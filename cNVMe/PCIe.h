@@ -852,6 +852,11 @@ namespace cnvme
 			/// <returns>PCI_EXPRESS_REGISTERS structure</returns>
 			PCI_EXPRESS_REGISTERS getPciExpressRegisters();
 
+			/// <summary>
+			/// Checks for changes (called automatically if multi-threaded)
+			/// </summary>
+			void checkForChanges();
+
 		private:
 			/// <summary>
 			/// The private implementation of the BAR memory.
@@ -873,6 +878,20 @@ namespace cnvme
 			/// <returns>PCI Header Pointer</returns>
 			cnvme::pci::header::PCI_HEADER* getPciHeader();
 
+			/// <summary>
+			/// True if the register watching thread should be going
+			/// </summary>
+			bool listeningThreadBool;
+
+			/// <summary>
+			/// Thread for background listening
+			/// </summary>
+			std::thread listeningThread;
+
+			/// <summary>
+			/// Run in a thread, listens for changes to perform tasks on change... (like a bleh interrupt)
+			/// </summary>
+			void listenForChanges();
 		};
 	}
 }

@@ -16,6 +16,7 @@ Types.h - A header file for all needed type includes
 #include <cstdint>
 #include <exception>
 #include <string>
+#include <thread>
 #include <vector>
 
 // Unsigned values

@@ -832,23 +832,29 @@ namespace cnvme
 			{
 				retStr += strings::indentLines(MSIXCAP->toString());
 			}
-			
+
 			if (PXCAP)
 			{
 				retStr += strings::indentLines(PXCAP->toString());
 			}
-			
+
 			if (AERCAP)
 			{
 				retStr += strings::indentLines(AERCAP->toString());
 			}
-			
+
 			return retStr;
 		}
 
 		PCIExpressRegisters::PCIExpressRegisters()
 		{
 			resetPciHeader();
+#ifdef SINGLE_THREADED
+			listeningThreadBool = false;
+#else
+			listeningThreadBool = true;
+			listeningThread = std::thread(&PCIExpressRegisters::listenForChanges, this);
+#endif
 		}
 
 		void PCIExpressRegisters::resetPciHeader()
@@ -964,9 +970,6 @@ namespace cnvme
 
 			PXCAP->PXLS.NLW = 8; // x8 width
 			PXCAP->PXLS.CLS = 8; // x8 speed
-
-
-
 		}
 
 		cnvme::Payload PCIExpressRegisters::readHeaderAndCapabilities()
@@ -978,15 +981,6 @@ namespace cnvme
 		{
 			// Update registers
 			PciHeaderAndCapabilities = payload;
-
-			auto post = getPciExpressRegisters();
-
-			// If we can't find PXCAP or IFLR was set to 1 do the function level reset
-			if ((!post.PXCAP) || post.PXCAP->PXDC.IFLR == 1)
-			{
-				resetPciHeader(); // Function level reset
-				LOG_INFO("Initiated a function level reset");
-			}
 		}
 
 		PCI_EXPRESS_REGISTERS PCIExpressRegisters::getPciExpressRegisters()
@@ -1058,9 +1052,31 @@ namespace cnvme
 			return Registers;
 		}
 
+		void PCIExpressRegisters::checkForChanges()
+		{
+			auto &regs = getPciExpressRegisters();
+
+			// If we can't find PXCAP or IFLR was set to 1 do the function level reset
+			if ((!regs.PXCAP) || regs.PXCAP->PXDC.IFLR == 1)
+			{
+				resetPciHeader(); // Function level reset
+				LOG_INFO("Initiated a function level reset");
+			}
+		}
+
 		PCI_HEADER* PCIExpressRegisters::getPciHeader()
 		{
 			return (PCI_HEADER*)PciHeaderAndCapabilities.getBuffer();
+		}
+
+		void PCIExpressRegisters::listenForChanges()
+		{
+			while (listeningThreadBool)
+			{
+				// Check for changes twice a second
+				std::this_thread::sleep_for(std::chrono::milliseconds(500));
+				checkForChanges();
+			}
 		}
 	}
 }

@@ -11,22 +11,27 @@ Main.cpp - An implementation file for the Main entry
 
 using namespace cnvme;
 
+
 int main()
 {
 	// This is testing code.
 	
 	pci::PCIExpressRegisters p;
 
+	LOG_SET_LEVEL(5);
+
 	p.getPciExpressRegisters().PciHeader->ID.VID = 0xBB;
 	p.getPciExpressRegisters().PciHeader->ID.DID = 0xFF;
-
-	std::cout << p.getPciExpressRegisters().PciHeader->toString() << std::endl;
 
 	Payload other(99999);
 	memset(other.getBuffer(), 0xff, 99999);
 	p.writeHeaderAndCapabilities(other); // should do FLR
 
-	std::cout << p.getPciExpressRegisters().PciHeader->toString() << std::endl;
+	std::this_thread::sleep_for(std::chrono::seconds(2));
+
+	p.getPciExpressRegisters().PXCAP->PXDC.IFLR = 1;  // Does another FLR
+
+	std::this_thread::sleep_for(std::chrono::seconds(2));
 
 	char c = '1';
 	std::cin >> c;
