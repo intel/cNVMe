@@ -923,7 +923,7 @@ namespace cnvme
 
 		}
 
-		cnvme::Payload PCIExpressRegisters::getHeaderAndCapabilities()
+		cnvme::Payload PCIExpressRegisters::readHeaderAndCapabilities()
 		{
 			return cnvme::Payload(PciHeaderAndCapabilities);
 		}

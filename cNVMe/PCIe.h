@@ -821,7 +821,7 @@ namespace cnvme
 			/// Gets a copy of the header and capabilities payload
 			/// </summary>
 			/// <returns>A copy of PciHeaderAndCapabilities</returns>
-			cnvme::Payload getHeaderAndCapabilities();
+			cnvme::Payload readHeaderAndCapabilities();
 
 			/// <summary>
 			/// Updates the header and capabilities payload with the one given

@@ -15,12 +15,18 @@ int main()
 {
 	// This is testing code.
 	
-	LOG_SET_LEVEL(2);
-	LOG_ERROR("Hey");
-	LOG_SET_LEVEL(0);
-	LOG_ERROR("Hey2");
-	LOG_SET_LEVEL(2);
-	LOG_INFO("Hey3");
+	pci::PCIExpressRegisters p;
+
+	auto b = p.readHeaderAndCapabilities();
+
+	memset(b.getBuffer(), 0xff, b.getSize());
+
+	p.writeHeaderAndCapabilities(b);
+
+	std::cout << ((pci::header::PCI_HEADER*)p.readHeaderAndCapabilities().getBuffer())->toString() << std::endl;
+
+	auto j = p;
+	std::cout << ((pci::header::PCI_HEADER*)j.readHeaderAndCapabilities().getBuffer())->toString() << std::endl;
 
 
 	char c = '1';
