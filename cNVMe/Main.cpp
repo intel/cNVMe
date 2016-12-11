@@ -17,17 +17,16 @@ int main()
 	
 	pci::PCIExpressRegisters p;
 
-	auto b = p.readHeaderAndCapabilities();
+	p.getPciExpressRegisters().PciHeader->ID.VID = 0xBB;
+	p.getPciExpressRegisters().PciHeader->ID.DID = 0xFF;
 
-	memset(b.getBuffer(), 0xff, b.getSize());
+	std::cout << p.getPciExpressRegisters().PciHeader->toString() << std::endl;
 
-	p.writeHeaderAndCapabilities(b);
+	Payload other(99999);
+	memset(other.getBuffer(), 0xff, 99999);
+	p.writeHeaderAndCapabilities(other); // should do FLR
 
-	std::cout << ((pci::header::PCI_HEADER*)p.readHeaderAndCapabilities().getBuffer())->toString() << std::endl;
-
-	auto j = p;
-	std::cout << ((pci::header::PCI_HEADER*)j.readHeaderAndCapabilities().getBuffer())->toString() << std::endl;
-
+	std::cout << p.getPciExpressRegisters().PciHeader->toString() << std::endl;
 
 	char c = '1';
 	std::cin >> c;

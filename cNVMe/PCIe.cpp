@@ -16,6 +16,15 @@ PCIe.cpp - A implementation file for the PCIe Registers
 #define BAR_SIZE 4096          // 4K Bytes
 #define CAPABILITIES_SIZE 4096 // Much larger than probably needed
 
+// Cap Ids
+#define CID_PMCAP     0x01
+#define CID_MSICAP    0x05
+#define CID_MSIXCAP   0x11
+#define CID_PXCAP     0x10
+
+// Extended Cap Ids
+#define CID_AERCAP    0x0001
+
 using namespace cnvme::pci::capabilities;
 using namespace cnvme::pci::header;
 
@@ -481,7 +490,7 @@ namespace cnvme
 				retStr += strings::toString(ToStringParams(APPME, "AUX Power PM Enable"));
 				retStr += strings::toString(ToStringParams(ENS, "Enable No Snoop"));
 				retStr += strings::toString(ToStringParams(MRRS, "Max Read Request Size"));
-				retStr += strings::toString(ToStringParams(RSVD0, "Initiate Function Level Reset - A write of `1' initiates Function Level Reset to the Function. The value read by software from this bit shall always `0'"));
+				retStr += strings::toString(ToStringParams(IFLR, "Initiate Function Level Reset"));
 				return retStr;
 			}
 
@@ -800,6 +809,43 @@ namespace cnvme
 			}
 		}
 
+		std::string PCI_EXPRESS_REGISTERS::toString() const
+		{
+			std::string retStr;
+			retStr += "PCI Express Registers:\n";
+			if (PciHeader)
+			{
+				retStr += strings::indentLines(PciHeader->toString());
+			}
+
+			if (PMCAP)
+			{
+				retStr += strings::indentLines(PMCAP->toString());
+			}
+
+			if (MSICAP)
+			{
+				retStr += strings::indentLines(MSICAP->toString());
+			}
+
+			if (MSIXCAP)
+			{
+				retStr += strings::indentLines(MSIXCAP->toString());
+			}
+			
+			if (PXCAP)
+			{
+				retStr += strings::indentLines(PXCAP->toString());
+			}
+			
+			if (AERCAP)
+			{
+				retStr += strings::indentLines(AERCAP->toString());
+			}
+			
+			return retStr;
+		}
+
 		PCIExpressRegisters::PCIExpressRegisters()
 		{
 			resetPciHeader();
@@ -930,14 +976,91 @@ namespace cnvme
 
 		void PCIExpressRegisters::writeHeaderAndCapabilities(const cnvme::Payload& payload)
 		{
-			// TODO. Check for changes that would lead to things happening. (Function level reset is the one that comes to mind)
+			// Update registers
 			PciHeaderAndCapabilities = payload;
+
+			auto post = getPciExpressRegisters();
+
+			// If we can't find PXCAP or IFLR was set to 1 do the function level reset
+			if ((!post.PXCAP) || post.PXCAP->PXDC.IFLR == 1)
+			{
+				resetPciHeader(); // Function level reset
+				LOG_INFO("Initiated a function level reset");
+			}
+		}
+
+		PCI_EXPRESS_REGISTERS PCIExpressRegisters::getPciExpressRegisters()
+		{
+			PCI_EXPRESS_REGISTERS Registers = { 0 };
+			Registers.PciHeader = getPciHeader();
+
+			UINT_32 capOffset = Registers.PciHeader->CAP.CP;
+			UINT_32 lastOffset = 0;
+
+			// Go through capability linked list
+			while (capOffset != 0 && lastOffset != capOffset)
+			{
+				UINT_8* capPointer = (PciHeaderAndCapabilities.getBuffer() + capOffset);
+				PCI_CAPABILITY_ID* capId = ((PCI_CAPABILITY_ID*)capPointer);
+
+				if (capId->CID == CID_PMCAP) // PCI Power Management
+				{
+					Registers.PMCAP = (PCI_POWER_MANAGEMENT_CAPABILITIES*)capPointer;
+				}
+				else if (capId->CID == CID_MSICAP) // PCI MSI 
+				{
+					Registers.MSICAP = (PCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY*)capPointer;
+				}
+				else if (capId->CID == CID_MSIXCAP) // PCI MSIX 
+				{
+					Registers.MSIXCAP = (PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY*)capPointer;
+				}
+				else if (capId->CID == CID_PXCAP) // PCI Express 
+				{
+					Registers.PXCAP = (PCI_EXPRESS_CAPABILITY*)capPointer;
+				}
+				else
+				{
+					LOG_ERROR("Unknown CID: 0x" + strings::toHexString(capId->CID) + ". Breaking loop.");
+				}
+
+				lastOffset = capOffset;
+				capOffset = capId->NEXT;
+			}
+
+			// Find extended capabilities
+			capOffset = 0x1000;
+
+			while (capOffset != 0 && lastOffset != capOffset)
+			{
+				UINT_8* capPointer = (PciHeaderAndCapabilities.getBuffer() + capOffset);
+				PCI_AER_CAPABILITY_ID* capId = ((PCI_AER_CAPABILITY_ID*)capPointer);
+
+				// No Extended Capabilities.
+				if (capId->CID == 0)
+				{
+					break;
+				}
+
+				if (capId->CID == CID_AERCAP) // AER
+				{
+					Registers.AERCAP = (PCI_ADVANCED_ERROR_REPORTING_CAPABILITY*)capPointer;
+				}
+				else
+				{
+					LOG_ERROR("Unknown Extended CID: 0x" + strings::toHexString(capId->CID) + ". Breaking loop.");
+				}
+
+				lastOffset = capOffset;
+				capOffset = capId->NEXT;
+			}
+
+			return Registers;
 		}
 
 		PCI_HEADER* PCIExpressRegisters::getPciHeader()
 		{
 			return (PCI_HEADER*)PciHeaderAndCapabilities.getBuffer();
 		}
-
 	}
 }

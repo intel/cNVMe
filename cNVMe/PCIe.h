@@ -455,7 +455,7 @@ namespace cnvme
 				UINT_8 APPME : 1; // AUX Power PM Enable
 				UINT_8 ENS : 1; // Enable No Snoop
 				UINT_8 MRRS : 3; // Max Read Request Size
-				UINT_8 RSVD0 : 1; // Initiate Function Level Reset - A write of `1' initiates Function Level Reset to the Function. The value read by software from this bit shall always `0'
+				UINT_8 IFLR : 1; // Initiate Function Level Reset - A write of `1' initiates Function Level Reset to the Function. The value read by software from this bit shall always `0'
 
 				std::string toString() const;
 			} PCI_EXPRESS_DEVICE_CONTROL, *PPCI_EXPRESS_DEVICE_CONTROL;
@@ -787,6 +787,23 @@ namespace cnvme
 		}
 
 		/// <summary>
+		/// This is not necessarily the actual order at which the data is represented.
+		/// The PCIExpressRegisters class can calculate out the correct values for this 
+		/// This shouldn't be used directly unless retrieved.
+		/// </summary>
+		typedef struct PCI_EXPRESS_REGISTERS
+		{
+			header::PCI_HEADER* PciHeader;
+			capabilities::PCI_POWER_MANAGEMENT_CAPABILITIES* PMCAP;
+			capabilities::PCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY* MSICAP;
+			capabilities::PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY* MSIXCAP;
+			capabilities::PCI_EXPRESS_CAPABILITY* PXCAP;
+			capabilities::PCI_ADVANCED_ERROR_REPORTING_CAPABILITY* AERCAP;
+
+			std::string toString() const;
+		}PCI_EXPRESS_REGISTERS, *PPCI_EXPRESS_REGISTERS;
+
+		/// <summary>
 		/// This is a class for Section 2 of the NVMe 1.2.1 Spec. (System Bus (PCI Express) Registers)
 		/// </summary>
 		class PCIExpressRegisters
@@ -828,6 +845,12 @@ namespace cnvme
 			/// </summary>
 			/// <param name="payload">Payload of header and capability data</param>
 			void writeHeaderAndCapabilities(const cnvme::Payload &payload);
+
+			/// <summary>
+			/// Gets a struct representation of the PCIe Registers
+			/// </summary>
+			/// <returns>PCI_EXPRESS_REGISTERS structure</returns>
+			PCI_EXPRESS_REGISTERS getPciExpressRegisters();
 
 		private:
 			/// <summary>
