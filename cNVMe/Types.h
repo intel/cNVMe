@@ -4,8 +4,10 @@ This file is part of cNVMe and is released under the MIT License
 Types.h - A header file for all needed type includes
 */
 
-#pragma once
+// Project Includes
+#include "Payload.h" // Here to prevent import loop
 
+#pragma once
 
 // STL Includes
 #include <cassert>

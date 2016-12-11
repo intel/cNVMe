@@ -114,12 +114,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Payload.h" />
     <ClInclude Include="PCIe.h" />
     <ClInclude Include="Strings.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Payload.cpp" />
     <ClCompile Include="PCIe.cpp" />
     <ClCompile Include="Strings.cpp" />
   </ItemGroup>

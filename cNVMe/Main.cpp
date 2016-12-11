@@ -14,11 +14,19 @@ using namespace cnvme;
 
 int main()
 {
-	cnvme::pci::capabilities::PCI_ADVANCED_ERROR_REPORTING_CAPABILITY p = { 0 };
+	// This is testing code.
+	cnvme::Payload p(512);
 
+	p.getBuffer()[0] = 0xff;
 
-	std::cout << p.toString() << std::endl;
+	std::cout << p.getSize() << std::endl;
+
+	auto p2 = p;
+
+	std::cout << p2.getSize() << std::endl;
 
 	char c = '1';
 	std::cin >> c;
+
+	// End testing code.
 }
