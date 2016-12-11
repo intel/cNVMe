@@ -354,7 +354,7 @@ namespace cnvme
 			std::string PCI_MESSAGE_SIGNALED_INTERRUPT_MESSAGE_DATA::toString() const
 			{
 				std::string retStr;
-				retStr += "PCI Message Signaled Interrupt Message Data (MD / Offset MSICAP  + 0x12):\n";
+				retStr += "PCI Message Signaled Interrupt Message Data (MD / Offset MSICAP  + 0x0C):\n";
 				retStr += strings::toString(ToStringParams(DATA, "Data"));
 				return retStr;
 			}
@@ -362,7 +362,7 @@ namespace cnvme
 			std::string PCI_MESSAGE_SIGNALED_INTERRUPT_MASK_BITS::toString() const
 			{
 				std::string retStr;
-				retStr += "PCI Message Signaled Interrupt Mask Bits (MMASK / Offset MSICAP  + 0x16):\n";
+				retStr += "PCI Message Signaled Interrupt Mask Bits (MMASK / Offset MSICAP  + 0x10):\n";
 				retStr += strings::toString(ToStringParams(MASK, "Mask Bits"));
 				return retStr;
 			}
@@ -370,7 +370,7 @@ namespace cnvme
 			std::string PCI_MESSAGE_SIGNALED_INTERRUPT_PENDING_BITS::toString() const
 			{
 				std::string retStr;
-				retStr += "PCI Message Signaled Interrupt Pending Bits (MPEND / Offset MSICAP  + 0x20):\n";
+				retStr += "PCI Message Signaled Interrupt Pending Bits (MPEND / Offset MSICAP  + 0x14):\n";
 				retStr += strings::toString(ToStringParams(PEND, "Pending Bits"));
 				return retStr;
 			}
@@ -378,7 +378,7 @@ namespace cnvme
 			std::string PCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY::toString() const
 			{
 				std::string retStr;
-				retStr += "PCI Message Signaled Interrupt Capability (MSICAP)";
+				retStr += "PCI Message Signaled Interrupt Capability (MSICAP):\n";
 				retStr += strings::indentLines(MID.toString());
 				retStr += strings::indentLines(MC.toString());
 				retStr += strings::indentLines(MA.toString());
@@ -386,6 +386,211 @@ namespace cnvme
 				retStr += strings::indentLines(MD.toString());
 				retStr += strings::indentLines(MMASK.toString());
 				retStr += strings::indentLines(MPEND.toString());
+				return retStr;
+			}
+
+			std::string PCI_MSI_X_MESSAGE_CONTROL::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Msi X Message Control (MXC / Offset MSIXCAP + 0x2):\n";
+				retStr += strings::toString(ToStringParams(TS, "Table Size"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				retStr += strings::toString(ToStringParams(FM, "Function Mask"));
+				retStr += strings::toString(ToStringParams(MXE, "MSI-X Enable"));
+				return retStr;
+			}
+
+			std::string PCI_MSI_X_TABLE_OFFSET_TABLE_BIR::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Msi X Table Offset Table Bir (MTAB / Offset MSIXCAP + 0x4):\n";
+				retStr += strings::toString(ToStringParams(TBIR, "Table BIR"));
+				retStr += strings::toString(ToStringParams(TO, "Table Offset"));
+				return retStr;
+			}
+
+			std::string PCI_MSI_X_PBA_OFFSET_PBA_BIR::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Msi X Pba Offset Pba Bir (MPBA / Offset MSIXCAP + 0x8):\n";
+				retStr += strings::toString(ToStringParams(PBIR, "PBA BIR"));
+				retStr += strings::toString(ToStringParams(PBAO, "PBA Offset"));
+				return retStr;
+			}
+
+			std::string PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Message Signaled Interrupt X Capability (MSIXCAP):\n";
+				retStr += strings::indentLines(MXID.toString());
+				retStr += strings::indentLines(MXC.toString());
+				retStr += strings::indentLines(MTAB.toString());
+				retStr += strings::indentLines(MPBA.toString());
+				return retStr;
+			}
+
+			std::string PCI_EXPRESS_CAPABILITIES::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Express Capabilities (PXCAP / Offset PXCAP + 0x2):\n";
+				retStr += strings::toString(ToStringParams(VER, "Capability Version"));
+				retStr += strings::toString(ToStringParams(DPT, "Device/Port Type"));
+				retStr += strings::toString(ToStringParams(SI, "Slot Implemented"));
+				retStr += strings::toString(ToStringParams(IMN, "Interrupt Message Number"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_EXPRESS_DEVICE_CAPABILITIES::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Express Device Capabilities (PXDCAP / Offset PXCAP + 0x4):\n";
+				retStr += strings::toString(ToStringParams(MPS, "Max Payload Size Supported"));
+				retStr += strings::toString(ToStringParams(PFS, "Phantom Functions Supported"));
+				retStr += strings::toString(ToStringParams(ETFS, "Extended Tag Field Supported"));
+				retStr += strings::toString(ToStringParams(L0SL, "Endpoint L0s Acceptable Latency"));
+				retStr += strings::toString(ToStringParams(L1L, "Endpoint L1 Acceptable Latency"));
+				retStr += strings::toString(ToStringParams(RSVD2, "Reserved"));
+				retStr += strings::toString(ToStringParams(RER, "Role-based Error Reporting"));
+				retStr += strings::toString(ToStringParams(RSVD1, "Reserved"));
+				retStr += strings::toString(ToStringParams(CSPLV, "Captured Slot Power Limit Value"));
+				retStr += strings::toString(ToStringParams(CSPLS, "Captured Slot Power Limit Scale"));
+				retStr += strings::toString(ToStringParams(FLRC, "Function Level Reset Capability"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_EXPRESS_DEVICE_CONTROL::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Express Device Control (PXDC / Offset PXCAP + 0x8):\n";
+				retStr += strings::toString(ToStringParams(CERE, "Correctable Error Reporting Enable"));
+				retStr += strings::toString(ToStringParams(NFERE, "Non-Fatal Error Reporting Enable"));
+				retStr += strings::toString(ToStringParams(FERE, "Fatal Error Reporting Enable"));
+				retStr += strings::toString(ToStringParams(URRE, "Unsupported Request Reporting Enable"));
+				retStr += strings::toString(ToStringParams(ERO, "Enable Relaxed Ordering"));
+				retStr += strings::toString(ToStringParams(MPS, "Max Payload Size"));
+				retStr += strings::toString(ToStringParams(ETE, "Extended Tag Enable"));
+				retStr += strings::toString(ToStringParams(PFE, "Phantom Functions Enable"));
+				retStr += strings::toString(ToStringParams(APPME, "AUX Power PM Enable"));
+				retStr += strings::toString(ToStringParams(ENS, "Enable No Snoop"));
+				retStr += strings::toString(ToStringParams(MRRS, "Max Read Request Size"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Initiate Function Level Reset - A write of `1' initiates Function Level Reset to the Function. The value read by software from this bit shall always `0'"));
+				return retStr;
+			}
+
+			std::string PCI_EXPRESS_DEVICE_STATUS::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Express Device Status (PXDS / Offset PXCAP + 0xA):\n";
+				retStr += strings::toString(ToStringParams(CED, "Correctable Error Detected"));
+				retStr += strings::toString(ToStringParams(NFED, "Non-Fatal Error Detected"));
+				retStr += strings::toString(ToStringParams(FED, "Fatal Error Detected"));
+				retStr += strings::toString(ToStringParams(URD, "Unsupported Request Detected"));
+				retStr += strings::toString(ToStringParams(APD, "AUX Power Detected"));
+				retStr += strings::toString(ToStringParams(TP, "Transactions Pending"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_EXPRESS_LINK_CAPABILITIES::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Express Link Capabilities (PXLCAP / Offset PXCAP + 0xC):\n";
+				retStr += strings::toString(ToStringParams(SLS, "Supported Link Speeds"));
+				retStr += strings::toString(ToStringParams(MLW, "Maximum Link Width"));
+				retStr += strings::toString(ToStringParams(ASPMS, "Active State Power Management Support"));
+				retStr += strings::toString(ToStringParams(L0SEL, "L0s Exit Latency"));
+				retStr += strings::toString(ToStringParams(L1EL, "L1 Exit Latency"));
+				retStr += strings::toString(ToStringParams(CPM, "Clock Power Management"));
+				retStr += strings::toString(ToStringParams(SDERC, "Surprise Down Error Reporting Capable"));
+				retStr += strings::toString(ToStringParams(DLLLA, "Data Link Layer Link Active Reporting Capable"));
+				retStr += strings::toString(ToStringParams(LBNC, "Link Bandwidth Notification Capability"));
+				retStr += strings::toString(ToStringParams(AOC, "ASPM Optionality Compliance"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				retStr += strings::toString(ToStringParams(PN, "Port Number"));
+				return retStr;
+			}
+
+			std::string PCI_EXPRESS_LINK_CONTROL::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Express Link Control (PXLC / Offset PXCAP + 0x10):\n";
+				retStr += strings::toString(ToStringParams(ASPMC, "Active State Power Management Control"));
+				retStr += strings::toString(ToStringParams(RSVD2, "Reserved"));
+				retStr += strings::toString(ToStringParams(RCB, "Read Completion Boundary"));
+				retStr += strings::toString(ToStringParams(RSVD1, "Reserved: These bits are reserved on Endpoints"));
+				retStr += strings::toString(ToStringParams(CCC, "Common Clock Configuration"));
+				retStr += strings::toString(ToStringParams(ES, "Extended Synch"));
+				retStr += strings::toString(ToStringParams(ECPM, "Enable Clock Power Management"));
+				retStr += strings::toString(ToStringParams(HAWD, "Hardware Autonomous Width Disable"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_EXPRESS_LINK_STATUS::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Express Link Status (PXLS / Offset PXCAP + 0x12):\n";
+				retStr += strings::toString(ToStringParams(CLS, "Current Link Speed"));
+				retStr += strings::toString(ToStringParams(NLW, "Negotiated Link Width"));
+				retStr += strings::toString(ToStringParams(RSVD1, "Reserved"));
+				retStr += strings::toString(ToStringParams(SCC, "Slot Clock Configuration"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_EXPRESS_DEVICE_CAPABILITIES_2::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Express Device Capabilities 2 (PXDCAP2 / Offset PXCAP + 0x24):\n";
+				retStr += strings::toString(ToStringParams(CTRS, "Completion Timeout Ranges Supported"));
+				retStr += strings::toString(ToStringParams(CTDS, "Completion Timeout Disable Supported"));
+				retStr += strings::toString(ToStringParams(ARIFS, "ARI Forwarding Supported"));
+				retStr += strings::toString(ToStringParams(AORS, "AtomicOp Routing Supported"));
+				retStr += strings::toString(ToStringParams(AOCS32, "32-bit AtomicOp Completer Supported"));
+				retStr += strings::toString(ToStringParams(AOCS64, "64-bit AtomicOp Completer Supported"));
+				retStr += strings::toString(ToStringParams(CCS128, "128-bit CAS Completer Supported"));
+				retStr += strings::toString(ToStringParams(NPRPR, "No RO-enabled PR-PR Passing"));
+				retStr += strings::toString(ToStringParams(LTRS, "Latency Tolerance Reporting Supported"));
+				retStr += strings::toString(ToStringParams(TPHCS, "TPH Completer Supported"));
+				retStr += strings::toString(ToStringParams(RSVD1, "Reserved"));
+				retStr += strings::toString(ToStringParams(OBFFS, "OBFF Supported"));
+				retStr += strings::toString(ToStringParams(EFFS, "Extended Fmt Field Supported"));
+				retStr += strings::toString(ToStringParams(EETPS, "End-End TLP Prefix Supported"));
+				retStr += strings::toString(ToStringParams(MEETP, "Max End-End TLP Prefixes"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_EXPRESS_DEVICE_CONTROL_2::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Express Device Control 2 (PXDC2 / Offset PXCAP + 0x28):\n";
+				retStr += strings::toString(ToStringParams(RSVD3, "Completion Timeout Value:"));
+				retStr += strings::toString(ToStringParams(CTD, "Completion Timeout Disable"));
+				retStr += strings::toString(ToStringParams(RSVD2, "Reserved"));
+				retStr += strings::toString(ToStringParams(LTRME, "Latency Tolerance Reporting Mechanism Enable"));
+				retStr += strings::toString(ToStringParams(RSVD1, "Reserved"));
+				retStr += strings::toString(ToStringParams(OBFFE, "OBFF Enable"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_EXPRESS_CAPABILITY::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Express Capability (PXCAP):\n";
+				retStr += strings::indentLines(PXID.toString());
+				retStr += strings::indentLines(PXCAP.toString());
+				retStr += strings::indentLines(PXDCAP.toString());
+				retStr += strings::indentLines(PXDC.toString());
+				retStr += strings::indentLines(PXDS.toString());
+				retStr += strings::indentLines(PXLCAP.toString());
+				retStr += strings::indentLines(PXLC.toString());
+				retStr += strings::indentLines(PXLS.toString());
+				retStr += strings::indentLines(PXDCAP2.toString());
+				retStr += strings::indentLines(PXDC2.toString());
 				return retStr;
 			}
 

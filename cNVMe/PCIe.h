@@ -369,6 +369,216 @@ namespace cnvme
 			}PCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY, *PPCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY;
 			static_assert(sizeof(PCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY) == 24, "MSICAP should be 24 byte(s) in size.");
 
+			typedef struct PCI_MSI_X_MESSAGE_CONTROL
+			{
+				UINT_16 TS : 11; // Table Size
+				UINT_16 RSVD0 : 3; // Reserved
+				UINT_16 FM : 1; // Function Mask
+				UINT_16 MXE : 1; // MSI-X Enable
+
+				std::string toString() const;
+			} PCI_MSI_X_MESSAGE_CONTROL, *PPCI_MSI_X_MESSAGE_CONTROL;
+			static_assert(sizeof(PCI_MSI_X_MESSAGE_CONTROL) == 2, "MXC should be 2 byte(s) in size.");
+
+			typedef struct PCI_MSI_X_TABLE_OFFSET_TABLE_BIR
+			{
+				UINT_32 TBIR : 3; // Table BIR
+				UINT_32 TO : 29; // Table Offset
+
+				std::string toString() const;
+			} PCI_MSI_X_TABLE_OFFSET_TABLE_BIR, *PPCI_MSI_X_TABLE_OFFSET_TABLE_BIR;
+			static_assert(sizeof(PCI_MSI_X_TABLE_OFFSET_TABLE_BIR) == 4, "MTAB should be 4 byte(s) in size.");
+
+			typedef struct PCI_MSI_X_PBA_OFFSET_PBA_BIR
+			{
+				UINT_32 PBIR : 3; // PBA BIR
+				UINT_32 PBAO : 29; // PBA Offset
+
+				std::string toString() const;
+			} PCI_MSI_X_PBA_OFFSET_PBA_BIR, *PPCI_MSI_X_PBA_OFFSET_PBA_BIR;
+			static_assert(sizeof(PCI_MSI_X_PBA_OFFSET_PBA_BIR) == 4, "MPBA should be 4 byte(s) in size.");
+
+			/*! This is the PCI Message Signaled Interrupt X Capability structure (NVMe 1.2.1 section 2.4)
+			*/
+			typedef struct PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY
+			{
+				PCI_CAPABILITY_ID MXID;
+				PCI_MSI_X_MESSAGE_CONTROL MXC;
+				PCI_MSI_X_TABLE_OFFSET_TABLE_BIR MTAB;
+				PCI_MSI_X_PBA_OFFSET_PBA_BIR MPBA;
+
+				std::string toString() const;
+			}PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY, *PPCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY;
+			static_assert(sizeof(PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY) == 12, "MSIXCAP should be 12 byte(s) in size.");
+
+			typedef struct PCI_EXPRESS_CAPABILITIES
+			{
+				UINT_8 VER : 4; // Capability Version
+				UINT_8 DPT : 4; // Device/Port Type
+				UINT_8 SI : 1; // Slot Implemented
+				UINT_8 IMN : 5; // Interrupt Message Number
+				UINT_8 RSVD0 : 2; // Reserved
+
+				std::string toString() const;
+			} PCI_EXPRESS_CAPABILITIES, *PPCI_EXPRESS_CAPABILITIES;
+			static_assert(sizeof(PCI_EXPRESS_CAPABILITIES) == 2, "PXCAP should be 2 byte(s) in size.");
+
+			typedef struct PCI_EXPRESS_DEVICE_CAPABILITIES
+			{
+				UINT_32 MPS : 3; // Max Payload Size Supported
+				UINT_32 PFS : 2; // Phantom Functions Supported
+				UINT_32 ETFS : 1; // Extended Tag Field Supported
+				UINT_32 L0SL : 3; // Endpoint L0s Acceptable Latency
+				UINT_32 L1L : 3; // Endpoint L1 Acceptable Latency
+				UINT_32 RSVD2 : 3; // Reserved
+				UINT_32 RER : 1; // Role-based Error Reporting
+				UINT_32 RSVD1 : 2; // Reserved
+				UINT_32 CSPLV : 8; // Captured Slot Power Limit Value
+				UINT_32 CSPLS : 2; // Captured Slot Power Limit Scale
+				UINT_32 FLRC : 1; // Function Level Reset Capability
+				UINT_32 RSVD0 : 3; // Reserved
+
+				std::string toString() const;
+			} PCI_EXPRESS_DEVICE_CAPABILITIES, *PPCI_EXPRESS_DEVICE_CAPABILITIES;
+			static_assert(sizeof(PCI_EXPRESS_DEVICE_CAPABILITIES) == 4, "PXDCAP should be 4 byte(s) in size.");
+
+			typedef struct PCI_EXPRESS_DEVICE_CONTROL
+			{
+				UINT_8 CERE : 1; // Correctable Error Reporting Enable
+				UINT_8 NFERE : 1; // Non-Fatal Error Reporting Enable
+				UINT_8 FERE : 1; // Fatal Error Reporting Enable
+				UINT_8 URRE : 1; // Unsupported Request Reporting Enable
+				UINT_8 ERO : 1; // Enable Relaxed Ordering
+				UINT_8 MPS : 3; // Max Payload Size
+				UINT_8 ETE : 1; // Extended Tag Enable
+				UINT_8 PFE : 1; // Phantom Functions Enable
+				UINT_8 APPME : 1; // AUX Power PM Enable
+				UINT_8 ENS : 1; // Enable No Snoop
+				UINT_8 MRRS : 3; // Max Read Request Size
+				UINT_8 RSVD0 : 1; // Initiate Function Level Reset - A write of `1' initiates Function Level Reset to the Function. The value read by software from this bit shall always `0'
+
+				std::string toString() const;
+			} PCI_EXPRESS_DEVICE_CONTROL, *PPCI_EXPRESS_DEVICE_CONTROL;
+			static_assert(sizeof(PCI_EXPRESS_DEVICE_CONTROL) == 2, "PXDC should be 2 byte(s) in size.");
+
+			typedef struct PCI_EXPRESS_DEVICE_STATUS
+			{
+				UINT_16 CED : 1; // Correctable Error Detected
+				UINT_16 NFED : 1; // Non-Fatal Error Detected
+				UINT_16 FED : 1; // Fatal Error Detected
+				UINT_16 URD : 1; // Unsupported Request Detected
+				UINT_16 APD : 1; // AUX Power Detected
+				UINT_16 TP : 1; // Transactions Pending
+				UINT_16 RSVD0 : 10; // Reserved
+
+				std::string toString() const;
+			} PCI_EXPRESS_DEVICE_STATUS, *PPCI_EXPRESS_DEVICE_STATUS;
+			static_assert(sizeof(PCI_EXPRESS_DEVICE_STATUS) == 2, "PXDS should be 2 byte(s) in size.");
+
+			typedef struct PCI_EXPRESS_LINK_CAPABILITIES
+			{
+				UINT_32 SLS : 4; // Supported Link Speeds
+				UINT_32 MLW : 6; // Maximum Link Width
+				UINT_32 ASPMS : 2; // Active State Power Management Support
+				UINT_32 L0SEL : 3; // L0s Exit Latency
+				UINT_32 L1EL : 3; // L1 Exit Latency
+				UINT_32 CPM : 1; // Clock Power Management
+				UINT_32 SDERC : 1; // Surprise Down Error Reporting Capable
+				UINT_32 DLLLA : 1; // Data Link Layer Link Active Reporting Capable
+				UINT_32 LBNC : 1; // Link Bandwidth Notification Capability
+				UINT_32 AOC : 1; // ASPM Optionality Compliance
+				UINT_32 RSVD0 : 1; // Reserved
+				UINT_32 PN : 8; // Port Number
+
+				std::string toString() const;
+			} PCI_EXPRESS_LINK_CAPABILITIES, *PPCI_EXPRESS_LINK_CAPABILITIES;
+			static_assert(sizeof(PCI_EXPRESS_LINK_CAPABILITIES) == 4, "PXLCAP should be 4 byte(s) in size.");
+
+			typedef struct PCI_EXPRESS_LINK_CONTROL
+			{
+				UINT_8 ASPMC : 2; // Active State Power Management Control
+				UINT_8 RSVD2 : 1; // Reserved
+				UINT_8 RCB : 1; // Read Completion Boundary
+				UINT_8 RSVD1 : 2; // Reserved: These bits are reserved on Endpoints
+				UINT_8 CCC : 1; // Common Clock Configuration
+				UINT_8 ES : 1; // Extended Synch
+				UINT_8 ECPM : 1; // Enable Clock Power Management
+				UINT_8 HAWD : 1; // Hardware Autonomous Width Disable
+				UINT_8 RSVD0 : 6; // Reserved
+
+				std::string toString() const;
+			} PCI_EXPRESS_LINK_CONTROL, *PPCI_EXPRESS_LINK_CONTROL;
+			static_assert(sizeof(PCI_EXPRESS_LINK_CONTROL) == 2, "PXLC should be 2 byte(s) in size.");
+
+			typedef struct PCI_EXPRESS_LINK_STATUS
+			{
+				UINT_16 CLS : 4; // Current Link Speed
+				UINT_16 NLW : 6; // Negotiated Link Width
+				UINT_16 RSVD1 : 2; // Reserved
+				UINT_16 SCC : 1; // Slot Clock Configuration
+				UINT_16 RSVD0 : 3; // Reserved
+
+				std::string toString() const;
+			} PCI_EXPRESS_LINK_STATUS, *PPCI_EXPRESS_LINK_STATUS;
+			static_assert(sizeof(PCI_EXPRESS_LINK_STATUS) == 2, "PXLS should be 2 byte(s) in size.");
+
+			typedef struct PCI_EXPRESS_DEVICE_CAPABILITIES_2
+			{
+				UINT_32 CTRS : 4; // Completion Timeout Ranges Supported
+				UINT_32 CTDS : 1; // Completion Timeout Disable Supported
+				UINT_32 ARIFS : 1; // ARI Forwarding Supported
+				UINT_32 AORS : 1; // AtomicOp Routing Supported
+				UINT_32 AOCS32 : 1; // 32-bit AtomicOp Completer Supported
+				UINT_32 AOCS64 : 1; // 64-bit AtomicOp Completer Supported
+				UINT_32 CCS128 : 1; // 128-bit CAS Completer Supported
+				UINT_32 NPRPR : 1; // No RO-enabled PR-PR Passing
+				UINT_32 LTRS : 1; // Latency Tolerance Reporting Supported
+				UINT_32 TPHCS : 2; // TPH Completer Supported
+				UINT_32 RSVD1 : 4; // Reserved
+				UINT_32 OBFFS : 2; // OBFF Supported
+				UINT_32 EFFS : 1; // Extended Fmt Field Supported
+				UINT_32 EETPS : 1; // End-End TLP Prefix Supported
+				UINT_32 MEETP : 2; // Max End-End TLP Prefixes
+				UINT_32 RSVD0 : 8; // Reserved
+
+				std::string toString() const;
+			} PCI_EXPRESS_DEVICE_CAPABILITIES_2, *PPCI_EXPRESS_DEVICE_CAPABILITIES_2;
+			static_assert(sizeof(PCI_EXPRESS_DEVICE_CAPABILITIES_2) == 4, "PXDCAP2 should be 4 byte(s) in size.");
+
+			typedef struct PCI_EXPRESS_DEVICE_CONTROL_2
+			{
+				UINT_32 RSVD3 : 4; // Completion Timeout Value:
+				UINT_32 CTD : 1; // Completion Timeout Disable
+				UINT_32 RSVD2 : 5; // Reserved
+				UINT_32 LTRME : 1; // Latency Tolerance Reporting Mechanism Enable
+				UINT_32 RSVD1 : 2; // Reserved
+				UINT_32 OBFFE : 2; // OBFF Enable
+				UINT_32 RSVD0 : 17; // Reserved
+
+				std::string toString() const;
+			} PCI_EXPRESS_DEVICE_CONTROL_2, *PPCI_EXPRESS_DEVICE_CONTROL_2;
+			static_assert(sizeof(PCI_EXPRESS_DEVICE_CONTROL_2) == 4, "PXDC2 should be 4 byte(s) in size.");
+
+			/*! This is the PCI Express Capability structure (NVMe 1.2.1 section 2.5)
+			*/
+			typedef struct PCI_EXPRESS_CAPABILITY
+			{
+				PCI_CAPABILITY_ID PXID;
+				PCI_EXPRESS_CAPABILITIES PXCAP;
+				PCI_EXPRESS_DEVICE_CAPABILITIES PXDCAP;
+				PCI_EXPRESS_DEVICE_CONTROL PXDC;
+				PCI_EXPRESS_DEVICE_STATUS PXDS;
+				PCI_EXPRESS_LINK_CAPABILITIES PXLCAP;
+				PCI_EXPRESS_LINK_CONTROL PXLC;
+				PCI_EXPRESS_LINK_STATUS PXLS;
+				UINT_8 RSVD0[16];
+				PCI_EXPRESS_DEVICE_CAPABILITIES_2 PXDCAP2;
+				PCI_EXPRESS_DEVICE_CONTROL_2 PXDC2;
+
+				std::string toString() const;
+			}PCI_EXPRESS_CAPABILITY, *PPCI_EXPRESS_CAPABILITY;
+			static_assert(sizeof(PCI_EXPRESS_CAPABILITY) == 44, "PXCAP should be 42 byte(s) in size.");
+
 		}
 	}
 }
