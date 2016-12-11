@@ -33,7 +33,7 @@ namespace cnvme
 
 		std::string toString(UINT_64 value, std::string abbreviation, std::string description)
 		{
-			return "  " + rfill(abbreviation, 6) + " : " + rfill(description, 45) + " : " + std::to_string(value) + " (0x" + toHexString(value) + ") \n";
+			return "  " + rfill(abbreviation, 10) + " : " + rfill(description, 45) + " : " + std::to_string(value) + " (0x" + toHexString(value) + ") \n";
 		}
 		std::string indentLines(std::string str)
 		{

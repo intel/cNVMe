@@ -594,7 +594,204 @@ namespace cnvme
 				return retStr;
 			}
 
+			std::string PCI_AER_CAPABILITY_ID::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Aer Capability Id (AERID / Offset AERCAP):\n";
+				retStr += strings::toString(ToStringParams(CID, "Capability ID"));
+				retStr += strings::toString(ToStringParams(CVER, "Capability Version"));
+				retStr += strings::toString(ToStringParams(NEXT, "Next Pointer"));
+				return retStr;
+			}
 
+			std::string PCI_AER_UNCORRECTABLE_ERROR_STATUS_REGISTER::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Aer Uncorrectable Error Status Register (AERUCES / Offset AERCAP + 0x4):\n";
+				retStr += strings::toString(ToStringParams(RSVD2, "Reserved"));
+				retStr += strings::toString(ToStringParams(DLPES, "Data Link Protocol Error Status"));
+				retStr += strings::toString(ToStringParams(RSVD1, "Reserved"));
+				retStr += strings::toString(ToStringParams(PTS, "Poisoned TLP Status"));
+				retStr += strings::toString(ToStringParams(FCPES, "Flow Control Protocol Error Status"));
+				retStr += strings::toString(ToStringParams(CTS, "Completion Timeout Status"));
+				retStr += strings::toString(ToStringParams(CAS, "Completer Abort Status"));
+				retStr += strings::toString(ToStringParams(UCS, "Unexpected Completion Status"));
+				retStr += strings::toString(ToStringParams(ROS, "Receiver Overflow Status"));
+				retStr += strings::toString(ToStringParams(MTS, "Malformed TLP Status"));
+				retStr += strings::toString(ToStringParams(ECRCES, "ECRC Error Status"));
+				retStr += strings::toString(ToStringParams(URES, "Unsupported Request Error Status"));
+				retStr += strings::toString(ToStringParams(ACSVS, "ACS Violation Status"));
+				retStr += strings::toString(ToStringParams(UIES, "Uncorrectable Internal Error Status"));
+				retStr += strings::toString(ToStringParams(MCBTS, "MC Blocked TLP Status"));
+				retStr += strings::toString(ToStringParams(AOEBS, "AtomicOp Egress Blocked Status"));
+				retStr += strings::toString(ToStringParams(TPBES, "TLP Prefix Blocked Error Status"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_AER_UNCORRECTABLE_ERROR_MASK_REGISTER::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Aer Uncorrectable Error Mask Register (AERUCEM / Offset AERCAP + 0x8):\n";
+				retStr += strings::toString(ToStringParams(RSVD2, "Reserved"));
+				retStr += strings::toString(ToStringParams(DLPEM, "Data Link Protocol Error Mask"));
+				retStr += strings::toString(ToStringParams(RSVD1, "Reserved"));
+				retStr += strings::toString(ToStringParams(PTM, "Poisoned TLP Mask"));
+				retStr += strings::toString(ToStringParams(FCPEM, "Flow Control Protocol Error Mask"));
+				retStr += strings::toString(ToStringParams(CTM, "Completion Timeout Mask"));
+				retStr += strings::toString(ToStringParams(CAM, "Completer Abort Mask"));
+				retStr += strings::toString(ToStringParams(UCM, "Unexpected Completion Mask"));
+				retStr += strings::toString(ToStringParams(ROM, "Receiver Overflow Mask"));
+				retStr += strings::toString(ToStringParams(MTM, "Malformed TLP Mask"));
+				retStr += strings::toString(ToStringParams(ECRCEM, "ECRC Error Mask"));
+				retStr += strings::toString(ToStringParams(UREM, "Unsupported Request Error Mask"));
+				retStr += strings::toString(ToStringParams(ACSVM, "ACS Violation Mask"));
+				retStr += strings::toString(ToStringParams(UIEM, "Uncorrectable Internal Error Mask"));
+				retStr += strings::toString(ToStringParams(MCBTM, "MC Blocked TLP Mask"));
+				retStr += strings::toString(ToStringParams(AOEBM, "AtomicOp Egress Blocked Mask"));
+				retStr += strings::toString(ToStringParams(TPBEM, "TLP Prefix Blocked Error Mask"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_AER_UNCORRECTABLE_ERROR_SEVERITY_REGISTER::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Aer Uncorrectable Error Severity Register (AERUCESEV / Offset AERCAP + 0xC):\n";
+				retStr += strings::toString(ToStringParams(RSVD2, "Reserved"));
+				retStr += strings::toString(ToStringParams(DLPESEV, "Data Link Protocol Error Severity"));
+				retStr += strings::toString(ToStringParams(RSVD1, "Reserved"));
+				retStr += strings::toString(ToStringParams(PTSEV, "Poisoned TLP Severity"));
+				retStr += strings::toString(ToStringParams(FCPESEV, "Flow Control Protocol Error Severity"));
+				retStr += strings::toString(ToStringParams(CTSEV, "Completion Timeout Severity"));
+				retStr += strings::toString(ToStringParams(CASEV, "Completer Abort Severity"));
+				retStr += strings::toString(ToStringParams(UCSEV, "Unexpected Completion Severity"));
+				retStr += strings::toString(ToStringParams(ROSEV, "Receiver Overflow Severity"));
+				retStr += strings::toString(ToStringParams(MTSEV, "Malformed TLP Severity"));
+				retStr += strings::toString(ToStringParams(ECRCESEV, "ECRC Error Severity"));
+				retStr += strings::toString(ToStringParams(URESEV, "Unsupported Request Error Severity"));
+				retStr += strings::toString(ToStringParams(ACSVSEV, "ACS Violation Severity"));
+				retStr += strings::toString(ToStringParams(UIESEV, "Uncorrectable Internal Error Severity"));
+				retStr += strings::toString(ToStringParams(MCBTSEV, "MC Blocked TLP Severity"));
+				retStr += strings::toString(ToStringParams(AOEBSEV, "AtomicOp Egress Blocked Severity"));
+				retStr += strings::toString(ToStringParams(TPBESEV, "TLP Prefix Blocked Error Severity"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_AER_CORRECTABLE_ERROR_STATUS_REGISTER::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Aer Correctable Error Status Register (AERCS / Offset AERCAP + 0x10):\n";
+				retStr += strings::toString(ToStringParams(RES, "Receiver Error Status"));
+				retStr += strings::toString(ToStringParams(RSVD2, "Reserved"));
+				retStr += strings::toString(ToStringParams(BTS, "Bad TLP Status"));
+				retStr += strings::toString(ToStringParams(BDS, "Bad DLLP Status"));
+				retStr += strings::toString(ToStringParams(RRS, "REPLAY NUM Rollover Status"));
+				retStr += strings::toString(ToStringParams(RSVD1, "Reserved"));
+				retStr += strings::toString(ToStringParams(RTS, "Replay Timer Timeout Status"));
+				retStr += strings::toString(ToStringParams(ANFES, "Advisory Non-Fatal Error Status"));
+				retStr += strings::toString(ToStringParams(CIES, "Corrected Internal Error Status"));
+				retStr += strings::toString(ToStringParams(HLOS, "Header Log Overflow Status"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_AER_CORRECTABLE_ERROR_MASK_REGISTER::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Aer Correctable Error Mask Register (AERCEM / Offset AERCAP + 0x14):\n";
+				retStr += strings::toString(ToStringParams(REM, "Receiver Error Mask"));
+				retStr += strings::toString(ToStringParams(RSVD3, "Reserved"));
+				retStr += strings::toString(ToStringParams(BTM, "Bad TLP Mask"));
+				retStr += strings::toString(ToStringParams(BDM, "Bad DLLP Mask"));
+				retStr += strings::toString(ToStringParams(RRM, "REPLAY NUM Rollover Mask"));
+				retStr += strings::toString(ToStringParams(RSVD2, "Reserved"));
+				retStr += strings::toString(ToStringParams(RTM, "Replay Timer Timeout Mask"));
+				retStr += strings::toString(ToStringParams(RSVD1, "Advisory Non-Fatal Error Mask ANFEM)"));
+				retStr += strings::toString(ToStringParams(CIEM, "Corrected Internal Error Mask"));
+				retStr += strings::toString(ToStringParams(HLOM, "Header Log Overflow Mask"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_AER_CAPABILITIES_AND_CONTROL_REGISTER::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Aer Capabilities And Control Register (AERCC / Offset AERCAP + 0x18):\n";
+				retStr += strings::toString(ToStringParams(FEP, "First Error Pointer"));
+				retStr += strings::toString(ToStringParams(EGC, "ECRC Generation Capable"));
+				retStr += strings::toString(ToStringParams(EGE, "ECRC Generation Enable"));
+				retStr += strings::toString(ToStringParams(ECC, "ECRC Check Capable"));
+				retStr += strings::toString(ToStringParams(ECE, "ECRC Check Enable"));
+				retStr += strings::toString(ToStringParams(MHRC, "Multiple Header Recording Capable"));
+				retStr += strings::toString(ToStringParams(MHRE, "Multiple Header Recording Enable"));
+				retStr += strings::toString(ToStringParams(TPLP, "TLP Prefix Log Present"));
+				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
+				return retStr;
+			}
+
+			std::string PCI_AER_HEADER_LOG_REGISTER::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Aer Header Log Register (AERHL / Offset AERCAP + 0x1C):\n";
+				retStr += strings::toString(ToStringParams(HB12, "Header Byte 12"));
+				retStr += strings::toString(ToStringParams(HB13, "Header Byte 13"));
+				retStr += strings::toString(ToStringParams(HB14, "Header Byte 14"));
+				retStr += strings::toString(ToStringParams(HB15, "Header Byte 15"));
+				retStr += strings::toString(ToStringParams(HB8, "Header Byte 8"));
+				retStr += strings::toString(ToStringParams(HB9, "Header Byte 9"));
+				retStr += strings::toString(ToStringParams(HB10, "Header Byte 10"));
+				retStr += strings::toString(ToStringParams(HB11, "Header Byte 11"));
+				retStr += strings::toString(ToStringParams(HB4, "Header Byte 4"));
+				retStr += strings::toString(ToStringParams(HB5, "Header Byte 5"));
+				retStr += strings::toString(ToStringParams(HB6, "Header Byte 6"));
+				retStr += strings::toString(ToStringParams(HB7, "Header Byte 7"));
+				retStr += strings::toString(ToStringParams(HB0, "Header Byte 0"));
+				retStr += strings::toString(ToStringParams(HB1, "Header Byte 1"));
+				retStr += strings::toString(ToStringParams(HB2, "Header Byte 2"));
+				retStr += strings::toString(ToStringParams(HB3, "Header Byte 3"));
+				return retStr;
+			}
+
+			std::string PCI_AER_TLP_PREFIX_LOG_REGISTER::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Aer Tlp Prefix Log Register (AERTLP / Offset AERCAP + 0x38):\n";
+				retStr += strings::toString(ToStringParams(TPL4B0, "Fourth TLP Prefix Log Byte 0"));
+				retStr += strings::toString(ToStringParams(TPL4B1, "Fourth TLP Prefix Log Byte 1"));
+				retStr += strings::toString(ToStringParams(TPL4B2, "Fourth TLP Prefix Log Byte 2"));
+				retStr += strings::toString(ToStringParams(TPL4B3, "Fourth TLP Prefix Log Byte 3"));
+				retStr += strings::toString(ToStringParams(TPL3B0, "Third TLP Prefix Log Byte 0"));
+				retStr += strings::toString(ToStringParams(TPL3B1, "Third TLP Prefix Log Byte 1"));
+				retStr += strings::toString(ToStringParams(TPL3B2, "Third TLP Prefix Log Byte 2"));
+				retStr += strings::toString(ToStringParams(TPL3B3, "Third TLP Prefix Log Byte 3"));
+				retStr += strings::toString(ToStringParams(TPL2B0, "Second TLP Prefix Log Byte 0"));
+				retStr += strings::toString(ToStringParams(TPL2B1, "Second TLP Prefix Log Byte 1"));
+				retStr += strings::toString(ToStringParams(TPL2B2, "Second TLP Prefix Log Byte 2"));
+				retStr += strings::toString(ToStringParams(TPL2B3, "Second TLP Prefix Log Byte 3"));
+				retStr += strings::toString(ToStringParams(TPL1B0, "First TLP Prefix Log Byte 0"));
+				retStr += strings::toString(ToStringParams(TPL1B1, "First TLP Prefix Log Byte 1"));
+				retStr += strings::toString(ToStringParams(TPL1B2, "First TLP Prefix Log Byte 2"));
+				retStr += strings::toString(ToStringParams(TPL1B3, "First TLP Prefix Log Byte 3"));
+				return retStr;
+			}
+
+			std::string PCI_ADVANCED_ERROR_REPORTING_CAPABILITY::toString() const
+			{
+				std::string retStr;
+				retStr += "PCI Advanced Error Reporting Extended Capability (PXCAP):\n";
+				retStr += strings::indentLines(AERID.toString());
+				retStr += strings::indentLines(AERUCES.toString());
+				retStr += strings::indentLines(AERUCEM.toString());
+				retStr += strings::indentLines(AERUCESEV.toString());
+				retStr += strings::indentLines(AERCS.toString());
+				retStr += strings::indentLines(AERCEM.toString());
+				retStr += strings::indentLines(AERCC.toString());
+				retStr += strings::indentLines(AERHL.toString());
+				retStr += strings::indentLines(AERTLP.toString());
+				return retStr;
+			}
 		}
 
 	}

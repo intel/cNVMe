@@ -14,7 +14,7 @@ using namespace cnvme;
 
 int main()
 {
-	cnvme::pci::capabilities::PCI_EXPRESS_CAPABILITY p = { 0 };
+	cnvme::pci::capabilities::PCI_ADVANCED_ERROR_REPORTING_CAPABILITY p = { 0 };
 
 
 	std::cout << p.toString() << std::endl;

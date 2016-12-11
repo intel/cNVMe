@@ -577,7 +577,214 @@ namespace cnvme
 
 				std::string toString() const;
 			}PCI_EXPRESS_CAPABILITY, *PPCI_EXPRESS_CAPABILITY;
-			static_assert(sizeof(PCI_EXPRESS_CAPABILITY) == 44, "PXCAP should be 42 byte(s) in size.");
+			static_assert(sizeof(PCI_EXPRESS_CAPABILITY) == 44, "PXCAP should be 44 byte(s) in size.");
+
+			// Extended Capabilities start at 0x100, after the regular ones
+
+			typedef struct PCI_AER_CAPABILITY_ID
+			{
+				UINT_16 CID; // Capability ID
+				UINT_16 CVER : 4; // Capability Version
+				UINT_16 NEXT : 12; // Next Pointer
+
+				std::string toString() const;
+			} PCI_AER_CAPABILITY_ID, *PPCI_AER_CAPABILITY_ID;
+			static_assert(sizeof(PCI_AER_CAPABILITY_ID) == 4, "AERID should be 4 byte(s) in size.");
+
+			typedef struct PCI_AER_UNCORRECTABLE_ERROR_STATUS_REGISTER
+			{
+				UINT_32 RSVD2 : 4; // Reserved
+				UINT_32 DLPES : 1; // Data Link Protocol Error Status
+				UINT_32 RSVD1 : 7; // Reserved
+				UINT_32 PTS : 1; // Poisoned TLP Status
+				UINT_32 FCPES : 1; // Flow Control Protocol Error Status
+				UINT_32 CTS : 1; // Completion Timeout Status
+				UINT_32 CAS : 1; // Completer Abort Status
+				UINT_32 UCS : 1; // Unexpected Completion Status
+				UINT_32 ROS : 1; // Receiver Overflow Status
+				UINT_32 MTS : 1; // Malformed TLP Status
+				UINT_32 ECRCES : 1; // ECRC Error Status
+				UINT_32 URES : 1; // Unsupported Request Error Status
+				UINT_32 ACSVS : 1; // ACS Violation Status
+				UINT_32 UIES : 1; // Uncorrectable Internal Error Status
+				UINT_32 MCBTS : 1; // MC Blocked TLP Status
+				UINT_32 AOEBS : 1; // AtomicOp Egress Blocked Status
+				UINT_32 TPBES : 1; // TLP Prefix Blocked Error Status
+				UINT_32 RSVD0 : 6; // Reserved
+
+				std::string toString() const;
+			} PCI_AER_UNCORRECTABLE_ERROR_STATUS_REGISTER, *PPCI_AER_UNCORRECTABLE_ERROR_STATUS_REGISTER;
+			static_assert(sizeof(PCI_AER_UNCORRECTABLE_ERROR_STATUS_REGISTER) == 4, "AERUCES should be 4 byte(s) in size.");
+
+			typedef struct PCI_AER_UNCORRECTABLE_ERROR_MASK_REGISTER
+			{
+				UINT_32 RSVD2 : 4; // Reserved
+				UINT_32 DLPEM : 1; // Data Link Protocol Error Mask
+				UINT_32 RSVD1 : 7; // Reserved
+				UINT_32 PTM : 1; // Poisoned TLP Mask
+				UINT_32 FCPEM : 1; // Flow Control Protocol Error Mask
+				UINT_32 CTM : 1; // Completion Timeout Mask
+				UINT_32 CAM : 1; // Completer Abort Mask
+				UINT_32 UCM : 1; // Unexpected Completion Mask
+				UINT_32 ROM : 1; // Receiver Overflow Mask
+				UINT_32 MTM : 1; // Malformed TLP Mask
+				UINT_32 ECRCEM : 1; // ECRC Error Mask
+				UINT_32 UREM : 1; // Unsupported Request Error Mask
+				UINT_32 ACSVM : 1; // ACS Violation Mask
+				UINT_32 UIEM : 1; // Uncorrectable Internal Error Mask
+				UINT_32 MCBTM : 1; // MC Blocked TLP Mask
+				UINT_32 AOEBM : 1; // AtomicOp Egress Blocked Mask
+				UINT_32 TPBEM : 1; // TLP Prefix Blocked Error Mask
+				UINT_32 RSVD0 : 6; // Reserved
+
+				std::string toString() const;
+			} PCI_AER_UNCORRECTABLE_ERROR_MASK_REGISTER, *PPCI_AER_UNCORRECTABLE_ERROR_MASK_REGISTER;
+			static_assert(sizeof(PCI_AER_UNCORRECTABLE_ERROR_MASK_REGISTER) == 4, "AERUCEM should be 4 byte(s) in size.");
+
+			typedef struct PCI_AER_UNCORRECTABLE_ERROR_SEVERITY_REGISTER
+			{
+				UINT_32 RSVD2 : 4; // Reserved
+				UINT_32 DLPESEV : 1; // Data Link Protocol Error Severity
+				UINT_32 RSVD1 : 7; // Reserved
+				UINT_32 PTSEV : 1; // Poisoned TLP Severity
+				UINT_32 FCPESEV : 1; // Flow Control Protocol Error Severity
+				UINT_32 CTSEV : 1; // Completion Timeout Severity
+				UINT_32 CASEV : 1; // Completer Abort Severity
+				UINT_32 UCSEV : 1; // Unexpected Completion Severity
+				UINT_32 ROSEV : 1; // Receiver Overflow Severity
+				UINT_32 MTSEV : 1; // Malformed TLP Severity
+				UINT_32 ECRCESEV : 1; // ECRC Error Severity
+				UINT_32 URESEV : 1; // Unsupported Request Error Severity
+				UINT_32 ACSVSEV : 1; // ACS Violation Severity
+				UINT_32 UIESEV : 1; // Uncorrectable Internal Error Severity
+				UINT_32 MCBTSEV : 1; // MC Blocked TLP Severity
+				UINT_32 AOEBSEV : 1; // AtomicOp Egress Blocked Severity
+				UINT_32 TPBESEV : 1; // TLP Prefix Blocked Error Severity
+				UINT_32 RSVD0 : 6; // Reserved
+
+				std::string toString() const;
+			} PCI_AER_UNCORRECTABLE_ERROR_SEVERITY_REGISTER, *PPCI_AER_UNCORRECTABLE_ERROR_SEVERITY_REGISTER;
+			static_assert(sizeof(PCI_AER_UNCORRECTABLE_ERROR_SEVERITY_REGISTER) == 4, "AERUCESEV should be 4 byte(s) in size.");
+
+			typedef struct PCI_AER_CORRECTABLE_ERROR_STATUS_REGISTER
+			{
+				UINT_8 RES : 1; // Receiver Error Status
+				UINT_8 RSVD2 : 5; // Reserved
+				UINT_8 BTS : 1; // Bad TLP Status
+				UINT_8 BDS : 1; // Bad DLLP Status
+				UINT_8 RRS : 1; // REPLAY NUM Rollover Status
+				UINT_8 RSVD1 : 3; // Reserved
+				UINT_8 RTS : 1; // Replay Timer Timeout Status
+				UINT_8 ANFES : 1; // Advisory Non-Fatal Error Status
+				UINT_8 CIES : 1; // Corrected Internal Error Status
+				UINT_8 HLOS : 1; // Header Log Overflow Status
+				UINT_16 RSVD0; // Reserved
+
+				std::string toString() const;
+			} PCI_AER_CORRECTABLE_ERROR_STATUS_REGISTER, *PPCI_AER_CORRECTABLE_ERROR_STATUS_REGISTER;
+			static_assert(sizeof(PCI_AER_CORRECTABLE_ERROR_STATUS_REGISTER) == 4, "AERCS should be 4 byte(s) in size.");
+
+			typedef struct PCI_AER_CORRECTABLE_ERROR_MASK_REGISTER
+			{
+				UINT_8 REM : 1; // Receiver Error Mask
+				UINT_8 RSVD3 : 5; // Reserved
+				UINT_8 BTM : 1; // Bad TLP Mask
+				UINT_8 BDM : 1; // Bad DLLP Mask
+				UINT_8 RRM : 1; // REPLAY NUM Rollover Mask
+				UINT_8 RSVD2 : 3; // Reserved
+				UINT_8 RTM : 1; // Replay Timer Timeout Mask
+				UINT_8 RSVD1 : 1; // Advisory Non-Fatal Error Mask ANFEM)
+				UINT_8 CIEM : 1; // Corrected Internal Error Mask
+				UINT_8 HLOM : 1; // Header Log Overflow Mask
+				UINT_16 RSVD0; // Reserved
+
+				std::string toString() const;
+			} PCI_AER_CORRECTABLE_ERROR_MASK_REGISTER, *PPCI_AER_CORRECTABLE_ERROR_MASK_REGISTER;
+			static_assert(sizeof(PCI_AER_CORRECTABLE_ERROR_MASK_REGISTER) == 4, "AERCEM should be 4 byte(s) in size.");
+
+			typedef struct PCI_AER_CAPABILITIES_AND_CONTROL_REGISTER
+			{
+				UINT_32 FEP : 5; // First Error Pointer
+				UINT_32 EGC : 1; // ECRC Generation Capable
+				UINT_32 EGE : 1; // ECRC Generation Enable
+				UINT_32 ECC : 1; // ECRC Check Capable
+				UINT_32 ECE : 1; // ECRC Check Enable
+				UINT_32 MHRC : 1; // Multiple Header Recording Capable
+				UINT_32 MHRE : 1; // Multiple Header Recording Enable
+				UINT_32 TPLP : 1; // TLP Prefix Log Present
+				UINT_32 RSVD0 : 20; // Reserved
+
+				std::string toString() const;
+			} PCI_AER_CAPABILITIES_AND_CONTROL_REGISTER, *PPCI_AER_CAPABILITIES_AND_CONTROL_REGISTER;
+			static_assert(sizeof(PCI_AER_CAPABILITIES_AND_CONTROL_REGISTER) == 4, "AERCC should be 4 byte(s) in size.");
+
+			typedef struct PCI_AER_HEADER_LOG_REGISTER
+			{
+				UINT_8 HB12; // Header Byte 12
+				UINT_8 HB13; // Header Byte 13
+				UINT_8 HB14; // Header Byte 14
+				UINT_8 HB15; // Header Byte 15
+				UINT_8 HB8; // Header Byte 8
+				UINT_8 HB9; // Header Byte 9
+				UINT_8 HB10; // Header Byte 10
+				UINT_8 HB11; // Header Byte 11
+				UINT_8 HB4; // Header Byte 4
+				UINT_8 HB5; // Header Byte 5
+				UINT_8 HB6; // Header Byte 6
+				UINT_8 HB7; // Header Byte 7
+				UINT_8 HB0; // Header Byte 0
+				UINT_8 HB1; // Header Byte 1
+				UINT_8 HB2; // Header Byte 2
+				UINT_8 HB3; // Header Byte 3
+
+				std::string toString() const;
+			} PCI_AER_HEADER_LOG_REGISTER, *PPCI_AER_HEADER_LOG_REGISTER;
+			static_assert(sizeof(PCI_AER_HEADER_LOG_REGISTER) == 16, "AERHL should be 16 byte(s) in size.");
+
+			typedef struct PCI_AER_TLP_PREFIX_LOG_REGISTER
+			{
+				UINT_8 TPL4B0; // Fourth TLP Prefix Log Byte 0
+				UINT_8 TPL4B1; // Fourth TLP Prefix Log Byte 1
+				UINT_8 TPL4B2; // Fourth TLP Prefix Log Byte 2
+				UINT_8 TPL4B3; // Fourth TLP Prefix Log Byte 3
+				UINT_8 TPL3B0; // Third TLP Prefix Log Byte 0
+				UINT_8 TPL3B1; // Third TLP Prefix Log Byte 1
+				UINT_8 TPL3B2; // Third TLP Prefix Log Byte 2
+				UINT_8 TPL3B3; // Third TLP Prefix Log Byte 3
+				UINT_8 TPL2B0; // Second TLP Prefix Log Byte 0
+				UINT_8 TPL2B1; // Second TLP Prefix Log Byte 1
+				UINT_8 TPL2B2; // Second TLP Prefix Log Byte 2
+				UINT_8 TPL2B3; // Second TLP Prefix Log Byte 3
+				UINT_8 TPL1B0; // First TLP Prefix Log Byte 0
+				UINT_8 TPL1B1; // First TLP Prefix Log Byte 1
+				UINT_8 TPL1B2; // First TLP Prefix Log Byte 2
+				UINT_8 TPL1B3; // First TLP Prefix Log Byte 3
+
+				std::string toString() const;
+			} PCI_AER_TLP_PREFIX_LOG_REGISTER, *PPCI_AER_TLP_PREFIX_LOG_REGISTER;
+			static_assert(sizeof(PCI_AER_TLP_PREFIX_LOG_REGISTER) == 16, "AERTLP should be 16 byte(s) in size.");
+
+
+			/*! This is the PCI AER Extended Capability structure (NVMe 1.2.1 section 2.6)
+			* @info This has to be at offset 0x100 here as it is the only extended capability.
+			*/
+			typedef struct PCI_ADVANCED_ERROR_REPORTING_CAPABILITY
+			{
+				PCI_AER_CAPABILITY_ID AERID;
+				PCI_AER_UNCORRECTABLE_ERROR_STATUS_REGISTER AERUCES;
+				PCI_AER_UNCORRECTABLE_ERROR_MASK_REGISTER AERUCEM;
+				PCI_AER_UNCORRECTABLE_ERROR_SEVERITY_REGISTER AERUCESEV;
+				PCI_AER_CORRECTABLE_ERROR_STATUS_REGISTER AERCS;
+				PCI_AER_CORRECTABLE_ERROR_MASK_REGISTER	AERCEM;
+				PCI_AER_CAPABILITIES_AND_CONTROL_REGISTER AERCC;
+				UINT_8 RSVD0[12];
+				PCI_AER_HEADER_LOG_REGISTER AERHL;
+				PCI_AER_TLP_PREFIX_LOG_REGISTER AERTLP;
+
+				std::string toString() const;
+			}PCI_ADVANCED_ERROR_REPORTING_CAPABILITY, *PPCI_ADVANCED_ERROR_REPORTING_CAPABILITY;
+			static_assert(sizeof(PCI_ADVANCED_ERROR_REPORTING_CAPABILITY) == 72, "AERCAP should be 42 byte(s) in size.");
+
 
 		}
 	}
