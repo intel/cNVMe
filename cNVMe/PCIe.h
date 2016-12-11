@@ -783,7 +783,7 @@ namespace cnvme
 
 				std::string toString() const;
 			}PCI_ADVANCED_ERROR_REPORTING_CAPABILITY, *PPCI_ADVANCED_ERROR_REPORTING_CAPABILITY;
-			static_assert(sizeof(PCI_ADVANCED_ERROR_REPORTING_CAPABILITY) == 72, "AERCAP should be 42 byte(s) in size.");
+			static_assert(sizeof(PCI_ADVANCED_ERROR_REPORTING_CAPABILITY) == 72, "AERCAP should be 72 byte(s) in size.");
 
 
 		}
