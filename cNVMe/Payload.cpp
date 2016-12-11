@@ -50,6 +50,7 @@ namespace cnvme
 			ByteSize = 0;
 		}
 	}
+
 	UINT_8* Payload::getBuffer()
 	{
 		return BytePointer;

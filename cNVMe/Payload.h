@@ -10,6 +10,9 @@ Payload.h - A header file for the Payload class
 
 namespace cnvme
 {
+	/// <summary>
+	/// Payload is a safe dynamic memory allocation class
+	/// </summary>
 	class Payload
 	{
 	public:
@@ -65,6 +68,5 @@ namespace cnvme
 		/// The number of bytes owned
 		/// </summary>
 		UINT_32 ByteSize;
-
 	};
 }

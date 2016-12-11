@@ -15,15 +15,10 @@ using namespace cnvme;
 int main()
 {
 	// This is testing code.
-	cnvme::Payload p(512);
+	
+	pci::PCIExpressRegisters p;
 
-	p.getBuffer()[0] = 0xff;
-
-	std::cout << p.getSize() << std::endl;
-
-	auto p2 = p;
-
-	std::cout << p2.getSize() << std::endl;
+	std::cout << ((cnvme::pci::header::PCI_HEADER*)(p.getHeaderAndCapabilities().getBuffer()))->toString() << std::endl;
 
 	char c = '1';
 	std::cin >> c;

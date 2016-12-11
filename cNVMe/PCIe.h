@@ -785,5 +785,70 @@ namespace cnvme
 			}PCI_ADVANCED_ERROR_REPORTING_CAPABILITY, *PPCI_ADVANCED_ERROR_REPORTING_CAPABILITY;
 			static_assert(sizeof(PCI_ADVANCED_ERROR_REPORTING_CAPABILITY) == 72, "AERCAP should be 72 byte(s) in size.");
 		}
+
+		/// <summary>
+		/// This is a class for Section 2 of the NVMe 1.2.1 Spec. (System Bus (PCI Express) Registers)
+		/// </summary>
+		class PCIExpressRegisters
+		{
+		public:
+			/// <summary>
+			/// Plain constructor
+			/// </summary>
+			PCIExpressRegisters();
+
+			/// <summary>
+			/// Destructor
+			/// </summary>
+			~PCIExpressRegisters() = default;
+
+			/// <summary>
+			/// Sets the PciHeader back to defaults
+			/// </summary>
+			void resetPciHeader();
+
+			/// <summary>
+			/// Allocates all 6 BARs
+			/// </summary>
+			void allocateBars();
+
+			/// <summary>
+			/// Allocates all PCI capability registers
+			/// </summary>
+			void allocateCapabilities();
+
+			/// <summary>
+			/// Gets a copy of the header and capabilities payload
+			/// </summary>
+			/// <returns>A copy of PciHeaderAndCapabilities</returns>
+			cnvme::Payload getHeaderAndCapabilities();
+
+			/// <summary>
+			/// Updates the header and capabilities payload with the one given
+			/// </summary>
+			/// <param name="payload">Payload of header and capability data</param>
+			void writeHeaderAndCapabilities(const cnvme::Payload &payload);
+
+		private:
+			/// <summary>
+			/// The private implementation of the BAR memory.
+			/// The user can only see it via the addresses in the Header structure
+			/// </summary>
+			cnvme::Payload Bars;
+
+			/// <summary>
+			/// The private implementation of the Header and Capabilities memory
+			/// The user can only see it via the addresses in the Header structure
+			/// </summary>
+			cnvme::Payload PciHeaderAndCapabilities;
+
+			/// <summary>
+			/// Gets a pointer to the Pci Header
+			/// This is private since it is raw access.
+			///     If something was modified, we couldn't 'fire an interrupt'
+			/// </summary>
+			/// <returns>PCI Header Pointer</returns>
+			cnvme::pci::header::PCI_HEADER* getPciHeader();
+		};
 	}
 }

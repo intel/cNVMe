@@ -13,6 +13,12 @@ PCIe.cpp - A implementation file for the PCIe Registers
 #define ToStringParams(abbreviation, description) \
 	abbreviation, #abbreviation, description
 
+#define BAR_SIZE 4096          // 4K Bytes
+#define CAPABILITIES_SIZE 4096 // Much larger than probably needed
+
+using namespace cnvme::pci::capabilities;
+using namespace cnvme::pci::header;
+
 namespace cnvme
 {
 	namespace pci
@@ -792,6 +798,145 @@ namespace cnvme
 				retStr += strings::indentLines(AERTLP.toString());
 				return retStr;
 			}
+		}
+
+		PCIExpressRegisters::PCIExpressRegisters()
+		{
+			resetPciHeader();
+		}
+
+		void PCIExpressRegisters::resetPciHeader()
+		{
+			PciHeaderAndCapabilities = cnvme::Payload(sizeof(PCI_HEADER) + CAPABILITIES_SIZE);
+			PCI_HEADER* PciHeader = getPciHeader();
+
+			PciHeader->ID.DID = 0xCCAA;
+			PciHeader->ID.VID = 0xAACC;
+
+			PciHeader->CMD.MSE = 1;  // Allow controller register memory space access
+			PciHeader->CMD.IOSE = 1; // Allow access to controller's target I/O space
+
+			PciHeader->STS.CL = 1;   // Device has a capabilities list
+
+			PciHeader->RID.RID = 1;  // This is stepping 1 of this 'hardware'
+
+			PciHeader->CC.BCC = 1; // Mass storage controller
+			PciHeader->CC.SCC = 8; // Non-Volatile Memory controller
+			PciHeader->CC.PI = 2;  // NVM Express
+
+			// Allocate BARs
+			allocateBars();
+
+			PciHeader->SS.SSID = 0xFFEE; // Subsystem ID
+			PciHeader->SS.SSVID = 0xEEFF; // Subsystem Vendor ID
+
+			// Allocate Capabilities
+			allocateCapabilities();
+
+			// Allocate Extended Capabilities
+			// TODO
+		}
+
+		void PCIExpressRegisters::allocateBars()
+		{
+			Bars = cnvme::Payload(BAR_SIZE * 6); // 6 bars
+			PCI_HEADER* PciHeader = getPciHeader();
+
+			// BAR 0
+			UINT_64 baseAddress = (UINT_64)&(*Bars.getBuffer());
+			PciHeader->MLBAR.BA = baseAddress & 0x3ffff; // 18 lower bits
+			PciHeader->MLBAR.TP = 2; // Support 64 bit addresses
+
+			// Each next BAR must be within 32 bit worth of bytes ahead
+
+			// BAR 1
+			PciHeader->MUBAR.BA = (UINT_32)(baseAddress >> 18);
+
+			// Reconstruction code
+			// UINT_64 addr = PciHeader->MLBAR.BA + (PciHeader->MUBAR.BA << 18);
+			// BAR0 = ((UINT_8*)addr);
+
+			// BAR 2 technically only would need 8 bytes of space...
+			PciHeader->IDBAR.BA = BAR_SIZE * 2;
+			PciHeader->IDBAR.RTE = 1; // I/O Space
+
+			// Bar 3
+			PciHeader->BAR3.BAR = BAR_SIZE * 3;
+
+			// Bar 4
+			PciHeader->BAR4.BAR = BAR_SIZE * 4;
+
+			// Bar 5
+			PciHeader->BAR5.BAR = BAR_SIZE * 5;
+		}
+
+		void PCIExpressRegisters::allocateCapabilities()
+		{
+			UINT_8* Capabilities = (PciHeaderAndCapabilities.getBuffer() + sizeof(PCI_HEADER));
+			PCI_HEADER* PciHeader = getPciHeader();
+
+			PciHeader->CAP.CP = sizeof(PCI_HEADER); // Put the first capability right after the header
+
+			// Capability 1 - PMCAP
+			PCI_POWER_MANAGEMENT_CAPABILITIES* PMCAP = (PCI_POWER_MANAGEMENT_CAPABILITIES*)(((UINT_8*)(PciHeader)) + PciHeader->CAP.CP);
+
+			PMCAP->PID.CID = 1; // PCI Power Management Capability
+			PMCAP->PID.NEXT = PciHeader->CAP.CP + sizeof(PCI_POWER_MANAGEMENT_CAPABILITIES); // Next will be right after this
+
+			PMCAP->PC.VS = 3; // Version 1.2 (I think)
+
+			PMCAP->PMCS.NSFRST = 1; // No internal reset on D3hot to D0
+
+			// Capability 2 - MSICAP
+			PCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY* MSICAP = (PCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY*)(((UINT_8*)(PciHeader)) + PMCAP->PID.NEXT);
+
+			MSICAP->MID.CID = 5; // PCI MSI Capability
+			MSICAP->MID.NEXT = PMCAP->PID.NEXT + sizeof(PCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY);
+
+			MSICAP->MC.C64 = 1; // Supports 64-bit addresses
+
+			// Currently don't support MSI. Use traditional interrupts.
+
+			// Capability 3 - MSIXCAP 
+			PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY* MSIXCAP = (PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY*)(((UINT_8*)(PciHeader)) + MSICAP->MID.NEXT);
+
+			MSIXCAP->MXID.CID = 0x11; // PCI MSIX Capability
+			MSIXCAP->MXID.NEXT = MSICAP->MID.NEXT + sizeof(PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY);
+
+			// Capability 4 - PXCAP
+			PCI_EXPRESS_CAPABILITY* PXCAP = (PCI_EXPRESS_CAPABILITY*)(((UINT_8*)(PciHeader)) + MSIXCAP->MXID.NEXT);
+
+			PXCAP->PXID.CID = 0x10; // PCI Express Capability
+			PXCAP->PXID.NEXT = 0; // End of capability list
+
+			PXCAP->PXCAP.VER = 2; // Version 2 of this structure
+
+			PXCAP->PXDCAP.FLRC = 1; // Support function level reset
+			PXCAP->PXDCAP.RER = 1; // Supports role based error reporting
+
+			PXCAP->PXLS.SCC = 1; // Slot Clock Configuration to show same physical clock used for all
+
+			PXCAP->PXLS.NLW = 8; // x8 width
+			PXCAP->PXLS.CLS = 8; // x8 speed
+
+
+
+		}
+
+		cnvme::Payload PCIExpressRegisters::getHeaderAndCapabilities()
+		{
+			return cnvme::Payload(PciHeaderAndCapabilities);
+		}
+
+		void PCIExpressRegisters::writeHeaderAndCapabilities(const cnvme::Payload& payload)
+		{
+			// TODO. Check for changes that would lead to things happening. (Function level reset is the one that comes to mind)
+			PciHeaderAndCapabilities = payload;
+		}
+
+		PCI_HEADER* PCIExpressRegisters::getPciHeader()
+		{
+			return (PCI_HEADER*)PciHeaderAndCapabilities.getBuffer();
 		}
 
 	}

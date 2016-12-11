@@ -14,6 +14,7 @@ Types.h - A header file for all needed type includes
 #include <cstdint>
 #include <exception>
 #include <string>
+#include <vector>
 
 // Unsigned values
 typedef uint8_t  UINT_8;
