@@ -849,6 +849,7 @@ namespace cnvme
 			/// </summary>
 			/// <returns>PCI Header Pointer</returns>
 			cnvme::pci::header::PCI_HEADER* getPciHeader();
+
 		};
 	}
 }

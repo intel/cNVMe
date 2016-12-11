@@ -5,7 +5,6 @@ Main.cpp - An implementation file for the Main entry
 */
 
 #include "Strings.h"
-
 #include "PCIe.h"
 
 #include <iostream>
@@ -16,9 +15,13 @@ int main()
 {
 	// This is testing code.
 	
-	pci::PCIExpressRegisters p;
+	LOG_SET_LEVEL(2);
+	LOG_ERROR("Hey");
+	LOG_SET_LEVEL(0);
+	LOG_ERROR("Hey2");
+	LOG_SET_LEVEL(2);
+	LOG_INFO("Hey3");
 
-	std::cout << ((cnvme::pci::header::PCI_HEADER*)(p.getHeaderAndCapabilities().getBuffer()))->toString() << std::endl;
 
 	char c = '1';
 	std::cin >> c;

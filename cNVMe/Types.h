@@ -9,6 +9,8 @@ Types.h - A header file for all needed type includes
 
 #pragma once
 
+#include "Logger.h"
+
 // STL Includes
 #include <cassert>
 #include <cstdint>
