@@ -9,7 +9,7 @@ PCIe.h - A header file for the PCIe Registers
 #include "Types.h"
 
 // Used as a way of seeing when interrupts happen
-#define CHANGE_CHECK_SLEEP_MS 100
+#define CHANGE_CHECK_SLEEP_MS 1
 
 namespace cnvme
 {

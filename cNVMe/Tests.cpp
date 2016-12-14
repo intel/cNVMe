@@ -10,7 +10,7 @@ Tests.cpp - An implementation file for all unit testing
 
 // Macros to fail a test
 #define FAIL(s) LOG_ERROR(s);return false;
-#define FAIL_IF_FALSE(b, s); if (!b) {FAIL(s);}
+#define FAIL_IF(b, s); if (b) {FAIL(s);}
 
 namespace cnvme
 {
@@ -51,39 +51,23 @@ namespace cnvme
 				p.getPciExpressRegisters().PciHeader->ID.VID = newVid;
 				p.getPciExpressRegisters().PciHeader->ID.DID = newDid;
 
-				if (p.getPciExpressRegisters().PciHeader->ID.VID != newVid)
-				{
-					FAIL("VID did not update");
-				}
-
-				if (p.getPciExpressRegisters().PciHeader->ID.DID != newDid)
-				{
-					FAIL("DID did not update");
-				}
+				FAIL_IF(p.getPciExpressRegisters().PciHeader->ID.VID != newVid, "VID did not update");
+				FAIL_IF(p.getPciExpressRegisters().PciHeader->ID.DID != newDid, "DID did not update");
 
 				p.getPciExpressRegisters().PXCAP->PXDC.IFLR = 1; // Issue reset
 
 				// Wait for thread to catch this... also tests that the thread is working
 				std::this_thread::sleep_for(std::chrono::milliseconds(CHANGE_CHECK_SLEEP_MS * 3));
 
-				if (p.getPciExpressRegisters().PciHeader->ID.VID != oldVid)
-				{
-					FAIL("VID did not reset");
-				}
-
-				if (p.getPciExpressRegisters().PciHeader->ID.DID != oldDid)
-				{
-					FAIL("DID did not reset");
-				}
+				FAIL_IF(p.getPciExpressRegisters().PciHeader->ID.VID != oldVid, "VID did not reset");
+				FAIL_IF(p.getPciExpressRegisters().PciHeader->ID.DID != oldDid, "DID did not reset");
 
 				Payload newPayload = p.readHeaderAndCapabilities();
 
 				// The BIST is the last thing before the BARs. The BARs should more than likely be different since they have raw addresses.
 				UINT_32 BISTOffset = offsetof(cnvme::pci::header::PCI_HEADER, cnvme::pci::header::PCI_HEADER::BIST);
-				if (memcmp(oldPayload.getBuffer(), newPayload.getBuffer(), BISTOffset) != 0)
-				{
-					FAIL("PCI Header up till BIST did not match original after function level reset")
-				}
+				FAIL_IF(memcmp(oldPayload.getBuffer(), newPayload.getBuffer(), BISTOffset) != 0, \
+					"PCI Header up till BIST did not match original after function level reset");
 
 				return true;
 			}

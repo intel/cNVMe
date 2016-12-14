@@ -16,9 +16,18 @@ int main()
 	// This is testing code.
 
 	LOG_SET_LEVEL(1);
+	
+
+	// run tests a few times to make sure things are normal
 	bool passingTests = true;
-	passingTests &= cnvme::tests::pci::testPciHeaderId();
+	for (int i = 0; i < 250; i++)
+	{
+		passingTests &= cnvme::tests::pci::testPciHeaderId();
+	}
 	std::cout << "Tests passing: " << strings::toString(passingTests) << std::endl;
+
+
+	cnvme::pci::PCIExpressRegisters p;
 
 	char c = '1';
 	std::cin >> c;
