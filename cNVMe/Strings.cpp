@@ -35,6 +35,17 @@ namespace cnvme
 		{
 			return "  " + rfill(abbreviation, 10) + " : " + rfill(description, 45) + " : " + std::to_string(value) + " (0x" + toHexString(value) + ") \n";
 		}
+
+		std::string toString(bool value)
+		{
+			if (value)
+			{
+				return "True";
+			}
+
+			return "False";
+		}
+
 		std::string indentLines(std::string str)
 		{
 			str = "  " + std::regex_replace(str, std::regex("\n"), "\n  ");

@@ -8,6 +8,9 @@ PCIe.h - A header file for the PCIe Registers
 
 #include "Types.h"
 
+// Used as a way of seeing when interrupts happen
+#define CHANGE_CHECK_SLEEP_MS 100
+
 namespace cnvme
 {
 	namespace pci
@@ -817,22 +820,7 @@ namespace cnvme
 			/// <summary>
 			/// Destructor
 			/// </summary>
-			~PCIExpressRegisters() = default;
-
-			/// <summary>
-			/// Sets the PciHeader back to defaults
-			/// </summary>
-			void resetPciHeader();
-
-			/// <summary>
-			/// Allocates all 6 BARs
-			/// </summary>
-			void allocateBars();
-
-			/// <summary>
-			/// Allocates all PCI capability registers
-			/// </summary>
-			void allocateCapabilities();
+			~PCIExpressRegisters();
 
 			/// <summary>
 			/// Gets a copy of the header and capabilities payload
@@ -871,6 +859,26 @@ namespace cnvme
 			cnvme::Payload PciHeaderAndCapabilities;
 
 			/// <summary>
+			/// True if the register watching thread should be going
+			/// </summary>
+			bool ListeningThreadBool;
+
+			/// <summary>
+			/// Thread for background listening
+			/// </summary>
+			std::thread ListeningThread;
+
+			/// <summary>
+			/// Mutex to ensure the checkForChanges() function only runs on one thread at a time
+			/// </summary>
+			std::mutex ChangeCheckMutex;
+
+			/// <summary>
+			/// Used to know when the listener is running
+			/// </summary>
+			std::mutex ListeningThreadRunning;
+
+			/// <summary>
 			/// Gets a pointer to the Pci Header
 			/// This is private since it is raw access.
 			///     If something was modified, we couldn't 'fire an interrupt'
@@ -879,19 +887,24 @@ namespace cnvme
 			cnvme::pci::header::PCI_HEADER* getPciHeader();
 
 			/// <summary>
-			/// True if the register watching thread should be going
-			/// </summary>
-			bool listeningThreadBool;
-
-			/// <summary>
-			/// Thread for background listening
-			/// </summary>
-			std::thread listeningThread;
-
-			/// <summary>
 			/// Run in a thread, listens for changes to perform tasks on change... (like a bleh interrupt)
 			/// </summary>
 			void listenForChanges();
+
+			/// <summary>
+			/// Resets everything to default
+			/// </summary>
+			void functionLevelReset();
+
+			/// <summary>
+			/// Allocates all 6 BARs
+			/// </summary>
+			void allocateBars();
+
+			/// <summary>
+			/// Allocates all PCI capability registers
+			/// </summary>
+			void allocateCapabilities();
 		};
 	}
 }

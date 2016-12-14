@@ -15,6 +15,7 @@ Types.h - A header file for all needed type includes
 #include <cassert>
 #include <cstdint>
 #include <exception>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>

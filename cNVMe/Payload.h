@@ -41,6 +41,13 @@ namespace cnvme
 		Payload& operator=(const Payload& other);
 
 		/// <summary>
+		/// Checks if the two payloads are equivalent
+		/// </summary>
+		/// <param name="other">The other payload</param>
+		/// <returns>true if equal size and contents</returns>
+		bool operator==(const Payload& other);
+
+		/// <summary>
 		/// Destructor, deallocates memory
 		/// </summary>
 		~Payload();
@@ -52,10 +59,16 @@ namespace cnvme
 		UINT_8* getBuffer();
 
 		/// <summary>
+		/// Get the byte pointer (as const)
+		/// </summary>
+		/// <returns>The underlying buffer</returns>
+		UINT_8* getBuffer() const;
+
+		/// <summary>
 		/// Returns the size of the underlying buffer
 		/// </summary>
 		/// <returns>Size in bytes</returns>
-		UINT_32 getSize();
+		UINT_32 getSize() const;
 
 	private:
 

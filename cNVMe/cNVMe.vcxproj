@@ -118,6 +118,7 @@
     <ClInclude Include="Payload.h" />
     <ClInclude Include="PCIe.h" />
     <ClInclude Include="Strings.h" />
+    <ClInclude Include="Tests.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <ItemGroup>
@@ -126,6 +127,7 @@
     <ClCompile Include="Payload.cpp" />
     <ClCompile Include="PCIe.cpp" />
     <ClCompile Include="Strings.cpp" />
+    <ClCompile Include="Tests.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

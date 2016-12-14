@@ -848,16 +848,29 @@ namespace cnvme
 
 		PCIExpressRegisters::PCIExpressRegisters()
 		{
-			resetPciHeader();
+			functionLevelReset();
 #ifdef SINGLE_THREADED
 			listeningThreadBool = false;
 #else
-			listeningThreadBool = true;
-			listeningThread = std::thread(&PCIExpressRegisters::listenForChanges, this);
+			ListeningThreadBool = true;
+			ListeningThread = std::thread(&PCIExpressRegisters::listenForChanges, this);
 #endif
 		}
 
-		void PCIExpressRegisters::resetPciHeader()
+		PCIExpressRegisters::~PCIExpressRegisters()
+		{
+			if (ListeningThreadBool)
+			{
+				ListeningThreadBool = false; // should lead to the thread stopping.
+
+				// Wait for the thread to end
+				ListeningThreadRunning.lock();
+				ListeningThreadRunning.unlock();
+				ListeningThread.join();
+			}
+		}
+
+		void PCIExpressRegisters::functionLevelReset()
 		{
 			PciHeaderAndCapabilities = cnvme::Payload(sizeof(PCI_HEADER) + CAPABILITIES_SIZE);
 			PCI_HEADER* PciHeader = getPciHeader();
@@ -1054,12 +1067,15 @@ namespace cnvme
 
 		void PCIExpressRegisters::checkForChanges()
 		{
+			// This mutex will make the rest of the code is this function run synchronously
+			std::unique_lock<std::mutex>(ChangeCheckMutex);
+
 			auto &regs = getPciExpressRegisters();
 
 			// If we can't find PXCAP or IFLR was set to 1 do the function level reset
 			if ((!regs.PXCAP) || regs.PXCAP->PXDC.IFLR == 1)
 			{
-				resetPciHeader(); // Function level reset
+				functionLevelReset(); // Function level reset
 				LOG_INFO("Initiated a function level reset");
 			}
 		}
@@ -1071,12 +1087,19 @@ namespace cnvme
 
 		void PCIExpressRegisters::listenForChanges()
 		{
-			while (listeningThreadBool)
+			// Used to know when this function ends
+			ListeningThreadRunning.lock();
+
+			while (ListeningThreadBool)
 			{
-				// Check for changes twice a second
-				std::this_thread::sleep_for(std::chrono::milliseconds(500));
+				// Check for changes several times a second
+				std::this_thread::sleep_for(std::chrono::milliseconds(CHANGE_CHECK_SLEEP_MS));
 				checkForChanges();
 			}
+
+			// unlock the mutex
+			ListeningThreadRunning.unlock();
 		}
+
 	}
 }

@@ -31,6 +31,11 @@ namespace cnvme
 		std::string toString(UINT_64 value, std::string abbreviation, std::string description);
 	
 		/// <summary>
+		/// Converts bool to string
+		/// </summary>
+		std::string toString(bool value);
+
+		/// <summary>
 		/// indents a given string by 2 spaces
 		/// </summary>
 		std::string indentLines(std::string str);

@@ -41,6 +41,16 @@ namespace cnvme
 		return *this;
 	}
 
+	bool Payload::operator==(const Payload &other)
+	{
+		if (this->getSize() == other.getSize())
+		{
+			return memcmp(this->getBuffer(), other.getBuffer(), this->getSize()) == 0;
+		}
+
+		return false;
+	}
+
 	Payload::~Payload()
 	{
 		if (BytePointer)
@@ -56,7 +66,12 @@ namespace cnvme
 		return BytePointer;
 	}
 
-	UINT_32 Payload::getSize()
+	UINT_8* Payload::getBuffer() const
+	{
+		return BytePointer;
+	}
+
+	UINT_32 Payload::getSize() const
 	{
 		return ByteSize;
 	}
