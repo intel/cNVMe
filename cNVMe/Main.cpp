@@ -20,7 +20,7 @@ int main()
 
 	// run tests a few times to make sure things are normal
 	bool passingTests = true;
-	for (int i = 0; i < 250; i++)
+	for (int i = 0; i < 50; i++)
 	{
 		passingTests &= cnvme::tests::pci::testPciHeaderId();
 	}
