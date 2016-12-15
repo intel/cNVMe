@@ -13,8 +13,10 @@ Types.h - A header file for all needed type includes
 
 // STL Includes
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <exception>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <thread>
