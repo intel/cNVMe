@@ -849,25 +849,15 @@ namespace cnvme
 		PCIExpressRegisters::PCIExpressRegisters()
 		{
 			functionLevelReset();
-#ifdef SINGLE_THREADED
-			listeningThreadBool = false;
-#else
-			ListeningThreadBool = true;
-			ListeningThread = std::thread(&PCIExpressRegisters::listenForChanges, this);
+#ifndef SINGLE_THREADED
+			RegisterWatcher = LoopingThread([&] {PCIExpressRegisters::checkForChanges(); }, CHANGE_CHECK_SLEEP_MS);
+			RegisterWatcher.start();
 #endif
 		}
 
 		PCIExpressRegisters::~PCIExpressRegisters()
 		{
-			if (ListeningThreadBool)
-			{
-				ListeningThreadBool = false; // should lead to the thread stopping.
 
-				// Wait for the thread to end
-				ListeningThreadRunning.lock();
-				ListeningThreadRunning.unlock();
-				ListeningThread.join();
-			}
 		}
 
 		void PCIExpressRegisters::functionLevelReset()
@@ -1067,9 +1057,6 @@ namespace cnvme
 
 		void PCIExpressRegisters::checkForChanges()
 		{
-			// This mutex will make the rest of the code is this function run synchronously
-			std::unique_lock<std::mutex>(ChangeCheckMutex);
-
 			auto &regs = getPciExpressRegisters();
 
 			// If we can't find PXCAP or IFLR was set to 1 do the function level reset
@@ -1080,25 +1067,18 @@ namespace cnvme
 			}
 		}
 
+		void PCIExpressRegisters::waitForChangeLoop()
+		{
+#ifndef SINGLE_THREADED
+			RegisterWatcher.waitForFlip();
+#else
+			checkForChanges();
+#endif
+		}
+
 		PCI_HEADER* PCIExpressRegisters::getPciHeader()
 		{
 			return (PCI_HEADER*)PciHeaderAndCapabilities.getBuffer();
-		}
-
-		void PCIExpressRegisters::listenForChanges()
-		{
-			// Used to know when this function ends
-			ListeningThreadRunning.lock();
-
-			while (ListeningThreadBool)
-			{
-				// Check for changes several times a second
-				std::this_thread::sleep_for(std::chrono::milliseconds(CHANGE_CHECK_SLEEP_MS));
-				checkForChanges();
-			}
-
-			// unlock the mutex
-			ListeningThreadRunning.unlock();
 		}
 
 	}

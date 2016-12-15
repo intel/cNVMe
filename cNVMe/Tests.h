@@ -5,6 +5,7 @@ Tests.h - A header file for all unit testing
 */
 #pragma once
 
+#include "LoopingThread.h"
 #include "Pcie.h"
 
 using namespace cnvme;
@@ -20,6 +21,19 @@ namespace cnvme
 			/// Generates a (sort-of) random number between lower and upper, inclusive
 			/// </summary>
 			UINT_64 randInt(UINT_64 lower, UINT_64 upper);
+
+			/// <summary>
+			/// Runs all tests
+			/// </summary>
+			bool runTests();
+		}
+
+		namespace general
+		{
+			/// <summary>
+			/// Tests the LoopingThread class
+			/// </summary>
+			bool testLoopingThread();
 		}
 
 		namespace pci

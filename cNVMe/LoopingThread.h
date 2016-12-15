@@ -24,6 +24,24 @@ namespace cnvme
 		LoopingThread(std::function<void()> functionToLoop, UINT_64 sleepDuration);
 
 		/// <summary>
+		/// Base constructor
+		/// </summary>
+		LoopingThread();
+
+		/// <summary>
+		/// Copy constructor
+		/// </summary>
+		/// <param name="other">Another LoopingThread to copy from</param>
+		LoopingThread(const LoopingThread &other);
+
+		/// <summary>
+		/// Assignment operator
+		/// </summary>
+		/// <param name="other">Another LoopingThread to copy from</param>
+		/// <returns>LoopingThread</returns>
+		LoopingThread& operator=(const LoopingThread& other);
+
+		/// <summary>
 		/// Destructor
 		/// </summary>
 		~LoopingThread();
@@ -72,19 +90,19 @@ namespace cnvme
 		std::mutex RunningMutex;
 
 		/// <summary>
-		/// Higher level wrapper for the RunningMutex
+		/// true if the thread is running
 		/// </summary>
-		std::unique_lock<std::mutex> RunningMutexLock;
+		std::atomic<bool> IsRunning;
 
 		/// <summary>
 		/// bool to say if we should keep looping or not
 		/// </summary>
-		bool ContinueLoop;
+		std::atomic<bool> ContinueLoop;
 
 		/// <summary>
 		/// This flips with each loop run
 		/// </summary>
-		bool Flipper;
+		std::atomic<bool> Flipper;
 
 		/// <summary>
 		/// Used to wait for a flip to happen (a loop iteration to occur)

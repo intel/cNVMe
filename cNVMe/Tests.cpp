@@ -7,6 +7,7 @@ Tests.cpp - An implementation file for all unit testing
 #include "Tests.h"
 
 #include <random>
+#include <future>
 
 // Macros to fail a test
 #define FAIL(s) LOG_ERROR(s);return false;
@@ -25,6 +26,46 @@ namespace cnvme
 
 				std::uniform_int_distribution<UINT_64> distribution(lower, upper);
 				return distribution(randomNumberEngine);
+			}
+
+			bool runTests()
+			{
+				std::vector<std::future<bool>> results;
+
+				// Run all tests 100 times, multi-threaded
+				for (int i = 0; i < 100; i++)
+				{
+					results.push_back(std::async(pci::testPciHeaderId));
+					results.push_back(std::async(general::testLoopingThread));
+				}
+
+				bool retVal = true;
+				for (auto &i : results)
+				{
+					retVal &= i.get();
+				}
+
+				return retVal;
+			}
+		}
+
+		namespace general
+		{
+			bool testLoopingThread()
+			{
+				LoopingThread LT([&] {return; }, 10);
+				for (int i = 0; i < 3; i++)
+				{
+					FAIL_IF(LT.isRunning(), "LoopingThread shouldn't be running before start");
+					LT.start();
+					FAIL_IF(!LT.isRunning(), "LoopingThread didn't immediately start running");
+					FAIL_IF(!LT.waitForFlip(), "waitForFlip() should return true since it is running");
+					LT.end();
+					FAIL_IF(LT.waitForFlip(), "waitForFlip() should return false since it has ended");
+					FAIL_IF(LT.isRunning(), "LoopingThread is still running after calling end()");
+				}
+
+				return true;
 			}
 		}
 
@@ -57,7 +98,7 @@ namespace cnvme
 				p.getPciExpressRegisters().PXCAP->PXDC.IFLR = 1; // Issue reset
 
 				// Wait for thread to catch this... also tests that the thread is working
-				std::this_thread::sleep_for(std::chrono::milliseconds(CHANGE_CHECK_SLEEP_MS * 3));
+				p.waitForChangeLoop();
 
 				FAIL_IF(p.getPciExpressRegisters().PciHeader->ID.VID != oldVid, "VID did not reset");
 				FAIL_IF(p.getPciExpressRegisters().PciHeader->ID.DID != oldDid, "DID did not reset");
@@ -74,5 +115,3 @@ namespace cnvme
 		}
 	}
 }
-
-

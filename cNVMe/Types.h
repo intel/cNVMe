@@ -12,6 +12,7 @@ Types.h - A header file for all needed type includes
 #include "Logger.h"
 
 // STL Includes
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <cstdint>

@@ -6,7 +6,7 @@ PCIe.h - A header file for the PCIe Registers
 
 #pragma once
 
-#include "Types.h"
+#include "LoopingThread.h"
 
 // Used as a way of seeing when interrupts happen
 #define CHANGE_CHECK_SLEEP_MS 1
@@ -845,6 +845,11 @@ namespace cnvme
 			/// </summary>
 			void checkForChanges();
 
+			/// <summary>
+			/// Waits till the loop goes
+			/// </summary>
+			void waitForChangeLoop();
+
 		private:
 			/// <summary>
 			/// The private implementation of the BAR memory.
@@ -859,37 +864,12 @@ namespace cnvme
 			cnvme::Payload PciHeaderAndCapabilities;
 
 			/// <summary>
-			/// True if the register watching thread should be going
-			/// </summary>
-			bool ListeningThreadBool;
-
-			/// <summary>
-			/// Thread for background listening
-			/// </summary>
-			std::thread ListeningThread;
-
-			/// <summary>
-			/// Mutex to ensure the checkForChanges() function only runs on one thread at a time
-			/// </summary>
-			std::mutex ChangeCheckMutex;
-
-			/// <summary>
-			/// Used to know when the listener is running
-			/// </summary>
-			std::mutex ListeningThreadRunning;
-
-			/// <summary>
 			/// Gets a pointer to the Pci Header
 			/// This is private since it is raw access.
 			///     If something was modified, we couldn't 'fire an interrupt'
 			/// </summary>
 			/// <returns>PCI Header Pointer</returns>
 			cnvme::pci::header::PCI_HEADER* getPciHeader();
-
-			/// <summary>
-			/// Run in a thread, listens for changes to perform tasks on change... (like a bleh interrupt)
-			/// </summary>
-			void listenForChanges();
 
 			/// <summary>
 			/// Resets everything to default
@@ -905,6 +885,11 @@ namespace cnvme
 			/// Allocates all PCI capability registers
 			/// </summary>
 			void allocateCapabilities();
+
+			/// <summary>
+			/// Watches for changes to the registers
+			/// </summary>
+			LoopingThread RegisterWatcher;
 		};
 	}
 }
