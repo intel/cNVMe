@@ -7,11 +7,6 @@ PCIe.cpp - A implementation file for the PCIe Registers
 #include "PCIe.h"
 #include "Strings.h"
 
-/// <summary>
-/// Used to get the params for strings::toString
-/// </summary>
-#define ToStringParams(abbreviation, description) \
-	abbreviation, #abbreviation, description
 
 #define BAR_SIZE 4096          // 4K Bytes
 #define CAPABILITIES_SIZE 4096 // Much larger than probably needed

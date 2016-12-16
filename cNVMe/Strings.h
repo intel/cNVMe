@@ -8,6 +8,12 @@ Strings.h - A header file for the Strings (helper) functions
 
 #include "Types.h"
 
+/// <summary>
+/// Used to get the params for strings::toString
+/// </summary>
+#define ToStringParams(abbreviation, description) \
+	abbreviation, #abbreviation, description
+
 namespace cnvme
 {
 	namespace strings

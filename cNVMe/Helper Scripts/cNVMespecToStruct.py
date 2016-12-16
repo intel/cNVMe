@@ -51,7 +51,8 @@ def getVarsString(fields):
     return retStr
 
 def getPciName(description):
-    return ("PCI_%s" % (description.replace(" ", "_").upper())).replace("PCI_PCI_", "PCI_")
+    #return ("PCI_%s" % (description.replace(" ", "_").upper())).replace("PCI_PCI_", "PCI_")
+    return ("%s" % (description.replace(" ", "_").upper())).replace("PCI_PCI_", "PCI_")
 
 if __name__ == '__main__':
     line = input()
