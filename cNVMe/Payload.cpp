@@ -6,6 +6,8 @@ Payload.cpp - An implementation file for the Payload class
 
 #include "Payload.h"
 
+#include <algorithm>
+
 namespace cnvme
 {
 	Payload::Payload(UINT_32 byteSize)
@@ -74,5 +76,25 @@ namespace cnvme
 	UINT_32 Payload::getSize() const
 	{
 		return ByteSize;
+	}
+
+	void Payload::resize(UINT_32 newSize)
+	{
+		if (newSize != ByteSize)
+		{
+			UINT_8* tmp = new UINT_8[newSize];
+			memcpy_s(tmp, newSize, BytePointer, std::min(ByteSize, newSize)); // Only copy current size at most... don't overflow
+			delete[] BytePointer;
+			BytePointer = tmp;
+			ByteSize = newSize;
+		}
+	}
+	UINT_64 Payload::getMemoryAddress()
+	{
+		if (getBuffer())
+		{
+			return (UINT_64)&(*getBuffer());
+		}
+		return NULL;
 	}
 }

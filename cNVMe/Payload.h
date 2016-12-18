@@ -70,6 +70,18 @@ namespace cnvme
 		/// <returns>Size in bytes</returns>
 		UINT_32 getSize() const;
 
+		/// <summary>
+		/// Resizes the payload
+		/// </summary>
+		/// <param name="newSize">The new size in bytes</param>
+		void resize(UINT_32 newSize);
+
+		/// <summary>
+		/// Returns the memory address for the payload
+		/// </summary>
+		/// <returns>Memory address</returns>
+		UINT_64 getMemoryAddress();
+
 	private:
 
 		/// <summary>

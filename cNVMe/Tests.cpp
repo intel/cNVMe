@@ -28,6 +28,11 @@ namespace cnvme
 				return distribution(randomNumberEngine);
 			}
 
+			UINT_64 getTimeInMilliseconds()
+			{
+				return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+			}
+
 			bool runTests()
 			{
 				std::vector<std::future<bool>> results;
@@ -37,6 +42,7 @@ namespace cnvme
 				{
 					results.push_back(std::async(pci::testPciHeaderId));
 					results.push_back(std::async(general::testLoopingThread));
+					results.push_back(std::async(controller_registers::testControllerReset));
 				}
 
 				bool retVal = true;
@@ -113,5 +119,77 @@ namespace cnvme
 				return true;
 			}
 		}
+
+		namespace controller_registers
+		{
+			bool testControllerReset()
+			{
+				Payload payload(sizeof(controller::registers::CONTROLLER_REGISTERS));
+				UINT_64 memoryAddress = payload.getMemoryAddress();
+
+				controller::registers::ControllerRegisters controllerRegisters(memoryAddress);
+				auto CR = controllerRegisters.getControllerRegisters();
+				auto timeoutMs = CR->CAP.TO * 500; // CAP.TO is in 500 millisecond intervals
+
+				FAIL_IF(CR->CC.EN == 1, "CC.EN should not automatically move to 1");
+				FAIL_IF(CR->CSTS.RDY != 0, "CSTS.RDY should be 0 after reset");
+
+				CR->CC.EN = 1;
+
+				bool rdyTo1 = false;
+				UINT_64 deathTime = helpers::getTimeInMilliseconds() + timeoutMs;
+				while (helpers::getTimeInMilliseconds() < deathTime)
+				{
+					if (CR->CSTS.RDY == 1)
+					{
+						rdyTo1 = true;
+						break;
+					}
+				}
+				FAIL_IF(rdyTo1 == false, "CSTS.RDY did not transition to 1 after CC.EN was set to 1");
+
+				UINT_32 savedAMS = CR->CC.AMS;  
+				UINT_32 savedACQB = (UINT_32)helpers::randInt(0, 0xFFFF);  // Make sure this does not get reset
+				CR->CC.AMS = helpers::randInt(0, 0b111);          // Make sure most things get reset
+				CR->ACQ.ACQB = savedACQB;
+
+				CR->CC.EN = 0; // Begin Reset
+				deathTime = helpers::getTimeInMilliseconds() + timeoutMs;
+				bool rdyTo0 = false;
+				while (helpers::getTimeInMilliseconds() < deathTime)
+				{
+					if (CR->CSTS.RDY == 0)
+					{
+						rdyTo0 = true;
+						break;
+					}
+				}
+				FAIL_IF(rdyTo0 == false, "CSTS.RDY did not transition to 0 after CC.EN was set to 0");
+
+				CR->CC.EN = 1; // Enable controller and wait till ready
+				rdyTo1 = false;
+				deathTime = helpers::getTimeInMilliseconds() + timeoutMs;
+				while (helpers::getTimeInMilliseconds() < deathTime)
+				{
+					if (CR->CSTS.RDY == 1)
+					{
+						rdyTo1 = true;
+						break;
+					}
+				}
+				FAIL_IF(rdyTo1 == false, "CSTS.RDY did not transition to 1 after CC.EN was set to 1");
+
+				// Check that proper things reset
+				FAIL_IF(CR->CC.AMS != savedAMS, "CC.AMS did not reset");
+				FAIL_IF(CR->ACQ.ACQB != savedACQB, "ACQ.ACQB reset when it should not have");
+
+				// Since the reset is complete, should have at most 1 queue
+				FAIL_IF(controllerRegisters.getQueueDoorbells().size() > 1, "Somehow we have more than 1 doorbell after a controller reset");
+
+				return true;
+			}
+
+		}
 	}
 }
+

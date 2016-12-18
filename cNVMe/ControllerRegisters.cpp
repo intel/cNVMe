@@ -7,6 +7,10 @@ ControllerRegisters.cpp - An implementation file for the ControllerRegisters
 #include "ControllerRegisters.h"
 #include "Strings.h"
 
+
+#define ADMIN_QUEUE_ID 0
+#define CHANGE_CHECK_SLEEP_MS 1 // Used as a way of seeing when interrupts happen
+
 namespace cnvme
 {
 	namespace controller
@@ -153,7 +157,7 @@ namespace cnvme
 			std::string SUBMISSION_QUEUE_Y_TAIL_DOORBELL::toString() const
 			{
 				std::string retStr;
-				retStr += "Submission Queue Y Tail Doorbell (SQyTDBL / Offset (1000 + 0x((2y) * (4 << CAP.DSTRD)))):\n";
+				retStr += "Submission Queue Y Tail Doorbell (SQyTDBL / Offset (0x1000 + ((2y) * (4 << CAP.DSTRD)))):\n";
 				retStr += strings::toString(ToStringParams(SQT, "Submission Queue Tail"));
 				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
 				return retStr;
@@ -162,7 +166,7 @@ namespace cnvme
 			std::string COMPLETION_QUEUE_Y_HEAD_DOORBELL::toString() const
 			{
 				std::string retStr;
-				retStr += "Completion Queue Y Head Doorbell (CQyHDBL / Offset (1000 + 0x((2y):\n";
+				retStr += "Completion Queue Y Head Doorbell (CQyHDBL / Offset (0x1000 + ((2y + 1) * (4 << CAP.DSTRD)))):\n";
 				retStr += strings::toString(ToStringParams(CQH, "Completion Queue Head"));
 				retStr += strings::toString(ToStringParams(RSVD0, "Reserved"));
 				return retStr;
@@ -185,6 +189,132 @@ namespace cnvme
 				retStr += strings::indentLines(CMBLOC.toString());
 				retStr += strings::indentLines(CMBSZ.toString());
 				return retStr;
+			}
+
+			std::string QUEUE_DOORBELLS::toString() const
+			{
+				std::string retStr;
+				retStr += "Queue Doorbells:\n";
+				retStr += strings::indentLines(SQTDBL.toString());
+				retStr += strings::indentLines(CQHDBL.toString());
+				return retStr;
+			}
+
+			ControllerRegisters::ControllerRegisters()
+			{
+				ControllerRegistersPointer = nullptr;
+			}
+
+			ControllerRegisters::ControllerRegisters(UINT_64 memoryLocation) : ControllerRegisters::ControllerRegisters()
+			{
+				ControllerRegistersPointer = (CONTROLLER_REGISTERS*)memoryLocation;
+				controllerReset();
+
+#ifndef SINGLE_THREADED
+				RegisterWatcher = LoopingThread([&] {ControllerRegisters::checkForChanges(); }, CHANGE_CHECK_SLEEP_MS);
+				RegisterWatcher.start();
+#endif
+			}
+
+			std::map<UINT_16, QUEUE_DOORBELLS*> ControllerRegisters::getQueueDoorbells()
+			{
+				std::map<UINT_16, QUEUE_DOORBELLS*> queueDoorbells;
+
+				if (ControllerRegistersPointer)
+				{
+					for (UINT_16 i : ValidQueues)
+					{
+						UINT_32 offset = (sizeof(QUEUE_DOORBELLS) * i);
+
+						queueDoorbells[i] = (QUEUE_DOORBELLS*)(((UINT_8*)ControllerRegistersPointer) + offset);
+					}
+				}
+
+				return queueDoorbells;
+			}
+
+			CONTROLLER_REGISTERS* ControllerRegisters::getControllerRegisters()
+			{
+				return ControllerRegistersPointer;
+			}
+
+			void ControllerRegisters::checkForChanges()
+			{
+				if (ControllerRegistersPointer)
+				{
+					CONTROLLER_REGISTERS* controllerRegisters = getControllerRegisters();
+
+					if (controllerRegisters->CC.EN == 0 && !controllerResetInitiated)
+					{
+						LOG_INFO("CC.EN was flipped to 0. Initiating controller reset.");
+						controllerReset();
+						// CSTS.RDY should now be 0
+					}
+
+					if (controllerResetInitiated && controllerRegisters->CC.EN == 1)
+					{
+						LOG_INFO("CC.EN was set back to 1. Setting CSTS.RDY to 1.");
+						controllerResetInitiated = false; // the reset is complete
+						controllerRegisters->CSTS.RDY = 1; // Controller has been re-enabled. We are now ready.
+					}
+				}
+			}
+
+			void ControllerRegisters::waitForChangeLoop()
+			{
+#ifndef SINGLE_THREADED
+				RegisterWatcher.waitForFlip();
+#else
+				checkForChanges();
+#endif
+			}
+
+			void ControllerRegisters::controllerReset()
+			{
+				if (ControllerRegistersPointer)
+				{
+					controllerResetInitiated = true;
+
+					// Save this as it persists
+					ADMIN_QUEUE_ATTRIBUTES AQA = ControllerRegistersPointer->AQA;
+					ADMIN_SUBMISSION_QUEUE_BASE_ADDRESS ASQ = ControllerRegistersPointer->ASQ;
+					ADMIN_COMPLETION_QUEUE_BASE_ADDRESS ACQ = ControllerRegistersPointer->ACQ;
+
+					memset(ControllerRegistersPointer, 0, sizeof(CONTROLLER_REGISTERS));
+
+					if (ValidQueues.find(ADMIN_QUEUE_ID) != ValidQueues.end())
+					{
+						ValidQueues.clear();
+						ValidQueues.insert(ADMIN_QUEUE_ID); // On controller reset, the admin queue persist
+					}
+					else
+					{
+						ValidQueues.clear();
+					}
+
+					ControllerRegistersPointer->CAP.MPSMAX = 0; // 4096 max
+					ControllerRegistersPointer->CAP.MPSMIN = 0; // 4096 min
+					ControllerRegistersPointer->CAP.CSS = 1; // NVM Command set
+					ControllerRegistersPointer->CAP.NSSRS = 1; // NVM Subsystem Reset Supported
+					ControllerRegistersPointer->CAP.TO = 4; // Worst case of 2 seconds
+					ControllerRegistersPointer->CAP.MQES = 0xFFFF; // At most 0xFFFF + 1 (zero based) queue entries 
+
+					// NVMe 1.2.1
+					ControllerRegistersPointer->VS.MJR = 1;
+					ControllerRegistersPointer->VS.MNR = 2;
+					ControllerRegistersPointer->VS.TER = 1; 
+
+					// Todo: Interrupts
+
+					// Admin Queue persists 
+					ControllerRegistersPointer->AQA = AQA;
+					ControllerRegistersPointer->ASQ = ASQ;
+					ControllerRegistersPointer->ACQ = ACQ;
+				}
+				else
+				{
+					LOG_ERROR("controllerReset() was called without a valid ControllerRegistersPointer");
+				}
 			}
 		}
 	}

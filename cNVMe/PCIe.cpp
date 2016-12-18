@@ -903,7 +903,7 @@ namespace cnvme
 			PciHeader->MUBAR.BA = (UINT_32)(baseAddress >> 18);
 
 			// Reconstruction code
-			// UINT_64 addr = PciHeader->MLBAR.BA + (PciHeader->MUBAR.BA << 18);
+			// UINT_64 addr = (UINT_64)PciHeader->MLBAR.BA + ((UINT_64)PciHeader->MUBAR.BA << 18);
 			// BAR0 = ((UINT_8*)addr);
 
 			// BAR 2 technically only would need 8 bytes of space...

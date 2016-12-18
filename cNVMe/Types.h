@@ -18,7 +18,9 @@ Types.h - A header file for all needed type includes
 #include <cstdint>
 #include <exception>
 #include <functional>
+#include <map>
 #include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <vector>

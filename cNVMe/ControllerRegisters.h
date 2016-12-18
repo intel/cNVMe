@@ -6,6 +6,7 @@ ControllerRegisters.h - A header file for the Controller Registers
 
 #pragma once
 
+#include "LoopingThread.h"
 #include "Types.h"
 
 namespace cnvme
@@ -168,6 +169,15 @@ namespace cnvme
 			} COMPLETION_QUEUE_Y_HEAD_DOORBELL, *PCOMPLETION_QUEUE_Y_HEAD_DOORBELL;
 			static_assert(sizeof(COMPLETION_QUEUE_Y_HEAD_DOORBELL) == 4, "CQyHDBL should be 4 byte(s) in size.");
 
+			typedef struct QUEUE_DOORBELLS
+			{
+				SUBMISSION_QUEUE_Y_TAIL_DOORBELL SQTDBL;
+				COMPLETION_QUEUE_Y_HEAD_DOORBELL CQHDBL;
+
+				std::string toString() const;
+			}QUEUE_DOORBELLS, *PQUEUE_DOORBELLS;
+			static_assert(sizeof(QUEUE_DOORBELLS) == 8, "QD should be 8 byte(s) in size.");
+
 			/// <summary>
 			/// Controller Registers from section 3 of the NVMe 1.2.1 spec
 			/// These are located in BAR0/BAR1 of memory
@@ -194,6 +204,74 @@ namespace cnvme
 			}CONTROLLER_REGISTERS, *PCONTROLLER_REGISTERS;
 			static_assert(sizeof(CONTROLLER_REGISTERS) == 4096, "CR should be 4096 byte(s) in size.");
 
+			class ControllerRegisters
+			{
+			public:
+				/// <summary>
+				/// Base constructor
+				/// </summary>
+				ControllerRegisters();
+
+				/// <summary>
+				/// Place 
+				/// </summary>
+				/// <param name="memoryLocation">Location of BAR0</param>
+				ControllerRegisters(UINT_64 memoryLocation);
+
+				/// <summary>
+				/// Destructor
+				/// </summary>
+				~ControllerRegisters() = default;
+
+				/// <summary>
+				/// Gets a map of queue id to queue doorbells.
+				/// </summary>
+				/// <returns>vector of queue doorbell pointers</returns>
+				std::map<UINT_16, QUEUE_DOORBELLS*> getQueueDoorbells();
+
+				/// <summary>
+				/// Returns the actual controller registers
+				/// </summary>
+				/// <returns>A pointer to the controller registers</returns>
+				CONTROLLER_REGISTERS* getControllerRegisters();
+
+				/// <summary>
+				/// Wait for an iteration of the interrupt loop
+				/// </summary>
+				void waitForChangeLoop();
+
+			private:
+
+				/// <summary>
+				/// Pointer to the controller registers (and BAR0 in PCIe NVMe)
+				/// </summary>
+				CONTROLLER_REGISTERS* ControllerRegistersPointer;
+
+				/// <summary>
+				/// Used to keep track of the non-deleted but created queues
+				/// </summary>
+				std::set<UINT_16> ValidQueues;
+
+				/// <summary>
+				/// Looping thread to watch the registers.
+				/// </summary>
+				LoopingThread RegisterWatcher;
+
+				/// <summary>
+				/// Used to keep track if a reset was sent via CC.EN == 0
+				/// </summary>
+				bool controllerResetInitiated;
+
+				/// <summary>
+				/// Function to be called in loop looking for changes
+				/// </summary>
+				void checkForChanges();
+
+				/// <summary>
+				/// Does a controller reset;
+				/// </summary>
+				void controllerReset();
+			};
 		}
 
 	}
