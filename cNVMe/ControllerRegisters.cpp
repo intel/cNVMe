@@ -33,7 +33,7 @@ namespace cnvme
 				return retStr;
 			}
 
-			std::string Version::toString() const
+			std::string VERSION::toString() const
 			{
 				std::string retStr;
 				retStr += "Version (VS / Offset 0x08):\n";
@@ -168,6 +168,24 @@ namespace cnvme
 				return retStr;
 			}
 
+			std::string CONTROLLER_REGISTERS::toString() const
+			{
+				std::string retStr;
+				retStr += "Controller Registers:\n";
+				retStr += strings::indentLines(CAP.toString());
+				retStr += strings::indentLines(VS.toString());
+				retStr += strings::indentLines(INTMS.toString());
+				retStr += strings::indentLines(INTMC.toString());
+				retStr += strings::indentLines(CC.toString());
+				retStr += strings::indentLines(CSTS.toString());
+				retStr += strings::indentLines(NSSR.toString());
+				retStr += strings::indentLines(AQA.toString());
+				retStr += strings::indentLines(ASQ.toString());
+				retStr += strings::indentLines(ACQ.toString());
+				retStr += strings::indentLines(CMBLOC.toString());
+				retStr += strings::indentLines(CMBSZ.toString());
+				return retStr;
+			}
 		}
 	}
 }

@@ -33,15 +33,15 @@ namespace cnvme
 			} CONTROLLER_CAPABILITIES, *PCONTROLLER_CAPABILITIES;
 			static_assert(sizeof(CONTROLLER_CAPABILITIES) == 8, "CAP should be 8 byte(s) in size.");
 
-			typedef struct Version
+			typedef struct VERSION
 			{
 				UINT_8 TER; // Tertiary Version Number
 				UINT_8 MNR; // Minor Version Number
 				UINT_16 MJR; // Major Version Number
 
 				std::string toString() const;
-			}Version, *PVersion;
-			static_assert(sizeof(Version) == 4, "VS should be 4 byte(s) in size.");
+			}VERSION, *PVERSION;
+			static_assert(sizeof(VERSION) == 4, "VS should be 4 byte(s) in size.");
 
 			typedef struct INTERRUPT_MASK_SET
 			{
@@ -168,7 +168,34 @@ namespace cnvme
 			} COMPLETION_QUEUE_Y_HEAD_DOORBELL, *PCOMPLETION_QUEUE_Y_HEAD_DOORBELL;
 			static_assert(sizeof(COMPLETION_QUEUE_Y_HEAD_DOORBELL) == 4, "CQyHDBL should be 4 byte(s) in size.");
 
+			/// <summary>
+			/// Controller Registers from section 3 of the NVMe 1.2.1 spec
+			/// These are located in BAR0/BAR1 of memory
+			/// </summary>
+			typedef struct CONTROLLER_REGISTERS
+			{
+				CONTROLLER_CAPABILITIES CAP;
+				VERSION VS;
+				INTERRUPT_MASK_SET INTMS;
+				INTERRUPT_MASK_CLEAR INTMC;
+				CONTROLLER_CONFIGURATION CC;
+				UINT_8 RSVD0[4];
+				CONTROLLER_STATUS CSTS;
+				NVM_SUBSYSTEM_RESET NSSR;
+				ADMIN_QUEUE_ATTRIBUTES AQA;
+				ADMIN_SUBMISSION_QUEUE_BASE_ADDRESS ASQ;
+				ADMIN_COMPLETION_QUEUE_BASE_ADDRESS ACQ;
+				CONTROLLER_MEMORY_BUFFER_LOCATION CMBLOC;
+				CONTROLLER_MEMORY_BUFFER_SIZE CMBSZ;
+				UINT_8 RSVD1[3776];
+				UINT_8 CSS[256]; // Command Set Specific (RSVD)
+
+				std::string toString() const;
+			}CONTROLLER_REGISTERS, *PCONTROLLER_REGISTERS;
+			static_assert(sizeof(CONTROLLER_REGISTERS) == 4096, "CR should be 4096 byte(s) in size.");
+
 		}
+
 	}
 }
 
