@@ -85,9 +85,10 @@ namespace cnvme
 			return false;
 		}
 
-		bool cachedFlipper = Flipper;
-
+		// Get lock before any other flips can happen
 		std::unique_lock<std::mutex> flipLock(FlipMutex);
+
+		bool cachedFlipper = Flipper;
 
 		while (Flipper == cachedFlipper)
 		{

@@ -222,9 +222,14 @@ namespace cnvme
 
 				if (ControllerRegistersPointer)
 				{
+					auto regs = getControllerRegisters(); 
+
+					// This is multipled by 2 (below) to have both the completion and submission queue doorbells
+					UINT_64 submissionAndCompletionDoorbellSize = 2 * (UINT_64)std::pow(2, (2 + regs->CAP.DSTRD));
+
 					for (UINT_16 i : ValidQueues)
 					{
-						UINT_32 offset = (sizeof(QUEUE_DOORBELLS) * i);
+						UINT_64 offset = (submissionAndCompletionDoorbellSize * i);
 
 						queueDoorbells[i] = (QUEUE_DOORBELLS*)(((UINT_8*)ControllerRegistersPointer) + offset);
 					}
