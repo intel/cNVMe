@@ -1,4 +1,3 @@
-#include "Controller.h"
 /*
 This file is part of cNVMe and is released under the MIT License
 (C) - Charles Machalow - 2016
@@ -7,6 +6,7 @@ Controller.cpp - An implementation file for the NVMe Controller
 
 #define ADMIN_QUEUE_ID 0
 
+#include "Controller.h"
 #include "Strings.h"
 
 namespace cnvme
