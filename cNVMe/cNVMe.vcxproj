@@ -114,6 +114,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Controller.h" />
     <ClInclude Include="ControllerRegisters.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="LoopingThread.h" />
@@ -124,6 +125,7 @@
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Controller.cpp" />
     <ClCompile Include="ControllerRegisters.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="LoopingThread.cpp" />

@@ -843,10 +843,11 @@ namespace cnvme
 
 		PCIExpressRegisters::PCIExpressRegisters()
 		{
-			functionLevelReset();
 #ifndef SINGLE_THREADED
 			RegisterWatcher = LoopingThread([&] {PCIExpressRegisters::checkForChanges(); }, CHANGE_CHECK_SLEEP_MS);
 			RegisterWatcher.start();
+#else
+			functionLevelReset();
 #endif
 		}
 
@@ -857,6 +858,8 @@ namespace cnvme
 
 		void PCIExpressRegisters::functionLevelReset()
 		{
+			LOG_INFO("Beginning function level reset.");
+
 			PciHeaderAndCapabilities = cnvme::Payload(sizeof(PCI_HEADER) + CAPABILITIES_SIZE);
 			PCI_HEADER* PciHeader = getPciHeader();
 
@@ -880,11 +883,15 @@ namespace cnvme
 			PciHeader->SS.SSID = 0xFFEE; // Subsystem ID
 			PciHeader->SS.SSVID = 0xEEFF; // Subsystem Vendor ID
 
+			LOG_INFO("functionLevelReset has completed header allocation");
+
 			// Allocate Capabilities
 			allocateCapabilities();
 
 			// Allocate Extended Capabilities
 			// TODO
+
+			LOG_INFO("functionLevelReset is complete.");
 		}
 
 		void PCIExpressRegisters::allocateBars()
@@ -968,6 +975,8 @@ namespace cnvme
 
 			PXCAP->PXLS.NLW = 8; // x8 width
 			PXCAP->PXLS.CLS = 8; // x8 speed
+
+			LOG_INFO("Capabilities have been allocated");
 		}
 
 		cnvme::Payload PCIExpressRegisters::readHeaderAndCapabilities()
@@ -986,65 +995,68 @@ namespace cnvme
 			PCI_EXPRESS_REGISTERS Registers = { 0 };
 			Registers.PciHeader = getPciHeader();
 
-			UINT_32 capOffset = Registers.PciHeader->CAP.CP;
-			UINT_32 lastOffset = 0;
-
-			// Go through capability linked list
-			while (capOffset != 0 && lastOffset != capOffset)
+			if (Registers.PciHeader)
 			{
-				UINT_8* capPointer = (PciHeaderAndCapabilities.getBuffer() + capOffset);
-				PCI_CAPABILITY_ID* capId = ((PCI_CAPABILITY_ID*)capPointer);
+				UINT_32 capOffset = Registers.PciHeader->CAP.CP;
+				UINT_32 lastOffset = 0;
 
-				if (capId->CID == CID_PMCAP) // PCI Power Management
+				// Go through capability linked list
+				while (capOffset != 0 && lastOffset != capOffset)
 				{
-					Registers.PMCAP = (PCI_POWER_MANAGEMENT_CAPABILITIES*)capPointer;
-				}
-				else if (capId->CID == CID_MSICAP) // PCI MSI 
-				{
-					Registers.MSICAP = (PCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY*)capPointer;
-				}
-				else if (capId->CID == CID_MSIXCAP) // PCI MSIX 
-				{
-					Registers.MSIXCAP = (PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY*)capPointer;
-				}
-				else if (capId->CID == CID_PXCAP) // PCI Express 
-				{
-					Registers.PXCAP = (PCI_EXPRESS_CAPABILITY*)capPointer;
-				}
-				else
-				{
-					LOG_ERROR("Unknown CID: 0x" + strings::toHexString(capId->CID) + ". Breaking loop.");
-				}
+					UINT_8* capPointer = (PciHeaderAndCapabilities.getBuffer() + capOffset);
+					PCI_CAPABILITY_ID* capId = ((PCI_CAPABILITY_ID*)capPointer);
 
-				lastOffset = capOffset;
-				capOffset = capId->NEXT;
-			}
+					if (capId->CID == CID_PMCAP) // PCI Power Management
+					{
+						Registers.PMCAP = (PCI_POWER_MANAGEMENT_CAPABILITIES*)capPointer;
+					}
+					else if (capId->CID == CID_MSICAP) // PCI MSI 
+					{
+						Registers.MSICAP = (PCI_MESSAGE_SIGNALED_INTERRUPT_CAPABILITY*)capPointer;
+					}
+					else if (capId->CID == CID_MSIXCAP) // PCI MSIX 
+					{
+						Registers.MSIXCAP = (PCI_MESSAGE_SIGNALED_INTERRUPT_X_CAPABILITY*)capPointer;
+					}
+					else if (capId->CID == CID_PXCAP) // PCI Express 
+					{
+						Registers.PXCAP = (PCI_EXPRESS_CAPABILITY*)capPointer;
+					}
+					else
+					{
+						LOG_ERROR("Unknown CID: 0x" + strings::toHexString(capId->CID) + ". Breaking loop.");
+					}
 
-			// Find extended capabilities
-			capOffset = 0x1000;
-
-			while (capOffset != 0 && lastOffset != capOffset)
-			{
-				UINT_8* capPointer = (PciHeaderAndCapabilities.getBuffer() + capOffset);
-				PCI_AER_CAPABILITY_ID* capId = ((PCI_AER_CAPABILITY_ID*)capPointer);
-
-				// No Extended Capabilities.
-				if (capId->CID == 0)
-				{
-					break;
+					lastOffset = capOffset;
+					capOffset = capId->NEXT;
 				}
 
-				if (capId->CID == CID_AERCAP) // AER
-				{
-					Registers.AERCAP = (PCI_ADVANCED_ERROR_REPORTING_CAPABILITY*)capPointer;
-				}
-				else
-				{
-					LOG_ERROR("Unknown Extended CID: 0x" + strings::toHexString(capId->CID) + ". Breaking loop.");
-				}
+				// Find extended capabilities
+				capOffset = 0x1000;
 
-				lastOffset = capOffset;
-				capOffset = capId->NEXT;
+				while (capOffset != 0 && lastOffset != capOffset)
+				{
+					UINT_8* capPointer = (PciHeaderAndCapabilities.getBuffer() + capOffset);
+					PCI_AER_CAPABILITY_ID* capId = ((PCI_AER_CAPABILITY_ID*)capPointer);
+
+					// No Extended Capabilities.
+					if (capId->CID == 0)
+					{
+						break;
+					}
+
+					if (capId->CID == CID_AERCAP) // AER
+					{
+						Registers.AERCAP = (PCI_ADVANCED_ERROR_REPORTING_CAPABILITY*)capPointer;
+					}
+					else
+					{
+						LOG_ERROR("Unknown Extended CID: 0x" + strings::toHexString(capId->CID) + ". Breaking loop.");
+					}
+
+					lastOffset = capOffset;
+					capOffset = capId->NEXT;
+				}
 			}
 
 			return Registers;
@@ -1058,7 +1070,6 @@ namespace cnvme
 			if ((!regs.PXCAP) || regs.PXCAP->PXDC.IFLR == 1)
 			{
 				functionLevelReset(); // Function level reset
-				LOG_INFO("Initiated a function level reset");
 			}
 		}
 

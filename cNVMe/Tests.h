@@ -5,6 +5,7 @@ Tests.h - A header file for all unit testing
 */
 #pragma once
 
+#include "Controller.h"
 #include "ControllerRegisters.h"
 #include "LoopingThread.h"
 #include "Pcie.h"

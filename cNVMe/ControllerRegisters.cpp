@@ -4,11 +4,10 @@ This file is part of cNVMe and is released under the MIT License
 ControllerRegisters.cpp - An implementation file for the ControllerRegisters
 */
 
+#include "Controller.h"
 #include "ControllerRegisters.h"
 #include "Strings.h"
 
-
-#define ADMIN_QUEUE_ID 0
 #define CHANGE_CHECK_SLEEP_MS 1 // Used as a way of seeing when interrupts happen
 
 namespace cnvme
@@ -203,6 +202,7 @@ namespace cnvme
 			ControllerRegisters::ControllerRegisters()
 			{
 				ControllerRegistersPointer = nullptr;
+				Controller = nullptr;
 			}
 
 			ControllerRegisters::ControllerRegisters(UINT_64 memoryLocation) : ControllerRegisters::ControllerRegisters()
@@ -216,26 +216,16 @@ namespace cnvme
 #endif
 			}
 
-			std::map<UINT_16, QUEUE_DOORBELLS*> ControllerRegisters::getQueueDoorbells()
+			ControllerRegisters::ControllerRegisters(UINT_64 memoryLocation, cnvme::controller::Controller* controller)
 			{
-				std::map<UINT_16, QUEUE_DOORBELLS*> queueDoorbells;
+				Controller = controller;
+				ControllerRegistersPointer = (CONTROLLER_REGISTERS*)memoryLocation;
+				controllerReset();
 
-				if (ControllerRegistersPointer)
-				{
-					auto regs = getControllerRegisters(); 
-
-					// This is multipled by 2 (below) to have both the completion and submission queue doorbells
-					UINT_64 submissionAndCompletionDoorbellSize = 2 * (UINT_64)std::pow(2, (2 + regs->CAP.DSTRD));
-
-					for (UINT_16 i : ValidQueues)
-					{
-						UINT_64 offset = (submissionAndCompletionDoorbellSize * i);
-
-						queueDoorbells[i] = (QUEUE_DOORBELLS*)(((UINT_8*)ControllerRegistersPointer) + offset);
-					}
-				}
-
-				return queueDoorbells;
+#ifndef SINGLE_THREADED
+				RegisterWatcher = LoopingThread([&] {ControllerRegisters::checkForChanges(); }, CHANGE_CHECK_SLEEP_MS);
+				RegisterWatcher.start();
+#endif
 			}
 
 			CONTROLLER_REGISTERS* ControllerRegisters::getControllerRegisters()
@@ -278,6 +268,7 @@ namespace cnvme
 			{
 				if (ControllerRegistersPointer)
 				{
+					LOG_INFO("Doing the controller level reset.");
 					controllerResetInitiated = true;
 
 					// Save this as it persists
@@ -286,16 +277,6 @@ namespace cnvme
 					ADMIN_COMPLETION_QUEUE_BASE_ADDRESS ACQ = ControllerRegistersPointer->ACQ;
 
 					memset(ControllerRegistersPointer, 0, sizeof(CONTROLLER_REGISTERS));
-
-					if (ValidQueues.find(ADMIN_QUEUE_ID) != ValidQueues.end())
-					{
-						ValidQueues.clear();
-						ValidQueues.insert(ADMIN_QUEUE_ID); // On controller reset, the admin queue persist
-					}
-					else
-					{
-						ValidQueues.clear();
-					}
 
 					ControllerRegistersPointer->CAP.MPSMAX = 0; // 4096 max
 					ControllerRegistersPointer->CAP.MPSMIN = 0; // 4096 min
@@ -315,6 +296,12 @@ namespace cnvme
 					ControllerRegistersPointer->AQA = AQA;
 					ControllerRegistersPointer->ASQ = ASQ;
 					ControllerRegistersPointer->ACQ = ACQ;
+
+					if (Controller)
+					{
+						LOG_INFO("Notifying the controller of the controller reset");
+						Controller->controllerResetCallback();
+					}
 				}
 				else
 				{

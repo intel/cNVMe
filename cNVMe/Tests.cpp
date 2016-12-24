@@ -183,9 +183,6 @@ namespace cnvme
 				FAIL_IF(CR->CC.AMS != savedAMS, "CC.AMS did not reset");
 				FAIL_IF(CR->ACQ.ACQB != savedACQB, "ACQ.ACQB reset when it should not have");
 
-				// Since the reset is complete, should have at most 1 queue
-				FAIL_IF(controllerRegisters.getQueueDoorbells().size() > 1, "Somehow we have more than 1 doorbell after a controller reset");
-
 				return true;
 			}
 

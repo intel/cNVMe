@@ -13,6 +13,8 @@ namespace cnvme
 {
 	namespace controller
 	{
+		class Controller;
+
 		namespace registers
 		{
 			typedef struct CONTROLLER_CAPABILITIES
@@ -213,21 +215,22 @@ namespace cnvme
 				ControllerRegisters();
 
 				/// <summary>
-				/// Place 
+				/// Place these registers at the memoryLocation 
 				/// </summary>
 				/// <param name="memoryLocation">Location of BAR0</param>
 				ControllerRegisters(UINT_64 memoryLocation);
 
 				/// <summary>
+				/// Place the registers at the memory location, though also give a pointer to the controller to make callbacks for resets
+				/// </summary>
+				/// <param name="memoryLocation">Location of BAR0</param>
+				/// <param name="controller">Poi8nter to the controller</param>
+				ControllerRegisters(UINT_64 memoryLocation, cnvme::controller::Controller* controller);
+
+				/// <summary>
 				/// Destructor
 				/// </summary>
 				~ControllerRegisters() = default;
-
-				/// <summary>
-				/// Gets a map of queue id to queue doorbells.
-				/// </summary>
-				/// <returns>vector of queue doorbell pointers</returns>
-				std::map<UINT_16, QUEUE_DOORBELLS*> getQueueDoorbells();
 
 				/// <summary>
 				/// Returns the actual controller registers
@@ -248,14 +251,14 @@ namespace cnvme
 				CONTROLLER_REGISTERS* ControllerRegistersPointer;
 
 				/// <summary>
-				/// Used to keep track of the non-deleted but created queues
-				/// </summary>
-				std::set<UINT_16> ValidQueues;
-
-				/// <summary>
 				/// Looping thread to watch the registers.
 				/// </summary>
 				LoopingThread RegisterWatcher;
+
+				/// <summary>
+				/// The controller that owns this.
+				/// </summary>
+				cnvme::controller::Controller* Controller;
 
 				/// <summary>
 				/// Used to keep track if a reset was sent via CC.EN == 0
