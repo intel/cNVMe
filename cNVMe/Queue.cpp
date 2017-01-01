@@ -16,13 +16,15 @@ namespace cnvme
 			QueueId = 0;
 			Doorbell = nullptr;
 			Index = 0; // Queue start at 0
+			LinkedMemoryAddress = 0;
 		}
 
-		Queue::Queue(UINT_32 queueSize, UINT_32 queueId, UINT_16* doorbell)
+		Queue::Queue(UINT_32 queueSize, UINT_32 queueId, UINT_16* doorbell, UINT_64 linkedMemoryAddress) : Queue()
 		{
 			QueueSize = queueSize;
 			QueueId = queueId;
 			Doorbell = doorbell;
+			LinkedMemoryAddress = linkedMemoryAddress;
 		}
 
 		UINT_32 Queue::getQueueSize() const
@@ -48,6 +50,11 @@ namespace cnvme
 		void Queue::setIndex(UINT_32 newIndex)
 		{
 			Index = newIndex;
+		}
+
+		UINT_64 Queue::getMemoryAddress()
+		{
+			return LinkedMemoryAddress;
 		}
 	}
 }

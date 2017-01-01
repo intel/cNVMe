@@ -9,6 +9,7 @@ Controller.h - A header file for the NVMe Controller
 #include "ControllerRegisters.h"
 #include "PCIe.h"
 #include "Types.h"
+#include "Queue.h"
 
 using namespace cnvme;
 
@@ -73,15 +74,15 @@ namespace cnvme
 
 			/// <summary>
 			/// Used to keep track of the non-deleted but created submission queues
-			/// Map from queue id to current tail
+			/// Vector of queue objects
 			/// </summary>
-			std::map<UINT_16, UINT_16> ValidSubmissionQueues;
+			std::vector<Queue> ValidSubmissionQueues;
 
 			/// <summary>
-			/// Used to keep track of the non-deleted but created qcompletion queues
-			/// Map from queue id to current head
+			/// Used to keep track of the non-deleted but created completion queues
+			/// Vector of queue objects
 			/// </summary>
-			std::map<UINT_16, UINT_16> ValidCompletionQueues;
+			std::vector<Queue> ValidCompletionQueues;
 
 			/// <summary>
 			/// Function to be called in loop looking for changes
@@ -93,6 +94,14 @@ namespace cnvme
 			/// </summary>
 			/// <param name="submissionQueueId">The submission queue id</param>
 			void processCommandAndPostCompletion(UINT_16 submissionQueueId);
+
+			/// <summary>
+			/// Returns a Queue matching the given id
+			/// </summary>
+			/// <param name="queues">vector of Queues</param>
+			/// <param name="id">The queue id</param>
+			/// <returns>Queue</returns>
+			Queue *getQueueWithId(std::vector<Queue> &queues, UINT_16 id);
 		};
 	}
 }

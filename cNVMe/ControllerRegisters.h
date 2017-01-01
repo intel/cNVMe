@@ -239,6 +239,12 @@ namespace cnvme
 				CONTROLLER_REGISTERS* getControllerRegisters();
 
 				/// <summary>
+				/// Returns a pointer to the queue doorbells
+				/// </summary>
+				/// <returns>Queue doorbells pointer</returns>
+				QUEUE_DOORBELLS* getQueueDoorbells();
+
+				/// <summary>
 				/// Wait for an iteration of the interrupt loop
 				/// </summary>
 				void waitForChangeLoop();

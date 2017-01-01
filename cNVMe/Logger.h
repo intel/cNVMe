@@ -3,8 +3,10 @@ This file is part of cNVMe and is released under the MIT License
 (C) - Charles Machalow - 2016
 Logger.h - A header file for the Logging
 */
+
 #pragma once
 
+#include <mutex>
 #include <string>
 
 // Macros to make this easier to work with
@@ -82,6 +84,11 @@ namespace cnvme
 			/// Gets the current time as a string
 			/// </summary>
 			std::string getCurrentTime();
+
+			/// <summary>
+			/// Mutex for printing
+			/// </summary>
+			std::mutex Mutex;
 		};
 
 		/// <summary>

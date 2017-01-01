@@ -34,7 +34,9 @@ namespace cnvme
 		{
 			if (level <= Level)
 			{
+				Mutex.lock();
 				std::cerr << getCurrentTime() << " - " <<  txt << std::endl;
+				Mutex.unlock();
 			}
 		}
 

@@ -28,8 +28,9 @@ namespace cnvme
 			/// </summary>
 			/// <param name="queueSize">The queue size</param>
 			/// <param name="queueId">The queue id</param>
-			/// <param name="doorbell">The queue doorbell register (tail or head)</param>
-			Queue(UINT_32 queueSize, UINT_32 queueId, UINT_16* doorbell);
+			/// <param name="doorbell">The queue doorbell register (tail or head)</param>	
+			/// <param name="linkedMemoryAddress">The memory this queue uses for operations</param>
+			Queue(UINT_32 queueSize, UINT_32 queueId, UINT_16* doorbell, UINT_64 linkedMemoryAddress);
 
 			/// <summary>
 			/// Destructor
@@ -66,6 +67,12 @@ namespace cnvme
 			/// <param name="newIndex">the new index</param>
 			void setIndex(UINT_32 newIndex);
 
+			/// <summary>
+			/// Returns the address of the linked memory
+			/// </summary>
+			/// <returns>Address</returns>
+			UINT_64 getMemoryAddress();
+
 		private:
 
 			/// <summary>
@@ -88,6 +95,12 @@ namespace cnvme
 			/// </summary>
 			UINT_32 Index;
 
+			/// <summary>
+			/// The memory for this queue to use.
+			/// Submission queues will expect the 64 byte CDB here
+			/// Completion queues will expect to place completion here
+			/// </summary>
+			UINT_64 LinkedMemoryAddress;
 		};
 	}
 }

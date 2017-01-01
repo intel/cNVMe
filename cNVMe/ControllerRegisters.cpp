@@ -255,6 +255,12 @@ namespace cnvme
 				}
 			}
 
+			QUEUE_DOORBELLS * ControllerRegisters::getQueueDoorbells()
+			{
+				return (controller::registers::QUEUE_DOORBELLS*)((UINT_8*)this->getControllerRegisters() \
+					+ sizeof(registers::CONTROLLER_REGISTERS));
+			}
+
 			void ControllerRegisters::waitForChangeLoop()
 			{
 #ifndef SINGLE_THREADED

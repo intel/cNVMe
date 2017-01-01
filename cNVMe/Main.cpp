@@ -33,8 +33,7 @@ int main()
 	// Setup some raw DW info
 	p.getBuffer()[0] = 0xFF;
 	p.getBuffer()[2] = 0xFF;
-	controller::registers::QUEUE_DOORBELLS* doorbells = (controller::registers::QUEUE_DOORBELLS*)((UINT_8*)regs) + sizeof(controller::registers::CONTROLLER_REGISTERS);
-	doorbells[0].SQTDBL.SQT = 1;
+	co.getControllerRegisters()->getQueueDoorbells()[0].SQTDBL.SQT = 1;
 	// soon after this, we see the DWs come up from the logging 
 
 	co.waitForChangeLoop();

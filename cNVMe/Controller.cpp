@@ -33,6 +33,8 @@ namespace cnvme
 
 		Controller::~Controller()
 		{
+			DoorbellWatcher.end();
+
 			if (PCIExpressRegisters)
 			{
 				delete PCIExpressRegisters;
@@ -59,10 +61,13 @@ namespace cnvme
 		void Controller::checkForChanges()
 		{
 			auto controllerRegisters = ControllerRegisters->getControllerRegisters();
+			// Admin doorbell is right after the Controller Registers... though we may not have it yet
+			controller::registers::QUEUE_DOORBELLS* doorbells = getControllerRegisters()->getQueueDoorbells();
+
 
 			if (controllerRegisters->CSTS.RDY == 0)
 			{
-				return;
+				return; // Not ready... Don't do anything.
 			}
 
 			if (controllerRegisters->AQA.ACQS == 0 || controllerRegisters->AQA.ASQS == 0)
@@ -78,7 +83,7 @@ namespace cnvme
 			// Now that we have a SQ address, make it valid
 			if (ValidSubmissionQueues.size() == 0)
 			{
-				ValidSubmissionQueues[ADMIN_QUEUE_ID] = 0;
+				ValidSubmissionQueues.push_back(Queue(controllerRegisters->AQA.ASQS, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].SQTDBL.SQT, controllerRegisters->ASQ.ASQB));
 			}
 
 			if (controllerRegisters->ACQ.ACQB == 0)
@@ -89,26 +94,26 @@ namespace cnvme
 			// Now that we have a CQ address, make it valid
 			if (ValidCompletionQueues.size() == 0)
 			{
-				ValidCompletionQueues[ADMIN_QUEUE_ID] = 0;
+				ValidCompletionQueues.push_back(Queue(controllerRegisters->AQA.ACQS, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].CQHDBL.CQH, controllerRegisters->ACQ.ACQB));
 			}
 
 			// Made it this far, we have at least the admin queue
-
-			// Admin doorbell is right after the Controller Registers
-			controller::registers::QUEUE_DOORBELLS* doorbells = ((controller::registers::QUEUE_DOORBELLS*)ControllerRegisters->getControllerRegisters()) \
-				+ sizeof(registers::CONTROLLER_REGISTERS);
-
-			for (auto sq : ValidSubmissionQueues)
+			// This is round-robin right now
+			for (auto &sq : ValidSubmissionQueues)
 			{
-				UINT_16 sqid = sq.first;
-				UINT_16 sqidHead = sq.second;
-				if (doorbells[sqid].SQTDBL.SQT != sqidHead) // Head moved, doorbell has rung
+				UINT_16 sqid = sq.getQueueId();
+				UINT_16 sqidHead = sq.getIndex();
+				UINT_16 setIndex = doorbells[sqid].SQTDBL.SQT;
+				if (setIndex != sqidHead) // Index moved, doorbell has rung
 				{
-					// Todo... make sure the SQT isn't larger than AQA.ASQS
-					// Todo... probably need a way to know some queue attributes. Like Queue size, queue tail/head.
-					//    Right now we have the Valid...Queues maps, need to make them map from queueId to attributes.
+					if (setIndex > sq.getQueueSize())
+					{
+						assert(0); // Invalid doorbell rang. I think this would trigger an async event.
+					}
 
-					ValidSubmissionQueues[sqid] = doorbells[sqid].SQTDBL.SQT;
+					// Update my record of the Index
+					sq.setIndex(setIndex);
+
 					processCommandAndPostCompletion(sqid); // This calls the command
 				}
 			}
@@ -117,12 +122,18 @@ namespace cnvme
 		void Controller::processCommandAndPostCompletion(UINT_16 submissionQueueId)
 		{
 			auto controllerRegisters = getControllerRegisters()->getControllerRegisters();
+			Queue* theSubmissionQueue = getQueueWithId(ValidSubmissionQueues, submissionQueueId);
+
+			if (theSubmissionQueue == nullptr)
+			{
+				LOG_ERROR("Somehow we were unable to find a submission queue matching: " + std::to_string(submissionQueueId));
+				return;
+			}
 
 			if (submissionQueueId == 0)
 			{
 				// Admin command
-				UINT_64 adminSubQAddr = (UINT_64)controllerRegisters->ASQ.ASQB;
-				UINT_32* subQPointer = (UINT_32*)adminSubQAddr;
+				UINT_32* subQPointer = (UINT_32*)theSubmissionQueue->getMemoryAddress(); // This is the address of the 64 byte command
 
 				LOG_INFO("Admin Command Recv'd");
 				for (int i = 0; i < 16; i++)
@@ -142,22 +153,38 @@ namespace cnvme
 			}
 		}
 
+		Queue* Controller::getQueueWithId(std::vector<Queue> &queues, UINT_16 id)
+		{
+			for (size_t i = 0; i < queues.size(); i++)
+			{
+				if (queues[i].getQueueId() == id)
+				{
+					return &queues[i];
+				}
+			}
+
+			LOG_ERROR("Invalid queue id specified: " + std::to_string(id));
+			return nullptr;
+		}
+
 		void Controller::controllerResetCallback()
 		{
-			LOG_INFO("Recv'd a controllerResetCallback request.")
-			bool haveAdminSubQueue = (ValidSubmissionQueues.find(ADMIN_QUEUE_ID) != ValidSubmissionQueues.end());
-			bool haveAdminComQueue = (ValidCompletionQueues.find(ADMIN_QUEUE_ID) != ValidCompletionQueues.end());
+			LOG_INFO("Recv'd a controllerResetCallback request.");
 
-			// Reset to just admin queues if we have it
-			ValidSubmissionQueues.clear();
-			if (haveAdminSubQueue)
+			for (size_t i = ValidSubmissionQueues.size() - 1; i != -1; i--)
 			{
-				ValidSubmissionQueues[ADMIN_QUEUE_ID] = 0;
+				if (ValidSubmissionQueues[i].getQueueId() != ADMIN_QUEUE_ID)
+				{
+					ValidSubmissionQueues.erase(ValidSubmissionQueues.begin() + i);
+				}
 			}
-			ValidCompletionQueues.clear();
-			if (haveAdminComQueue)
+
+			for (size_t i = ValidCompletionQueues.size() - 1; i != -1; i--)
 			{
-				ValidCompletionQueues[ADMIN_QUEUE_ID] = 0;
+				if (ValidCompletionQueues[i].getQueueId() != ADMIN_QUEUE_ID)
+				{
+					ValidCompletionQueues.erase(ValidCompletionQueues.begin() + i);
+				}
 			}
 		}
 
