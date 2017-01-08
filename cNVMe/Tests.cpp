@@ -208,9 +208,9 @@ namespace cnvme
 				FAIL_IF(!retStr.find(std::to_string(command.DWord10)), "Generated DWord10 not found in parsing");
 				FAIL_IF(!retStr.find(std::to_string(command.DWord11)), "Generated DWord11 not found in parsing");
 				FAIL_IF(!retStr.find(std::to_string(command.DWord12)), "Generated DWord12 not found in parsing");
-				FAIL_IF(!retStr.find(std::to_string(command.DWord13)), "Generated DWord12 not found in parsing");
-				FAIL_IF(!retStr.find(std::to_string(command.DWord14)), "Generated DWord12 not found in parsing");
-				FAIL_IF(!retStr.find(std::to_string(command.DWord15)), "Generated DWord12 not found in parsing");
+				FAIL_IF(!retStr.find(std::to_string(command.DWord13)), "Generated DWord13 not found in parsing");
+				FAIL_IF(!retStr.find(std::to_string(command.DWord14)), "Generated DWord14 not found in parsing");
+				FAIL_IF(!retStr.find(std::to_string(command.DWord15)), "Generated DWord15 not found in parsing");
 
 				return true;
 			}
