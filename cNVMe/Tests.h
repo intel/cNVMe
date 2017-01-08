@@ -1,10 +1,11 @@
 /*
 This file is part of cNVMe and is released under the MIT License
-(C) - Charles Machalow - 2016
+(C) - Charles Machalow - 2017
 Tests.h - A header file for all unit testing
 */
 #pragma once
 
+#include "Command.h"
 #include "Controller.h"
 #include "ControllerRegisters.h"
 #include "LoopingThread.h"
@@ -60,6 +61,14 @@ namespace cnvme
 			/// Tests a controller level reset
 			/// </summary>
 			bool testControllerReset();
+		}
+
+		namespace commands
+		{
+			/// <summary>
+			/// Tests the general NVMe Command parsing
+			/// </summary>
+			bool testNVMeCommandParsing();
 		}
 
 	}

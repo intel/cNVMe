@@ -1,6 +1,6 @@
 /*
 This file is part of cNVMe and is released under the MIT License
-(C) - Charles Machalow - 2016
+(C) - Charles Machalow - 2017
 Tests.cpp - An implementation file for all unit testing
 */
 
@@ -43,6 +43,7 @@ namespace cnvme
 					results.push_back(std::async(pci::testPciHeaderId));
 					results.push_back(std::async(general::testLoopingThread));
 					results.push_back(std::async(controller_registers::testControllerReset));
+					results.push_back(std::async(commands::testNVMeCommandParsing));
 				}
 
 				bool retVal = true;
@@ -185,8 +186,34 @@ namespace cnvme
 
 				return true;
 			}
+		}
 
+		namespace commands
+		{
+			bool testNVMeCommandParsing()
+			{
+				cnvme::command::NVME_COMMAND command = { 0 };
+				command.DWord0Breakdown.OPC = (UINT_8)helpers::randInt(0, 100);
+				command.DWord1 = (UINT_32)helpers::randInt(0, 0xFFFFFFFF);
+				command.DWord10 = (UINT_32)helpers::randInt(0, 0xFF);
+				command.DWord11 = (UINT_32)helpers::randInt(0, 0xFFF);
+				command.DWord12 = (UINT_32)helpers::randInt(0, 0xFFFF);
+				command.DWord13 = (UINT_32)helpers::randInt(0, 0xFFFFF);
+				command.DWord14 = (UINT_32)helpers::randInt(0, 0xFFFFFF);
+				command.DWord15 = (UINT_32)helpers::randInt(0, 0xFFFFFFF);
+
+				std::string retStr = command.toString();
+				FAIL_IF(!retStr.find(std::to_string(command.DWord0Breakdown.OPC)), "Generated OPC not found in parsing");
+				FAIL_IF(!retStr.find(std::to_string(command.DWord1)), "Generated DWord1 not found in parsing");
+				FAIL_IF(!retStr.find(std::to_string(command.DWord10)), "Generated DWord10 not found in parsing");
+				FAIL_IF(!retStr.find(std::to_string(command.DWord11)), "Generated DWord11 not found in parsing");
+				FAIL_IF(!retStr.find(std::to_string(command.DWord12)), "Generated DWord12 not found in parsing");
+				FAIL_IF(!retStr.find(std::to_string(command.DWord13)), "Generated DWord12 not found in parsing");
+				FAIL_IF(!retStr.find(std::to_string(command.DWord14)), "Generated DWord12 not found in parsing");
+				FAIL_IF(!retStr.find(std::to_string(command.DWord15)), "Generated DWord12 not found in parsing");
+
+				return true;
+			}
 		}
 	}
 }
-

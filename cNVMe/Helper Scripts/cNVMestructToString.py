@@ -6,6 +6,7 @@ Author(s):
     Charles Machalow
 '''
 
+from ctypes import *
 import os
 import tempfile
 
@@ -86,8 +87,11 @@ def inputGenerator():
     while True:
         yield input()
 
+class Nothing(Structure):
+    pass
+    
 if __name__ == "__main__":
-    txt = object()
+    txt = Nothing()
     txt.splitlines = inputGenerator
     runWithText(txt, "??")
 

@@ -114,6 +114,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Command.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="ControllerRegisters.h" />
     <ClInclude Include="Logger.h" />
@@ -126,6 +127,7 @@
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Command.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="ControllerRegisters.cpp" />
     <ClCompile Include="Logger.cpp" />

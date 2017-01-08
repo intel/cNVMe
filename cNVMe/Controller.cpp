@@ -1,13 +1,16 @@
 /*
 This file is part of cNVMe and is released under the MIT License
-(C) - Charles Machalow - 2016
+(C) - Charles Machalow - 2017
 Controller.cpp - An implementation file for the NVMe Controller
 */
 
 #define ADMIN_QUEUE_ID 0
 
+#include "Command.h"
 #include "Controller.h"
 #include "Strings.h"
+
+using namespace cnvme::command;
 
 namespace cnvme
 {
@@ -130,18 +133,13 @@ namespace cnvme
 				return;
 			}
 
-			if (submissionQueueId == 0)
+			UINT_8* subQPointer = (UINT_8*)theSubmissionQueue->getMemoryAddress(); // This is the address of the 64 byte command
+			NVME_COMMAND* command = (NVME_COMMAND*)subQPointer;
+
+			if (submissionQueueId == ADMIN_QUEUE_ID)
 			{
 				// Admin command
-				UINT_32* subQPointer = (UINT_32*)theSubmissionQueue->getMemoryAddress(); // This is the address of the 64 byte command
-
-				LOG_INFO("Admin Command Recv'd");
-				for (int i = 0; i < 16; i++)
-				{
-					// todo... class for NVMe Command. 64 byte / 16 DWords
-
-					LOG_INFO("DWord " + std::to_string(i) + ": 0x" + strings::toHexString(subQPointer[i]));
-				}
+				LOG_INFO(command->toString());
 
 				// Todo: post completion and actually process the command
 
