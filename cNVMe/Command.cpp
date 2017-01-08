@@ -65,5 +65,21 @@ namespace cnvme
 			return retStr;
 		}
 
+		std::string COMPLETION_QUEUE_ENTRY::toString() const
+		{
+			std::string retStr;
+			retStr += "Completion Queue Entry\n";
+			retStr += strings::toString(ToStringParams(DWord0, "Command DWord 0 / NSID"));
+			retStr += strings::toString(ToStringParams(DWord1, "Command DWord 1 / Reserved"));
+			retStr += strings::toString(ToStringParams(DWord2, "Command DWord 2 / SQHD / SQID"));
+			retStr += strings::indentLines(strings::toString(ToStringParams(SQHD, "Submission Queue Head Pointer")));
+			retStr += strings::indentLines(strings::toString(ToStringParams(SQID, "Submission Queue Identifier")));
+			retStr += strings::toString(ToStringParams(DWord3, "Command DWord 3 / CID / P / SF"));
+			retStr += strings::indentLines(strings::toString(ToStringParams(CID, "Command Identifier")));
+			retStr += strings::indentLines(strings::toString(ToStringParams(P, "Phase Tag")));
+			retStr += strings::indentLines(strings::toString(ToStringParams(SF, "Status Field")));
+			return retStr;
+		}
+
 	}
 }

@@ -121,5 +121,35 @@ namespace cnvme
 		}NVME_COMMAND, *PNVME_COMMAND;
 		static_assert(sizeof(NVME_COMMAND) == 64, "NVME_COMMAND should be 64 byte(s) in size.");
 
+		typedef struct COMPLETION_QUEUE_ENTRY
+		{
+			UINT_32 DWord0; // Command Specific
+			UINT_32 DWord1; // Reserved
+
+			union
+			{
+				struct
+				{
+					UINT_16 SQHD; //SQ Head Pointer
+					UINT_16 SQID; //SQ Identifier;
+				};
+				UINT_32 DWord2;
+			};
+
+			union
+			{
+				struct
+				{
+					UINT_16 CID; // Command Identifier
+					UINT_16 P : 1; // Phase Tag
+					UINT_16 SF : 15; // Status Field
+				};
+				UINT_32 DWord3;
+			};
+
+			std::string toString() const;
+		}COMPLETION_QUEUE_ENTRY, *PCOMPLETION_QUEUE_ENTRY;
+		static_assert(sizeof(COMPLETION_QUEUE_ENTRY) == 16, "COMPLETION_QUEUE_ENTRY should be 16 byte(s) in size.");
+
 	}
 }
