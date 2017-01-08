@@ -97,7 +97,10 @@ namespace cnvme
 			// Now that we have a CQ address, make it valid
 			if (ValidCompletionQueues.size() == 0)
 			{
-				ValidCompletionQueues.push_back(Queue(controllerRegisters->AQA.ACQS, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].CQHDBL.CQH, controllerRegisters->ACQ.ACQB));
+				Queue AdminCompletionQueue(controllerRegisters->AQA.ACQS, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].CQHDBL.CQH, controllerRegisters->ACQ.ACQB);
+				AdminCompletionQueue.setMappedQueue(&ValidSubmissionQueues[ADMIN_QUEUE_ID]); // Map CQ -> SQ
+				ValidCompletionQueues.push_back(AdminCompletionQueue);
+				ValidSubmissionQueues[0].setMappedQueue(&ValidCompletionQueues[ADMIN_QUEUE_ID]); // Map SQ -> CQ
 			}
 
 			// Made it this far, we have at least the admin queue
@@ -126,23 +129,33 @@ namespace cnvme
 		{
 			auto controllerRegisters = getControllerRegisters()->getControllerRegisters();
 			Queue* theSubmissionQueue = getQueueWithId(ValidSubmissionQueues, submissionQueueId);
-
 			if (theSubmissionQueue == nullptr)
 			{
 				LOG_ERROR("Somehow we were unable to find a submission queue matching: " + std::to_string(submissionQueueId));
 				return;
 			}
 
+			Queue* theCompletionQueue = theSubmissionQueue->getMappedQueue();
+			if (theCompletionQueue == nullptr)
+			{
+				LOG_ERROR("Submission Queue " + std::to_string(submissionQueueId) + " doesn't have a mapped completion queue. And yet it recieved a command.");
+				return;
+			}
+
 			UINT_8* subQPointer = (UINT_8*)theSubmissionQueue->getMemoryAddress(); // This is the address of the 64 byte command
 			NVME_COMMAND* command = (NVME_COMMAND*)subQPointer;
+			controller::registers::QUEUE_DOORBELLS* doorbells = getControllerRegisters()->getQueueDoorbells();
 
 			if (submissionQueueId == ADMIN_QUEUE_ID)
 			{
 				// Admin command
 				LOG_INFO(command->toString());
 
-				// Todo: post completion and actually process the command
-
+				switch (command->DWord0Breakdown.OPC)
+				{
+				case 0x18: //Keep Alive... no data should be easiest
+					postCompletion(*theCompletionQueue, COMPLETION_QUEUE_ENTRY());
+				}
 			}
 			else
 			{
@@ -163,6 +176,20 @@ namespace cnvme
 
 			LOG_ERROR("Invalid queue id specified: " + std::to_string(id));
 			return nullptr;
+		}
+
+		void Controller::postCompletion(Queue &completionQueue, COMPLETION_QUEUE_ENTRY completionEntry)
+		{
+			completionQueue.setIndex(completionQueue.getIndex() + 1);
+			UINT_16* dbell = completionQueue.getDoorbell();
+			dbell[0]++;
+
+			Queue* submissionQueue = completionQueue.getMappedQueue();
+			completionEntry.SQID = submissionQueue->getQueueId();
+			completionEntry.SQHD = submissionQueue->getIndex();
+			completionEntry.CID = submissionQueue->getIndex(); // This is Wrong. Fix later
+			
+			memcpy((void*)completionQueue.getMemoryAddress(), &completionEntry, sizeof(completionEntry));
 		}
 
 		void Controller::controllerResetCallback()

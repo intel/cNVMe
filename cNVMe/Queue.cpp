@@ -17,6 +17,7 @@ namespace cnvme
 			Doorbell = nullptr;
 			Index = 0; // Queue start at 0
 			LinkedMemoryAddress = 0;
+			MappedQueue = nullptr;
 		}
 
 		Queue::Queue(UINT_32 queueSize, UINT_32 queueId, UINT_16* doorbell, UINT_64 linkedMemoryAddress) : Queue()
@@ -55,6 +56,16 @@ namespace cnvme
 		UINT_64 Queue::getMemoryAddress()
 		{
 			return LinkedMemoryAddress;
+		}
+
+		Queue * Queue::getMappedQueue()
+		{
+			return MappedQueue;
+		}
+
+		void Queue::setMappedQueue(Queue* mappedQueue)
+		{
+			MappedQueue = mappedQueue;
 		}
 	}
 }

@@ -32,7 +32,7 @@ int main()
 	regs->CC.EN = 1;
 
 	NVME_COMMAND* command = (NVME_COMMAND*)p.getBuffer();
-	command->DWord0Breakdown.OPC = 0x1F;
+	command->DWord0Breakdown.OPC = 0x18; // Send keep alive
 	command->DWord1 = 0x1;
 
 	co.getControllerRegisters()->getQueueDoorbells()[0].SQTDBL.SQT = 1;

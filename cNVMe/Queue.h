@@ -73,6 +73,18 @@ namespace cnvme
 			/// <returns>Address</returns>
 			UINT_64 getMemoryAddress();
 
+			/// <summary>
+			/// Gets a pointer to the mapped queue
+			/// </summary>
+			/// <returns>Pointer to mapped queue</returns>
+			Queue* getMappedQueue();
+
+			/// <summary>
+			/// Set the mapped queue. If Queue is a sub queue, this is the completion queue.
+			/// </summary>
+			/// <param name="mappedQueue">Linked queue</param>
+			void setMappedQueue(Queue* mappedQueueId);
+
 		private:
 
 			/// <summary>
@@ -101,6 +113,12 @@ namespace cnvme
 			/// Completion queues will expect to place completion here
 			/// </summary>
 			UINT_64 LinkedMemoryAddress;
+
+			/// <summary>
+			/// Queue that this queue is mapped to
+			/// Example: If this is the admin submission queue, then this should be a pointer to the admin completion queue
+			/// </summary>
+			Queue* MappedQueue;
 		};
 	}
 }

@@ -6,6 +6,7 @@ Controller.h - A header file for the NVMe Controller
 
 #pragma once
 
+#include "Command.h"
 #include "ControllerRegisters.h"
 #include "PCIe.h"
 #include "Types.h"
@@ -102,6 +103,14 @@ namespace cnvme
 			/// <param name="id">The queue id</param>
 			/// <returns>Queue</returns>
 			Queue *getQueueWithId(std::vector<Queue> &queues, UINT_16 id);
+
+			/// <summary>
+			/// Posts the given completion to the given queue.
+			/// Fills in sqid, sqhd, cid
+			/// </summary>
+			/// <param name="completionQueue">Queue to post to</param>
+			/// <param name="completionEntry">Entry to post to the queue</param>
+			void postCompletion(Queue &completionQueue, command::COMPLETION_QUEUE_ENTRY completionEntry);
 		};
 	}
 }
