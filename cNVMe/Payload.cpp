@@ -17,6 +17,11 @@ namespace cnvme
 		memset(BytePointer, 0, ByteSize);
 	}
 
+	Payload::Payload(BYTE * pointer, UINT_32 byteSize) : Payload::Payload(byteSize)
+	{
+		memcpy_s(BytePointer, ByteSize, pointer, byteSize);
+	}
+
 	Payload::Payload()
 	{
 		ByteSize = 0;
@@ -47,10 +52,26 @@ namespace cnvme
 	{
 		if (this->getSize() == other.getSize())
 		{
+
+#ifdef PAYLOAD_CMP_DEBUG // Used for debugging comparison issues
+			for (UINT_32 i = 0; i < getSize(); i++)
+			{
+				if (getBuffer()[i] != other.getBuffer()[i])
+				{
+					printf("Miscompare at index %u : 0x%X != 0x%X\n", i, getBuffer()[i], other.getBuffer()[i]);
+				}
+			}
+#endif //PAYLOAD_CMP_DEBUG
 			return memcmp(this->getBuffer(), other.getBuffer(), this->getSize()) == 0;
+
 		}
 
 		return false;
+	}
+
+	bool Payload::operator!=(const Payload & other)
+	{
+		return !(*this == other);
 	}
 
 	Payload::~Payload()
@@ -96,5 +117,14 @@ namespace cnvme
 			return (UINT_64)&(*getBuffer());
 		}
 		return NULL;
+	}
+
+	void Payload::append(Payload &otherPayload)
+	{
+		UINT_32 oldSize = getSize();
+		this->resize(oldSize + otherPayload.getSize());
+
+		// copy other after this
+		memcpy_s(this->getBuffer() + oldSize, this->getSize() - oldSize, otherPayload.getBuffer(), otherPayload.getSize());
 	}
 }

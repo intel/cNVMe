@@ -10,6 +10,7 @@ Tests.h - A header file for all unit testing
 #include "ControllerRegisters.h"
 #include "LoopingThread.h"
 #include "Pcie.h"
+#include "PRP.h"
 
 using namespace cnvme;
 using namespace cnvme::controller;
@@ -35,6 +36,11 @@ namespace cnvme
 			/// Runs all tests
 			/// </summary>
 			bool runTests();
+
+			/// <summary>
+			/// Fills a payload with random data
+			/// </summary>
+			void randomizePayload(Payload &payload);
 		}
 
 		namespace general
@@ -71,5 +77,13 @@ namespace cnvme
 			bool testNVMeCommandParsing();
 		}
 
+		namespace prp
+		{
+			/// <summary>
+			/// Tests that creating a PRP and retriving the resulting payload yield
+			///   the same results.
+			/// </summary>
+			bool testDifferentPRPSizes();
+		}
 	}
 }

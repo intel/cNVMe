@@ -83,6 +83,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <StructMemberAlignment>1Byte</StructMemberAlignment>
+      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -121,6 +122,7 @@
     <ClInclude Include="LoopingThread.h" />
     <ClInclude Include="Payload.h" />
     <ClInclude Include="PCIe.h" />
+    <ClInclude Include="PRP.h" />
     <ClInclude Include="Queue.h" />
     <ClInclude Include="Strings.h" />
     <ClInclude Include="Tests.h" />
@@ -135,6 +137,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Payload.cpp" />
     <ClCompile Include="PCIe.cpp" />
+    <ClCompile Include="PRP.cpp" />
     <ClCompile Include="Queue.cpp" />
     <ClCompile Include="Strings.cpp" />
     <ClCompile Include="Tests.cpp" />

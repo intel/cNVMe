@@ -44,6 +44,7 @@ namespace cnvme
 					results.push_back(std::async(general::testLoopingThread));
 					results.push_back(std::async(controller_registers::testControllerReset));
 					results.push_back(std::async(commands::testNVMeCommandParsing));
+					results.push_back(std::async(prp::testDifferentPRPSizes));
 				}
 
 				bool retVal = true;
@@ -53,6 +54,16 @@ namespace cnvme
 				}
 
 				return retVal;
+			}
+
+			void randomizePayload(Payload & payload)
+			{
+				// Can't afford to take the time to randomize a 128MB buffer... so just randomly flip some bytes
+				UINT_32 jumpNum = (UINT_32)randInt((UINT_64)payload.getSize() / 4, (UINT_64)payload.getSize() / 2);
+				for (UINT_32 i = 0; i < payload.getSize(); i+=jumpNum)
+				{
+					payload.getBuffer()[i] = (BYTE)randInt(0, 0xFF);
+				}
 			}
 		}
 
@@ -211,6 +222,40 @@ namespace cnvme
 				FAIL_IF(!retStr.find(std::to_string(command.DWord13)), "Generated DWord13 not found in parsing");
 				FAIL_IF(!retStr.find(std::to_string(command.DWord14)), "Generated DWord14 not found in parsing");
 				FAIL_IF(!retStr.find(std::to_string(command.DWord15)), "Generated DWord15 not found in parsing");
+
+				return true;
+			}
+		}
+
+		namespace prp
+		{
+			bool testDifferentPRPSizes()
+			{
+				// Wide range of sizes to test les than a page, equal to a page, two pages, 
+				//  and a scenario to queue a chained PRP list.
+				std::vector<UINT_32> dataXfrSizes = { 512, 4095, 4096, 4097, 8192, 8193, 4096 * 100 };
+				
+				// memory page size is is 2 ^ (12 + CC.MPS). CC.MPS is 4 bits.
+				//  Test all valid page sizes
+				std::vector<UINT_32> memoryPageSizes;
+				for (int i = 0; i <= 0b1111; i++)
+				{
+					memoryPageSizes.push_back((UINT_32)std::pow(2, 12 + i));
+				}
+
+				for (UINT_32 dataSize : dataXfrSizes)
+				{
+					Payload payload(dataSize);
+					helpers::randomizePayload(payload);
+
+					for (UINT_32 pageSize : memoryPageSizes)
+					{
+						PRP prp(payload, pageSize);
+
+						FAIL_IF(payload != prp.getPayloadCopy(), "With pageSize (" + std::to_string(pageSize) + \
+							") and payload size (" + std::to_string(dataSize) + "), the PRP's payload didn't match the original!");
+					}
+				}
 
 				return true;
 			}

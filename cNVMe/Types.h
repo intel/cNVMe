@@ -12,6 +12,7 @@ Types.h - A header file for all needed type includes
 #include "Logger.h"
 
 // STL Includes
+#include <algorithm>
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -36,3 +37,14 @@ typedef int8_t   INT_8;
 typedef int16_t  INT_16;
 typedef int32_t  INT_32;
 typedef int64_t  INT_64;
+
+// Cause I'm lazy
+typedef UINT_8 BYTE;
+
+// Type Macros
+#define POINTER_TO_MEMORY_ADDRESS(p) (UINT_64)&(*p)
+#define MEMORY_ADDRESS_TO_8POINTER(m) (UINT_8*)m
+#define MEMORY_ADDRESS_TO_64POINTER(m) (UINT_64*)m
+
+// Init macro
+#define ALLOC_BYTE_ARRAY(name, size) BYTE* name = new BYTE[size]; memset(name, 0, size);

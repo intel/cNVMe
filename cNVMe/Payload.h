@@ -23,6 +23,13 @@ namespace cnvme
 		Payload(UINT_32 byteSize);
 
 		/// <summary>
+		/// Create a payload from a pointer/length. This copies the data.
+		/// </summary>
+		/// <param name="pointer">byte array</param>
+		/// <param name="byteSize">size of the array</param>
+		Payload(BYTE* pointer, UINT_32 byteSize);
+
+		/// <summary>
 		/// Default constructor
 		/// </summary>
 		Payload();
@@ -46,6 +53,13 @@ namespace cnvme
 		/// <param name="other">The other payload</param>
 		/// <returns>true if equal size and contents</returns>
 		bool operator==(const Payload& other);
+
+		/// <summary>
+		/// Checks if the two payloads are not equivalent
+		/// </summary>
+		/// <param name="other">The other payload</param>
+		/// <returns>false if equal size and contents</returns>
+		bool operator!=(const Payload& other);
 
 		/// <summary>
 		/// Destructor, deallocates memory
@@ -81,6 +95,12 @@ namespace cnvme
 		/// </summary>
 		/// <returns>Memory address</returns>
 		UINT_64 getMemoryAddress();
+
+		/// <summary>
+		/// Append another payload after this one
+		/// </summary>
+		/// <param name="otherPayload">another payload</param>
+		void append(Payload &otherPayload);
 
 	private:
 
