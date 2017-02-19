@@ -181,8 +181,6 @@ namespace cnvme
 		void Controller::postCompletion(Queue &completionQueue, COMPLETION_QUEUE_ENTRY completionEntry)
 		{
 			completionQueue.setIndex(completionQueue.getIndex() + 1);
-			UINT_16* dbell = completionQueue.getDoorbell();
-			dbell[0]++;
 
 			Queue* submissionQueue = completionQueue.getMappedQueue();
 			completionEntry.SQID = submissionQueue->getQueueId();
@@ -190,6 +188,10 @@ namespace cnvme
 			completionEntry.CID = submissionQueue->getIndex(); // This is Wrong. Fix later
 			
 			memcpy((void*)completionQueue.getMemoryAddress(), &completionEntry, sizeof(completionEntry));
+
+			// ring doorbell after placing data in completion queue.
+			UINT_16* dbell = completionQueue.getDoorbell();
+			dbell[0]++;
 		}
 
 		void Controller::controllerResetCallback()
