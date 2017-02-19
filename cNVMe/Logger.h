@@ -15,6 +15,10 @@ Logger.h - A header file for the Logging
 #define LOG_INFO(txt) cnvme::logging::theLogger.log(std::string(__func__) + "():" \
 + std::to_string(__LINE__) + " - [" + cnvme::logging::Logger::loggingLevelToString(cnvme::logging::INFO) + "] - " + txt, cnvme::logging::INFO);
 #define LOG_SET_LEVEL(level) cnvme::logging::theLogger.setLevel((cnvme::logging::LOGGING_LEVEL)level);
+#define ASSERT(txt) cnvme::logging::theLogger.setStatus(std::string(__func__) + "():" \
++ std::to_string(__LINE__) + " - " + std::string(txt));
+
+#define CLEARED_STATUS "Healthy"
 
 namespace cnvme
 {
@@ -74,6 +78,23 @@ namespace cnvme
 				return "Unknown";
 			}
 
+			/// <summary>
+			/// Set the simulation's status
+			/// </summary>
+			/// <param name="status">A message to say what's up.</param>
+			void setStatus(std::string status);
+
+			/// <summary>
+			/// Return the current status
+			/// </summary>
+			/// <returns>string</returns>
+			std::string getStatus();
+
+			/// <summary>
+			/// Clears the current status
+			/// </summary>
+			void clearStatus();
+
 		private:
 			/// <summary>
 			/// Current level of logging
@@ -89,6 +110,11 @@ namespace cnvme
 			/// Mutex for printing
 			/// </summary>
 			std::mutex Mutex;
+
+			/// <summary>
+			/// Current status
+			/// </summary>
+			std::string Status;
 		};
 
 		/// <summary>

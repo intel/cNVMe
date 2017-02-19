@@ -193,6 +193,47 @@ namespace cnvme
 		return PRP2;
 	}
 
+	bool PRP::placePayloadInExistingPRPs(Payload &payload)
+	{
+		if (payload.getSize() > getNumBytes())
+		{
+			ASSERT("Given payload is larger than the allocated PRPs");
+			return false;
+		}
+
+		UINT_32 bytesRemaining = payload.getSize();
+
+		BYTE* prp1Pointer = MEMORY_ADDRESS_TO_8POINTER(PRP1);
+
+		// Copy in first page of data
+		UINT_32 bytesIntoPrp1 = std::min(MemoryPageSize, bytesRemaining);
+		BYTE* payloadBuf = payload.getBuffer();
+		memcpy_s(prp1Pointer, MemoryPageSize, payloadBuf, bytesIntoPrp1);
+		payloadBuf += bytesIntoPrp1;
+		bytesRemaining -= bytesIntoPrp1;
+
+		if (bytesRemaining)
+		{
+			BYTE* prp2Pointer = MEMORY_ADDRESS_TO_8POINTER(PRP2);
+			if (usesPRPList())
+			{
+				std::vector<std::pair<BYTE*, UINT_32>> prpList = getPRPListPointers();
+				for (std::pair<BYTE*, UINT_32> &prp : prpList)
+				{
+					memcpy_s(prp.first, prp.second, payloadBuf, prp.second);
+					payloadBuf += prp.second;
+				}
+			}
+			else
+			{
+				// Copy the rest of the data into PRP2
+				UINT_32 bytesIntoPrp2 = std::min(MemoryPageSize, bytesRemaining);
+				memcpy_s(prp2Pointer, MemoryPageSize, payloadBuf, bytesIntoPrp2);
+			}
+		}
+		return true;
+	}
+
 	bool PRP::usesPRPList()
 	{
 		return NumberOfBytes > (MemoryPageSize * 2);

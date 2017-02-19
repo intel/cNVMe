@@ -84,6 +84,11 @@ namespace cnvme
 			///   the same results.
 			/// </summary>
 			bool testDifferentPRPSizes();
+
+			/// <summary>
+			/// Test copying an existing payload into an existing PRP.
+			/// </summary>
+			bool testDataIntoExistingPRP();
 		}
 	}
 }

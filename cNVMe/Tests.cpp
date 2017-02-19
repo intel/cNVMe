@@ -45,6 +45,7 @@ namespace cnvme
 					results.push_back(std::async(controller_registers::testControllerReset));
 					results.push_back(std::async(commands::testNVMeCommandParsing));
 					results.push_back(std::async(prp::testDifferentPRPSizes));
+					results.push_back(std::async(prp::testDataIntoExistingPRP));
 				}
 
 				bool retVal = true;
@@ -253,6 +254,45 @@ namespace cnvme
 						PRP prp(payload, pageSize);
 
 						FAIL_IF(payload != prp.getPayloadCopy(), "With pageSize (" + std::to_string(pageSize) + \
+							") and payload size (" + std::to_string(dataSize) + "), the PRP's payload didn't match the original!");
+					}
+				}
+
+				return true;
+			}
+
+			bool testDataIntoExistingPRP()
+			{
+				// Wide range of sizes to test les than a page, equal to a page, two pages, 
+				//  and a scenario to queue a chained PRP list.
+				std::vector<UINT_32> dataXfrSizes = { 512, 4095, 4096, 4097, 8192, 8193, 4096 * 100 };
+
+				// memory page size is is 2 ^ (12 + CC.MPS). CC.MPS is 4 bits.
+				//  Test all valid page sizes
+				std::vector<UINT_32> memoryPageSizes;
+				for (int i = 0; i <= 0b1111; i++)
+				{
+					memoryPageSizes.push_back((UINT_32)std::pow(2, 12 + i));
+				}
+
+				for (UINT_32 dataSize : dataXfrSizes)
+				{
+					Payload payloadWithData(dataSize);
+					Payload payloadWithDataTooLarge = payloadWithData;
+					payloadWithDataTooLarge.append(Payload(512));
+					helpers::randomizePayload(payloadWithData);
+					Payload payloadWithoutData(dataSize);
+
+					for (UINT_32 pageSize : memoryPageSizes)
+					{
+						PRP prp(payloadWithoutData, pageSize);
+						prp.placePayloadInExistingPRPs(payloadWithData);
+
+						FAIL_IF(prp.placePayloadInExistingPRPs(payloadWithDataTooLarge) , "Placing a larger than allocated Payload into PRPs should have failed!");
+						// Status will be messed with here. So clear.
+						cnvme::logging::theLogger.clearStatus();
+
+						FAIL_IF(payloadWithData != prp.getPayloadCopy(), "With pageSize (" + std::to_string(pageSize) + \
 							") and payload size (" + std::to_string(dataSize) + "), the PRP's payload didn't match the original!");
 					}
 				}

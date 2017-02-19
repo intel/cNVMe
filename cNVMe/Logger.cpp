@@ -18,6 +18,7 @@ namespace cnvme
 		Logger::Logger()
 		{
 			Level = SILENT;
+			clearStatus();
 		}
 
 		void Logger::setLevel(LOGGING_LEVEL level)
@@ -30,7 +31,7 @@ namespace cnvme
 			return Level;
 		}
 
-		void cnvme::logging::Logger::log(std::string txt, LOGGING_LEVEL level)
+		void Logger::log(std::string txt, LOGGING_LEVEL level)
 		{
 			if (level <= Level)
 			{
@@ -38,6 +39,21 @@ namespace cnvme
 				std::cerr << getCurrentTime() << " - " <<  txt << std::endl;
 				Mutex.unlock();
 			}
+		}
+
+		void Logger::setStatus(std::string status)
+		{
+			Status = status;
+		}
+
+		std::string Logger::getStatus()
+		{
+			return Status;
+		}
+
+		void Logger::clearStatus()
+		{
+			setStatus(CLEARED_STATUS);
 		}
 
 		std::string Logger::getCurrentTime()

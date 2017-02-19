@@ -77,6 +77,13 @@ namespace cnvme
 		/// <returns>Address of PRP2</returns>
 		UINT_64 getPRP2();
 
+		/// <summary>
+		/// Takes in a payload and copies over the data into the existing PRP addresses
+		/// </summary>
+		/// <param name="payload">Data to copy to PRPs</param>
+		/// <returns>True if the FULL payload has been sent to the PRPs. False otherwise.</returns>
+		bool placePayloadInExistingPRPs(Payload &payload);
+
 	private:
 
 		/// <summary>
