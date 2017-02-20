@@ -12,6 +12,9 @@ Controller.h - A header file for the NVMe Controller
 #include "Types.h"
 #include "Queue.h"
 
+#define MAX_COMMAND_IDENTIFIER 0xFFFF
+#define MAX_SUBMISSION_QUEUES  0xFFFF
+
 using namespace cnvme;
 
 namespace cnvme
@@ -86,6 +89,11 @@ namespace cnvme
 			std::vector<Queue> ValidCompletionQueues;
 
 			/// <summary>
+			/// Used to keep track of CIDs that have been used
+			/// </summary>
+			std::map<UINT_16, std::set<UINT_16>> SubmissionQueueIdToCommandIdentifiers;
+
+			/// <summary>
 			/// Function to be called in loop looking for changes
 			/// </summary>
 			void checkForChanges();
@@ -94,7 +102,8 @@ namespace cnvme
 			/// This call will take the command of the given submission queue id and ring the completion doorbell upon completion
 			/// </summary>
 			/// <param name="submissionQueueId">The submission queue id</param>
-			void processCommandAndPostCompletion(UINT_16 submissionQueueId);
+			/// <param name="submissionQueueIndex">The submission index for this command</param>
+			void processCommandAndPostCompletion(UINT_16 submissionQueueId, UINT_16 submissionQueueIndex);
 
 			/// <summary>
 			/// Returns a Queue matching the given id
@@ -110,7 +119,16 @@ namespace cnvme
 			/// </summary>
 			/// <param name="completionQueue">Queue to post to</param>
 			/// <param name="completionEntry">Entry to post to the queue</param>
-			void postCompletion(Queue &completionQueue, command::COMPLETION_QUEUE_ENTRY completionEntry);
+			/// <param name="command">The NVMe Command that is having its completion posted</param>
+			void postCompletion(Queue &completionQueue, command::COMPLETION_QUEUE_ENTRY completionEntry, command::NVME_COMMAND* command);
+
+			/// <summary>
+			/// Returns true if the command id 
+			/// </summary>
+			/// <param name="commandId">The command ID we are checking for</param>
+			/// <param name="submissionQueueId">The sub queue id the command was sent to</param>
+			/// <returns>true if valid, False otherwise.</returns>
+			bool isValidCommandIdentifier(UINT_16 commandId, UINT_16 submissionQueueId);
 		};
 	}
 }

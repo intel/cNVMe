@@ -80,15 +80,15 @@ namespace cnvme
 
 	bool LoopingThread::waitForFlip()
 	{
+		// Get lock before any other flips can happen
+		std::unique_lock<std::mutex> flipLock(FlipMutex);
+
 		if (!isRunning())
 		{
 			return false;
 		}
 
-		// Get lock before any other flips can happen
-		std::unique_lock<std::mutex> flipLock(FlipMutex);
-
-		bool cachedFlipper = Flipper;
+		bool cachedFlipper = Flipper.load();
 
 		while (Flipper == cachedFlipper)
 		{
@@ -104,10 +104,9 @@ namespace cnvme
 
 		while (ContinueLoop)
 		{
-			FunctionToLoop();
-
 			{
 				std::unique_lock<std::mutex> flipLock(FlipMutex);
+				FunctionToLoop();
 				Flipper = !Flipper;
 				FlipCondition.notify_all();
 			}

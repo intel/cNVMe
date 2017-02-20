@@ -120,12 +120,12 @@ namespace cnvme
 					// Update my record of the Index
 					sq.setIndex(setIndex);
 
-					processCommandAndPostCompletion(sqid); // This calls the command
+					processCommandAndPostCompletion(sqid, setIndex); // This calls the command
 				}
 			}
 		}
 
-		void Controller::processCommandAndPostCompletion(UINT_16 submissionQueueId)
+		void Controller::processCommandAndPostCompletion(UINT_16 submissionQueueId, UINT_16 submissionQueueIndex)
 		{
 			auto controllerRegisters = getControllerRegisters()->getControllerRegisters();
 			Queue* theSubmissionQueue = getQueueWithId(ValidSubmissionQueues, submissionQueueId);
@@ -142,9 +142,27 @@ namespace cnvme
 				return;
 			}
 
+			// Move the internal idea of completion queue index up 1 (with wrapping as needed)
+			theCompletionQueue->setIndex((theCompletionQueue->getIndex() + 1) & theCompletionQueue->getQueueSize());
+
 			UINT_8* subQPointer = (UINT_8*)theSubmissionQueue->getMemoryAddress(); // This is the address of the 64 byte command
 			NVME_COMMAND* command = (NVME_COMMAND*)subQPointer;
-			controller::registers::QUEUE_DOORBELLS* doorbells = getControllerRegisters()->getQueueDoorbells();
+
+			// At this point the index better be valid. The 0 means we wrapped around.
+			// Index == 0 means that we need to look at the last SQ entry.
+			if (theSubmissionQueue->getIndex() == 0)
+			{     
+				command += theSubmissionQueue->getQueueSize() - 1;
+			}
+
+			if (!isValidCommandIdentifier(command->DWord0Breakdown.CID, submissionQueueId))
+			{
+				COMPLETION_QUEUE_ENTRY cqe = { 0 };
+				cqe.SC = 3; // Command ID Conflict TODO: have NVMe constants somewhere.
+				cqe.DNR = 1; // Do not retry TODO: have NVMe constants somewhere.
+				postCompletion(*theCompletionQueue, cqe, command);
+				return; // Do not process command since the CID/SQID combo was invalid;
+			}
 
 			if (submissionQueueId == ADMIN_QUEUE_ID)
 			{
@@ -154,7 +172,7 @@ namespace cnvme
 				switch (command->DWord0Breakdown.OPC)
 				{
 				case 0x18: //Keep Alive... no data should be easiest
-					postCompletion(*theCompletionQueue, COMPLETION_QUEUE_ENTRY());
+					postCompletion(*theCompletionQueue, COMPLETION_QUEUE_ENTRY(), command);
 				}
 			}
 			else
@@ -178,20 +196,56 @@ namespace cnvme
 			return nullptr;
 		}
 
-		void Controller::postCompletion(Queue &completionQueue, COMPLETION_QUEUE_ENTRY completionEntry)
+		void Controller::postCompletion(Queue &completionQueue, COMPLETION_QUEUE_ENTRY completionEntry, NVME_COMMAND* command)
 		{
 			completionQueue.setIndex(completionQueue.getIndex() + 1);
 
 			Queue* submissionQueue = completionQueue.getMappedQueue();
 			completionEntry.SQID = submissionQueue->getQueueId();
 			completionEntry.SQHD = submissionQueue->getIndex();
-			completionEntry.CID = submissionQueue->getIndex(); // This is Wrong. Fix later
-			
-			memcpy((void*)completionQueue.getMemoryAddress(), &completionEntry, sizeof(completionEntry));
+			completionEntry.CID = command->DWord0Breakdown.CID;
+
+			COMPLETION_QUEUE_ENTRY* completionQueueList = (COMPLETION_QUEUE_ENTRY*)MEMORY_ADDRESS_TO_8POINTER(completionQueue.getMemoryAddress());
+			completionQueueList += completionQueue.getIndex(); // Move pointer to correct index
+
+			memcpy(completionQueueList, &completionEntry, sizeof(completionEntry)); // Post
+
+			LOG_INFO(completionEntry.toString());
 
 			// ring doorbell after placing data in completion queue.
 			UINT_16* dbell = completionQueue.getDoorbell();
-			dbell[0]++;
+			dbell[0] = completionQueue.getIndex();
+		}
+
+		bool Controller::isValidCommandIdentifier(UINT_16 commandId, UINT_16 submissionQueueId)
+		{
+			if (SubmissionQueueIdToCommandIdentifiers.find(submissionQueueId) == SubmissionQueueIdToCommandIdentifiers.end())
+			{
+				// SQID hasn't been used yet?
+				std::set<UINT_16> tmp = { commandId };
+				SubmissionQueueIdToCommandIdentifiers[submissionQueueId] = tmp;
+				return true;
+			}
+			else
+			{
+				// Have SQID in SubmissionQueueIdToCommandIdentifiers
+				std::set<UINT_16> &thisSubqsCids = SubmissionQueueIdToCommandIdentifiers[submissionQueueId];
+
+				if (thisSubqsCids.size() == MAX_COMMAND_IDENTIFIER)
+				{
+					LOG_INFO("Made it to the end of possible CIDs for SubQ " + std::to_string(submissionQueueId) + ". Resetting possibile CIDs.");
+					thisSubqsCids.clear();
+				}
+
+				if (thisSubqsCids.find(commandId) == thisSubqsCids.end())
+				{
+					thisSubqsCids.insert(commandId);
+					return true;
+				}
+			}
+
+			LOG_ERROR("Invalid command identifier was sent (" + std::to_string(commandId) + "). Was it re-used?");
+			return false;
 		}
 
 		void Controller::controllerResetCallback()
@@ -219,7 +273,6 @@ namespace cnvme
 		{
 #ifndef SINGLE_THREADED
 			DoorbellWatcher.waitForFlip();
-			DoorbellWatcher.waitForFlip();  // 2 flips to prevent the case where something gets changed in the middle of a flip
 #else
 			checkForChanges();
 #endif
