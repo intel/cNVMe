@@ -46,16 +46,24 @@ int main()
 	// That should have rung the completion doorbell.
 	COMPLETION_QUEUE_ENTRY* cqe = (COMPLETION_QUEUE_ENTRY*)compQ.getBuffer();
 
+	PRP prp(Payload(4096), 4096);
+
 	command++;
 	command->DWord0Breakdown.CID = 1; // Don't want to hit invalid CID/SQID combo
-	command->DWord0Breakdown.OPC = 0x18; // Send keep alive
-	command->DWord1 = 0x1;
+	command->DWord0Breakdown.OPC = 0x06; // Identify
+	command->DWord10 = 0x01; // Identify Controller
+	command->DWord1 = 0x0;
+	command->DPTR.DPTR1 = prp.getPRP1();
+	command->DPTR.DPTR2 = prp.getPRP2();
 
 	queueDoorbells[0].SQTDBL.SQT = 0;
 
 	//soon after this, we see the DWs come up from the logging 
 
 	co.waitForChangeLoop();
+
+	Payload test = prp.getPayloadCopy();
+
 
 	LOG_SET_LEVEL(1);
 

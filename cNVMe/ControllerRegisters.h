@@ -249,6 +249,12 @@ namespace cnvme
 				/// </summary>
 				void waitForChangeLoop();
 
+				/// <summary>
+				/// Gets the memory page size via CC.MPS
+				/// </summary>
+				/// <returns>Memory Page Size</returns>
+				UINT_32 getMemoryPageSize();
+
 			private:
 
 				/// <summary>

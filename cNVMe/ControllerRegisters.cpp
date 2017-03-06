@@ -270,6 +270,17 @@ namespace cnvme
 #endif
 			}
 
+			UINT_32 ControllerRegisters::getMemoryPageSize()
+			{
+				CONTROLLER_REGISTERS* controllerRegisters = getControllerRegisters();
+				if (controllerRegisters)
+				{
+					return (UINT_32)pow(2, 12 + controllerRegisters->CC.MPS);
+				}
+				ASSERT("Unable to get memory page size due to the controller registers being NULL");
+				return 0;
+			}
+
 			void ControllerRegisters::controllerReset()
 			{
 				if (ControllerRegistersPointer)

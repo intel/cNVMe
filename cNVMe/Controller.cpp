@@ -8,6 +8,7 @@ Controller.cpp - An implementation file for the NVMe Controller
 
 #include "Command.h"
 #include "Controller.h"
+#include "PRP.h"
 #include "Strings.h"
 
 using namespace cnvme::command;
@@ -164,6 +165,10 @@ namespace cnvme
 				return; // Do not process command since the CID/SQID combo was invalid;
 			}
 
+			Payload transferPayload;
+			PRP prp;
+			bool validCommand = true;
+			COMPLETION_QUEUE_ENTRY completionQueueEntryToPost = { 0 };
 			if (submissionQueueId == ADMIN_QUEUE_ID)
 			{
 				// Admin command
@@ -171,9 +176,33 @@ namespace cnvme
 
 				switch (command->DWord0Breakdown.OPC)
 				{
+				case 0x06: // Identify Controller
+					LOG_INFO("Got an identify controller call!");
+
+					// TODO : Check if ControllerRegisters is valid.
+					prp = PRP(command->DPTR.DPTR1, command->DPTR.DPTR2, 4096, ControllerRegisters->getMemoryPageSize());
+					transferPayload = prp.getPayloadCopy();
+					transferPayload.getBuffer()[0] = 1;
+					transferPayload.getBuffer()[1] = 0xff;
+					prp.placePayloadInExistingPRPs(transferPayload);
+					break;
 				case 0x18: //Keep Alive... no data should be easiest
-					postCompletion(*theCompletionQueue, COMPLETION_QUEUE_ENTRY(), command);
+					break;
+
+				default:
+					validCommand = false;
 				}
+
+				if (validCommand)
+				{
+					postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
+				}
+				else
+				{
+					assert(0); // kill for now. Need to return invalid command opcode
+					postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
+				}
+
 			}
 			else
 			{
