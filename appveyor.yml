@@ -1,4 +1,5 @@
 version: 1.0.{build}
+image: Visual Studio 2017
 configuration:
 - Debug
 - Release
@@ -9,3 +10,7 @@ clone_depth: 10
 build:
   project: cNVMe.sln
   verbosity: minimal
+test:
+  assemblies:
+    only:
+    - cNVMe.exe
