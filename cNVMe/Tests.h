@@ -9,7 +9,7 @@ Tests.h - A header file for all unit testing
 #include "Controller.h"
 #include "ControllerRegisters.h"
 #include "LoopingThread.h"
-#include "Pcie.h"
+#include "PCIe.h"
 #include "PRP.h"
 
 using namespace cnvme;

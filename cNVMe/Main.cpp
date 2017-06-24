@@ -46,7 +46,8 @@ int main()
 	// That should have rung the completion doorbell.
 	COMPLETION_QUEUE_ENTRY* cqe = (COMPLETION_QUEUE_ENTRY*)compQ.getBuffer();
 
-	PRP prp(Payload(4096), 4096);
+    Payload p(4096);
+	PRP prp(p, 4096);
 
 	command++;
 	command->DWord0Breakdown.CID = 1; // Don't want to hit invalid CID/SQID combo

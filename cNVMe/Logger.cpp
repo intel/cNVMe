@@ -7,6 +7,7 @@ Logger.cpp - An implementation file for the Logging
 #include "Logger.h"
 
 #include <ctime>
+#include <time.h>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -58,14 +59,17 @@ namespace cnvme
 
 		std::string Logger::getCurrentTime()
 		{
+            char buffer[80] = "\0";
+            #ifdef _WIN32
 			time_t rawtime;
 			struct tm timeinfo = { 0 };
-			char buffer[80] = "\0";
+			
 
 			time(&rawtime);
-			localtime_s(&timeinfo , &rawtime);
+			localtime(&timeinfo , &rawtime);
 
 			strftime(buffer, sizeof(buffer), "%d-%m-%Y %I:%M:%S", &timeinfo);
+            #endif
 			return buffer;
 		}
 

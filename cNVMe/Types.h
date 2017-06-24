@@ -15,7 +15,9 @@ Types.h - A header file for all needed type includes
 #include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <condition_variable>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -25,6 +27,10 @@ Types.h - A header file for all needed type includes
 #include <string>
 #include <thread>
 #include <vector>
+
+// C Includes
+#include <stdio.h>
+#include <string.h>
 
 // Unsigned values
 typedef uint8_t  UINT_8;
@@ -48,3 +54,7 @@ typedef UINT_8 BYTE;
 
 // Init macro
 #define ALLOC_BYTE_ARRAY(name, size) BYTE* name = new BYTE[size]; memset(name, 0, size);
+
+#ifndef _WIN32
+#define memcpy_s(dest, destSize, source, sourceSize) memcpy(dest, source, sourceSize)
+#endif

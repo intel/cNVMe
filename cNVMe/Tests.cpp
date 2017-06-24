@@ -125,7 +125,7 @@ namespace cnvme
 				Payload newPayload = p.readHeaderAndCapabilities();
 
 				// The BIST is the last thing before the BARs. The BARs should more than likely be different since they have raw addresses.
-				UINT_32 BISTOffset = offsetof(cnvme::pci::header::PCI_HEADER, cnvme::pci::header::PCI_HEADER::BIST);
+				UINT_32 BISTOffset = offsetof(cnvme::pci::header::PCI_HEADER, BIST);
 				FAIL_IF(memcmp(oldPayload.getBuffer(), newPayload.getBuffer(), BISTOffset) != 0, \
 					"PCI Header up till BIST did not match original after function level reset");
 
@@ -279,7 +279,8 @@ namespace cnvme
 				{
 					Payload payloadWithData(dataSize);
 					Payload payloadWithDataTooLarge = payloadWithData;
-					payloadWithDataTooLarge.append(Payload(512));
+                    Payload p(512);
+					payloadWithDataTooLarge.append(p);
 					helpers::randomizePayload(payloadWithData);
 					Payload payloadWithoutData(dataSize);
 
