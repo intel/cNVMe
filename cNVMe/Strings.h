@@ -45,5 +45,10 @@ namespace cnvme
 		/// indents a given string by 2 spaces
 		/// </summary>
 		std::string indentLines(std::string str);
+
+		/// <summary>
+		/// Find and replace a string and return the result
+		/// </summary>
+		std::string replace(const std::string &s, const std::string find, const std::string replace);
 	}
 }

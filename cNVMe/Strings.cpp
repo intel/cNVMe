@@ -48,16 +48,26 @@ namespace cnvme
 
 		std::string indentLines(std::string str)
 		{
-            #ifdef _WIN32
-			str = "  " + std::regex_replace(str, std::regex("\n"), "\n  ");
+			str = "  " + strings::replace(str, "\n", "\n  ");
 
 			while (*str.rbegin() == ' ')
 			{
 				str.erase(str.size() - 1);
 			}
-            #endif
 
 			return str;
+		}
+
+		std::string replace(const std::string &s, const std::string find, const std::string replace)
+		{
+			std::string retStr = std::string(s);
+			size_t pos = 0;
+			while ((pos = retStr.find(find, pos)) != std::string::npos) 
+			{
+				retStr.replace(pos, find.length(), replace);
+				pos += replace.length();
+			}
+			return retStr;
 		}
 	}
 }
