@@ -68,10 +68,10 @@ int main()
 
 	LOG_SET_LEVEL(1);
 
-	std::cout << "Tests passing: " << strings::toString(cnvme::tests::helpers::runTests()) << std::endl;
+	bool testsPassing = cnvme::tests::helpers::runTests();
+	std::cout << "Tests passing: " << strings::toString(testsPassing) << std::endl;
 
-	char c = '1';
-	std::cin >> c;
+	exit(!testsPassing); // 0 is pass
 
 	// End testing code.
 }

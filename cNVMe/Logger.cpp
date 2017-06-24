@@ -5,6 +5,7 @@ Logger.cpp - An implementation file for the Logging
 */
 
 #include "Logger.h"
+#include "Types.h"
 
 #include <ctime>
 #include <time.h>
@@ -60,16 +61,20 @@ namespace cnvme
 		std::string Logger::getCurrentTime()
 		{
 			char buffer[80] = "\0";
-#ifdef _WIN32
+
 			time_t rawtime;
 			struct tm timeinfo = { 0 };
 
 
 			time(&rawtime);
+#ifdef _WIN32
+			// This isn't even spec compliant or match cppreference.com... just a sketchy Microsoft extension ... 'secure'... lol
 			localtime_s(&timeinfo, &rawtime);
-
+#else // Linux
+			memcpy_s(&timeinfo, sizeof(timeinfo), localtime(&rawtime), sizeof(tm));
+#endif 
 			strftime(buffer, sizeof(buffer), "%d-%m-%Y %I:%M:%S", &timeinfo);
-#endif
+
 			return buffer;
 		}
 
