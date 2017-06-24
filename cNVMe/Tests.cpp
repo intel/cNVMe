@@ -279,8 +279,7 @@ namespace cnvme
 				{
 					Payload payloadWithData(dataSize);
 					Payload payloadWithDataTooLarge = payloadWithData;
-                    Payload p(512);
-					payloadWithDataTooLarge.append(p);
+					payloadWithDataTooLarge.append(Payload(512));
 					helpers::randomizePayload(payloadWithData);
 					Payload payloadWithoutData(dataSize);
 

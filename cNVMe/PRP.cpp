@@ -26,7 +26,7 @@ namespace cnvme
 		MemoryPageSize = memoryPageSize;
 	}
 
-	PRP::PRP(Payload &payload, UINT_32 memoryPageSize) : PRP()
+	PRP::PRP(const Payload &payload, UINT_32 memoryPageSize) : PRP()
 	{
 		FreeOnScopeLoss = true;
 		NumberOfBytes = payload.getSize();
@@ -145,8 +145,7 @@ namespace cnvme
 			UINT_32 bytesRemaining = NumberOfBytes;
 			// no matter what, prp 1 is used
 			BYTE* prp1Pointer = MEMORY_ADDRESS_TO_8POINTER(PRP1);
-			Payload p(prp1Pointer, std::min(bytesRemaining, MemoryPageSize));
-			payload.append(p);
+			payload.append(Payload(prp1Pointer, std::min(bytesRemaining, MemoryPageSize)));
 			bytesRemaining -= std::min(bytesRemaining, MemoryPageSize);
 			if (bytesRemaining > 0)
 			{
@@ -155,15 +154,13 @@ namespace cnvme
 					std::vector<std::pair<BYTE*, UINT_32>> prpList = getPRPListPointers();
 					for (std::pair<BYTE*, UINT_32> &prp : prpList)
 					{
-						Payload p(prp.first, prp.second);
-						payload.append(p);
+						payload.append(Payload(prp.first, prp.second));
 					}
 				}
 				else
 				{
 					BYTE* prp2Pointer = MEMORY_ADDRESS_TO_8POINTER(PRP2);
-					Payload p2(prp2Pointer, std::min(bytesRemaining, MemoryPageSize));
-					payload.append(p2);
+					payload.append(Payload(prp2Pointer, std::min(bytesRemaining, MemoryPageSize)));
 					bytesRemaining -= std::min(bytesRemaining, MemoryPageSize);
 				}
 			}

@@ -32,7 +32,7 @@ namespace cnvme
 		/// </summary>
 		/// <param name="payload">Payload to copy data to created PRP list</param>
 		/// <param name="memoryPageSize">Size in bytes of a memory page (CC.MPS)</param>
-		PRP(Payload &payload, UINT_32 memoryPageSize);
+		PRP(const Payload &payload, UINT_32 memoryPageSize);
 
 		/// <summary>
 		/// Destructor. Will only deallocate the PRP if it was created by a payload
