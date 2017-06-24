@@ -1,0 +1,11 @@
+version: 1.0.{build}
+configuration:
+- Debu
+- Release
+platform:
+- x86
+- x64
+clone_depth: 10
+build:
+  project: cNVMe.sln
+  verbosity: minimal
