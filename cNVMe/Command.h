@@ -65,7 +65,7 @@ namespace cnvme
 
 			union
 			{
-				UINT_32 DPTR2; // Data Pointer 2
+				UINT_64 DPTR2; // Data Pointer 2
 				struct
 				{
 					UINT_32 DWord8;
