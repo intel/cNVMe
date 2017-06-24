@@ -11,4 +11,4 @@ build:
   project: cNVMe.sln
   verbosity: minimal
 test_script:
-- ps: Get-Childitem -Path . -Filter *cNVMe.exe | % {& $_.FullName}
+- ps: Get-Childitem -Filter cNVMe.exe -Recurse| % {& $_.FullName}
