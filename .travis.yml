@@ -5,5 +5,7 @@ notifications:
   email:
     on_success: never
     on_failure: always
+before_script:
+  - sudo apt-get install build-essential g++ -y
 script:
   - cd cNVMe && ./build.sh && ./a.out
