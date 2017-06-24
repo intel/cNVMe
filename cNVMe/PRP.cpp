@@ -26,7 +26,7 @@ namespace cnvme
 		MemoryPageSize = memoryPageSize;
 	}
 
-	PRP::PRP(Payload &payload, UINT_32 memoryPageSize) : PRP()
+	PRP::PRP(const Payload &payload, UINT_32 memoryPageSize) : PRP()
 	{
 		FreeOnScopeLoss = true;
 		NumberOfBytes = payload.getSize();

@@ -119,7 +119,7 @@ namespace cnvme
 		return NULL;
 	}
 
-	void Payload::append(Payload &otherPayload)
+	void Payload::append(const Payload &otherPayload)
 	{
 		UINT_32 oldSize = getSize();
 		this->resize(oldSize + otherPayload.getSize());

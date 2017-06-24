@@ -100,7 +100,7 @@ namespace cnvme
 		/// Append another payload after this one
 		/// </summary>
 		/// <param name="otherPayload">another payload</param>
-		void append(Payload &otherPayload);
+		void append(const Payload &otherPayload);
 
 	private:
 

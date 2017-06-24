@@ -5,8 +5,10 @@ Logger.cpp - An implementation file for the Logging
 */
 
 #include "Logger.h"
+#include "Types.h"
 
 #include <ctime>
+#include <time.h>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -36,7 +38,7 @@ namespace cnvme
 			if (level <= Level)
 			{
 				Mutex.lock();
-				std::cerr << getCurrentTime() << " - " <<  txt << std::endl;
+				std::cerr << getCurrentTime() << " - " << txt << std::endl;
 				Mutex.unlock();
 			}
 		}
@@ -58,14 +60,21 @@ namespace cnvme
 
 		std::string Logger::getCurrentTime()
 		{
-			time_t rawtime;
-			struct tm timeinfo = { 0 };
 			char buffer[80] = "\0";
 
-			time(&rawtime);
-			localtime_s(&timeinfo , &rawtime);
+			time_t rawtime;
+			struct tm timeinfo = { 0 };
 
+
+			time(&rawtime);
+#ifdef _WIN32
+			// This isn't even spec compliant or match cppreference.com... just a sketchy Microsoft extension ... 'secure'... lol
+			localtime_s(&timeinfo, &rawtime);
+#else // Linux
+			memcpy_s(&timeinfo, sizeof(timeinfo), localtime(&rawtime), sizeof(tm));
+#endif 
 			strftime(buffer, sizeof(buffer), "%d-%m-%Y %I:%M:%S", &timeinfo);
+
 			return buffer;
 		}
 

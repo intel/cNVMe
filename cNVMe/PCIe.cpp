@@ -1064,7 +1064,7 @@ namespace cnvme
 
 		void PCIExpressRegisters::checkForChanges()
 		{
-			auto &regs = getPciExpressRegisters();
+			auto regs = getPciExpressRegisters();
 
 			// If we can't find PXCAP or IFLR was set to 1 do the function level reset
 			if ((!regs.PXCAP) || regs.PXCAP->PXDC.IFLR == 1)
