@@ -8,6 +8,8 @@ ControllerRegisters.cpp - An implementation file for the ControllerRegisters
 #include "ControllerRegisters.h"
 #include "Strings.h"
 
+#include <math.h>
+
 #define CHANGE_CHECK_SLEEP_MS 1 // Used as a way of seeing when interrupts happen
 
 namespace cnvme

@@ -46,7 +46,7 @@ int main()
 	// That should have rung the completion doorbell.
 	COMPLETION_QUEUE_ENTRY* cqe = (COMPLETION_QUEUE_ENTRY*)compQ.getBuffer();
 
-    Payload p(4096);
+	Payload p(4096);
 	PRP prp(p, 4096);
 
 	command++;

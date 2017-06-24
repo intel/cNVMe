@@ -145,7 +145,7 @@ namespace cnvme
 			UINT_32 bytesRemaining = NumberOfBytes;
 			// no matter what, prp 1 is used
 			BYTE* prp1Pointer = MEMORY_ADDRESS_TO_8POINTER(PRP1);
-            Payload p(prp1Pointer, std::min(bytesRemaining, MemoryPageSize));
+			Payload p(prp1Pointer, std::min(bytesRemaining, MemoryPageSize));
 			payload.append(p);
 			bytesRemaining -= std::min(bytesRemaining, MemoryPageSize);
 			if (bytesRemaining > 0)
@@ -155,14 +155,14 @@ namespace cnvme
 					std::vector<std::pair<BYTE*, UINT_32>> prpList = getPRPListPointers();
 					for (std::pair<BYTE*, UINT_32> &prp : prpList)
 					{
-                        Payload p(prp.first, prp.second);
+						Payload p(prp.first, prp.second);
 						payload.append(p);
 					}
 				}
 				else
 				{
 					BYTE* prp2Pointer = MEMORY_ADDRESS_TO_8POINTER(PRP2);
-                    Payload p2(prp2Pointer, std::min(bytesRemaining, MemoryPageSize));
+					Payload p2(prp2Pointer, std::min(bytesRemaining, MemoryPageSize));
 					payload.append(p2);
 					bytesRemaining -= std::min(bytesRemaining, MemoryPageSize);
 				}

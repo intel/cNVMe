@@ -37,7 +37,7 @@ namespace cnvme
 			if (level <= Level)
 			{
 				Mutex.lock();
-				std::cerr << getCurrentTime() << " - " <<  txt << std::endl;
+				std::cerr << getCurrentTime() << " - " << txt << std::endl;
 				Mutex.unlock();
 			}
 		}
@@ -59,17 +59,17 @@ namespace cnvme
 
 		std::string Logger::getCurrentTime()
 		{
-            char buffer[80] = "\0";
-            #ifdef _WIN32
+			char buffer[80] = "\0";
+#ifdef _WIN32
 			time_t rawtime;
 			struct tm timeinfo = { 0 };
-			
+
 
 			time(&rawtime);
-			localtime(&timeinfo , &rawtime);
+			localtime_s(&timeinfo, &rawtime);
 
 			strftime(buffer, sizeof(buffer), "%d-%m-%Y %I:%M:%S", &timeinfo);
-            #endif
+#endif
 			return buffer;
 		}
 
