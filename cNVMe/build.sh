@@ -1,1 +1,1 @@
-g++ *.h *.cpp -w -fpermissive -o a.out -pthread -std=c++11
+g++ *.h *.cpp -w -fpermissive -o cNVMe.out -pthread -std=c++11
