@@ -232,6 +232,13 @@ namespace cnvme
 
 		void Controller::postCompletion(Queue &completionQueue, COMPLETION_QUEUE_ENTRY completionEntry, NVME_COMMAND* command)
 		{
+			COMPLETION_QUEUE_ENTRY* completionQueueList = (COMPLETION_QUEUE_ENTRY*)MEMORY_ADDRESS_TO_8POINTER(completionQueue.getMemoryAddress());
+
+			ASSERT_IF(completionQueueList == nullptr, "completionQueueList cannot be NULL");
+
+			completionQueueList += completionQueue.getIndex(); // Move pointer to correct index
+			LOG_INFO("About to post completion to queue " + std::to_string(completionQueue.getQueueId()) + ". Index " + std::to_string(completionQueue.getIndex()));
+
 			UINT_32 updatedCQIndex = completionQueue.getIndex() + 1;
 			if (updatedCQIndex >= completionQueue.getQueueSize())
 			{
@@ -244,16 +251,9 @@ namespace cnvme
 			completionEntry.SQHD = submissionQueue->getIndex();
 			completionEntry.CID = command->DWord0Breakdown.CID;
 
-			COMPLETION_QUEUE_ENTRY* completionQueueList = (COMPLETION_QUEUE_ENTRY*)MEMORY_ADDRESS_TO_8POINTER(completionQueue.getMemoryAddress());
-
-			ASSERT_IF(completionQueueList == nullptr, "completionQueueList cannot be NULL");
-
-			completionQueueList += completionQueue.getIndex(); // Move pointer to correct index
 			UINT_32 completionQueueMemorySize = completionQueue.getQueueMemorySize();
 			completionQueueMemorySize -= (completionQueue.getIndex() * sizeof(COMPLETION_QUEUE_ENTRY)); // calculate new remaining memory size
 			ASSERT_IF(completionQueueMemorySize < sizeof(COMPLETION_QUEUE_ENTRY), "completionQueueMemorySize must be greater than a single completion queue entry");
-
-			LOG_INFO("About to post completion to queue " + std::to_string(completionQueue.getQueueId()) + ". Index " + std::to_string(completionQueue.getIndex()));
 			memcpy_s(completionQueueList, completionQueueMemorySize, &completionEntry, sizeof(completionEntry)); // Post
 			LOG_INFO(completionEntry.toString());
 
