@@ -4,6 +4,7 @@ This file is part of cNVMe and is released under the MIT License
 Queue.cpp- A implementation file for the NVMe Queues
 */
 
+#include "Command.h"
 #include "Queue.h"
 
 namespace cnvme
@@ -56,6 +57,11 @@ namespace cnvme
 		UINT_64 Queue::getMemoryAddress()
 		{
 			return LinkedMemoryAddress;
+		}
+
+		UINT_32 Queue::getQueueMemorySize()
+		{
+			return getQueueSize() * sizeof(cnvme::command::COMPLETION_QUEUE_ENTRY);
 		}
 
 		Queue * Queue::getMappedQueue()

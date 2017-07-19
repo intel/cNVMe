@@ -74,6 +74,12 @@ namespace cnvme
 			UINT_64 getMemoryAddress();
 
 			/// <summary>
+			/// Returns the assumed size of the complete queue in bytes
+			/// </summary>
+			/// <returns>Size in Bytes</returns>
+			UINT_32 getQueueMemorySize();
+
+			/// <summary>
 			/// Gets a pointer to the mapped queue
 			/// </summary>
 			/// <returns>Pointer to mapped queue</returns>

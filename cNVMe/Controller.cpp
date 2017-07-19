@@ -238,7 +238,6 @@ namespace cnvme
 				updatedCQIndex = 0; // wrap around
 			}
 			completionQueue.setIndex(updatedCQIndex);
-			
 
 			Queue* submissionQueue = completionQueue.getMappedQueue();
 			completionEntry.SQID = submissionQueue->getQueueId();
@@ -250,11 +249,12 @@ namespace cnvme
 			ASSERT_IF(completionQueueList == nullptr, "completionQueueList cannot be NULL");
 
 			completionQueueList += completionQueue.getIndex(); // Move pointer to correct index
+			UINT_32 completionQueueMemorySize = completionQueue.getQueueMemorySize();
+			completionQueueMemorySize -= (completionQueue.getIndex() * sizeof(COMPLETION_QUEUE_ENTRY)); // calculate new remaining memory size
+			ASSERT_IF(completionQueueMemorySize < sizeof(COMPLETION_QUEUE_ENTRY), "completionQueueMemorySize must be greater than a single completion queue entry");
 
 			LOG_INFO("About to post completion to queue " + std::to_string(completionQueue.getQueueId()) + ". Index " + std::to_string(completionQueue.getIndex()));
-
-			memcpy(completionQueueList, &completionEntry, sizeof(completionEntry)); // Post
-
+			memcpy_s(completionQueueList, completionQueueMemorySize, &completionEntry, sizeof(completionEntry)); // Post
 			LOG_INFO(completionEntry.toString());
 
 			// ring doorbell after placing data in completion queue.
