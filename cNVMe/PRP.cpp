@@ -42,7 +42,7 @@ namespace cnvme
 		// We will only allocate the 512 as opposed finding a full page. While here, another oddity is the offset.
 		// I'm not using the offset, it is always 0. Assume that we can always allocate a complete, empty page.
 		
-		memcpy(prp1Pointer, payload.getBuffer(), prp1DataSize);
+		memcpy_s(prp1Pointer, prp1DataSize, payload.getBuffer(), prp1DataSize); //do not copy the whole payload. Just the prp1DataSize.
 
 		bytesRemaining -= prp1DataSize;
 
@@ -54,7 +54,7 @@ namespace cnvme
 			// If the remaining data size is less than a second memory page, just copy to that pointer
 			if (!usesPRPList())
 			{
-				memcpy(prp2Pointer, payload.getBuffer() + MemoryPageSize, \
+				memcpy_s(prp2Pointer, MemoryPageSize, payload.getBuffer() + MemoryPageSize, \
 					std::min(payload.getSize() - MemoryPageSize, MemoryPageSize));
 			}
 			else
@@ -82,7 +82,7 @@ namespace cnvme
 
 						UINT_32 bytesToCopy = std::min(MemoryPageSize, bytesRemaining);
 
-						memcpy(listItem, bufPointer, bytesToCopy);
+						memcpy_s(listItem, MemoryPageSize, bufPointer, bytesToCopy);
 
 						bytesRemaining -= bytesToCopy;
 						bufPointer += bytesToCopy;
