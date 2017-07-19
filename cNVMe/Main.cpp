@@ -21,7 +21,7 @@ int main()
 	Controller co;
 	auto regs = co.getControllerRegisters()->getControllerRegisters();
 
-	// One entry per queue
+	// Two entries per queue
 	regs->AQA.ACQS = 2;
 	regs->AQA.ASQS = 2;
 	Payload subQ(512);

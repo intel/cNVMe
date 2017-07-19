@@ -143,9 +143,6 @@ namespace cnvme
 				return;
 			}
 
-			// Move the internal idea of completion queue index up 1 (with wrapping as needed)
-			theCompletionQueue->setIndex((theCompletionQueue->getIndex() + 1) & theCompletionQueue->getQueueSize());
-
 			UINT_8* subQPointer = (UINT_8*)theSubmissionQueue->getMemoryAddress(); // This is the address of the 64 byte command
 			NVME_COMMAND* command = (NVME_COMMAND*)subQPointer;
 
@@ -235,7 +232,13 @@ namespace cnvme
 
 		void Controller::postCompletion(Queue &completionQueue, COMPLETION_QUEUE_ENTRY completionEntry, NVME_COMMAND* command)
 		{
-			completionQueue.setIndex(completionQueue.getIndex() + 1);
+			UINT_32 updatedCQIndex = completionQueue.getIndex() + 1;
+			if (updatedCQIndex >= completionQueue.getQueueSize())
+			{
+				updatedCQIndex = 0; // wrap around
+			}
+			completionQueue.setIndex(updatedCQIndex);
+			
 
 			Queue* submissionQueue = completionQueue.getMappedQueue();
 			completionEntry.SQID = submissionQueue->getQueueId();
@@ -243,7 +246,12 @@ namespace cnvme
 			completionEntry.CID = command->DWord0Breakdown.CID;
 
 			COMPLETION_QUEUE_ENTRY* completionQueueList = (COMPLETION_QUEUE_ENTRY*)MEMORY_ADDRESS_TO_8POINTER(completionQueue.getMemoryAddress());
+
+			ASSERT_IF(completionQueueList == nullptr, "completionQueueList cannot be NULL");
+
 			completionQueueList += completionQueue.getIndex(); // Move pointer to correct index
+
+			LOG_INFO("About to post completion to queue " + std::to_string(completionQueue.getQueueId()) + ". Index " + std::to_string(completionQueue.getIndex()));
 
 			memcpy(completionQueueList, &completionEntry, sizeof(completionEntry)); // Post
 

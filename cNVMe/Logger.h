@@ -17,7 +17,7 @@ Logger.h - A header file for the Logging
 #define LOG_SET_LEVEL(level) cnvme::logging::theLogger.setLevel((cnvme::logging::LOGGING_LEVEL)level);
 #define ASSERT(txt) cnvme::logging::theLogger.setStatus(std::string(__func__) + "():" \
 + std::to_string(__LINE__) + " - " + std::string(txt));
-
+#define ASSERT_IF(cond, txt) if (cond){ASSERT(txt);};
 #define CLEARED_STATUS "Healthy"
 
 namespace cnvme
