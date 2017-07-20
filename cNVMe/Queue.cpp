@@ -59,6 +59,11 @@ namespace cnvme
 			return LinkedMemoryAddress;
 		}
 
+		void Queue::setMemoryAddress(UINT_64 memoryAddress)
+		{
+			LinkedMemoryAddress = memoryAddress;
+		}
+
 		UINT_32 Queue::getQueueMemorySize()
 		{
 			return getQueueSize() * sizeof(cnvme::command::COMPLETION_QUEUE_ENTRY);

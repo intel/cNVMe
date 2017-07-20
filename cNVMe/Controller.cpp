@@ -85,6 +85,13 @@ namespace cnvme
 			{
 				ValidSubmissionQueues.push_back(Queue(controllerRegisters->AQA.ASQS + 1, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].SQTDBL.SQT, controllerRegisters->ASQ.ASQB));
 			}
+			else
+			{
+				// Check if ASQB matches ValidSubmissionQueues
+				Queue* adminQueue = getQueueWithId(ValidSubmissionQueues, ADMIN_QUEUE_ID);
+				ASSERT_IF(!adminQueue, "Couldn't find the admin submission queue! Though ValidSubmissionQueue size is not 0.");
+				adminQueue->setMemoryAddress(controllerRegisters->ASQ.ASQB);
+			}
 
 			if (controllerRegisters->ACQ.ACQB == 0)
 			{
@@ -97,7 +104,17 @@ namespace cnvme
 				Queue AdminCompletionQueue(controllerRegisters->AQA.ACQS + 1, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].CQHDBL.CQH, controllerRegisters->ACQ.ACQB);
 				AdminCompletionQueue.setMappedQueue(&ValidSubmissionQueues[ADMIN_QUEUE_ID]); // Map CQ -> SQ
 				ValidCompletionQueues.push_back(AdminCompletionQueue);
-				ValidSubmissionQueues[0].setMappedQueue(&ValidCompletionQueues[ADMIN_QUEUE_ID]); // Map SQ -> CQ
+
+				Queue* adminSubQ = getQueueWithId(ValidSubmissionQueues, ADMIN_QUEUE_ID);
+				ASSERT_IF(!adminSubQ, "Couldn't find the admin submission queue, to link it to the admin completion queue!");
+				adminSubQ->setMappedQueue(&ValidCompletionQueues[ADMIN_QUEUE_ID]); // Map SQ -> CQ
+			}
+			else
+			{
+				// Check if ACQB matches ValidCompletionQueues
+				Queue* adminQueue = getQueueWithId(ValidCompletionQueues, ADMIN_QUEUE_ID);
+				ASSERT_IF(!adminQueue, "Couldn't find the admin completion queue! Though ValidCompletionQueues size is not 0.");
+				adminQueue->setMemoryAddress(controllerRegisters->ACQ.ACQB);
 			}
 
 			// Made it this far, we have at least the admin queue
@@ -307,6 +324,9 @@ namespace cnvme
 					ValidCompletionQueues.erase(ValidCompletionQueues.begin() + i);
 				}
 			}
+
+			// Clear the SubQ to CID listing.
+			this->SubmissionQueueIdToCommandIdentifiers.clear();
 		}
 
 		void Controller::waitForChangeLoop()

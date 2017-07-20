@@ -74,6 +74,11 @@ namespace cnvme
 			UINT_64 getMemoryAddress();
 
 			/// <summary>
+			/// Sets the memory address of the queue.
+			/// </summary>
+			void setMemoryAddress(UINT_64 memoryAddress);
+
+			/// <summary>
 			/// Returns the assumed size of the complete queue in bytes
 			/// </summary>
 			/// <returns>Size in Bytes</returns>
