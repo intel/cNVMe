@@ -75,11 +75,6 @@ namespace cnvme
 				return; // Not ready... Don't do anything.
 			}
 
-			if (controllerRegisters->AQA.ACQS == 0 || controllerRegisters->AQA.ASQS == 0)
-			{
-				return; // Don't have admin completion / submission queue
-			}
-
 			if (controllerRegisters->ASQ.ASQB == 0)
 			{
 				return; // Don't have a admin submission queue address
@@ -88,7 +83,7 @@ namespace cnvme
 			// Now that we have a SQ address, make it valid
 			if (ValidSubmissionQueues.size() == 0)
 			{
-				ValidSubmissionQueues.push_back(Queue(controllerRegisters->AQA.ASQS, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].SQTDBL.SQT, controllerRegisters->ASQ.ASQB));
+				ValidSubmissionQueues.push_back(Queue(controllerRegisters->AQA.ASQS + 1, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].SQTDBL.SQT, controllerRegisters->ASQ.ASQB));
 			}
 
 			if (controllerRegisters->ACQ.ACQB == 0)
@@ -99,7 +94,7 @@ namespace cnvme
 			// Now that we have a CQ address, make it valid
 			if (ValidCompletionQueues.size() == 0)
 			{
-				Queue AdminCompletionQueue(controllerRegisters->AQA.ACQS, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].CQHDBL.CQH, controllerRegisters->ACQ.ACQB);
+				Queue AdminCompletionQueue(controllerRegisters->AQA.ACQS + 1, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].CQHDBL.CQH, controllerRegisters->ACQ.ACQB);
 				AdminCompletionQueue.setMappedQueue(&ValidSubmissionQueues[ADMIN_QUEUE_ID]); // Map CQ -> SQ
 				ValidCompletionQueues.push_back(AdminCompletionQueue);
 				ValidSubmissionQueues[0].setMappedQueue(&ValidCompletionQueues[ADMIN_QUEUE_ID]); // Map SQ -> CQ
@@ -149,7 +144,7 @@ namespace cnvme
 			// At this point the index better be valid. The 0 means we wrapped around.
 			// Index == 0 means that we need to look at the last SQ entry.
 			if (theSubmissionQueue->getIndex() == 0)
-			{     
+			{
 				command += theSubmissionQueue->getQueueSize() - 1;
 			}
 

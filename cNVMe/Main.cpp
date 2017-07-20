@@ -22,8 +22,8 @@ int main()
 	auto regs = co.getControllerRegisters()->getControllerRegisters();
 
 	// Two entries per queue
-	regs->AQA.ACQS = 2;
-	regs->AQA.ASQS = 2;
+	regs->AQA.ACQS = 1;	 // 0-based
+	regs->AQA.ASQS = 1;	 // 0-based
 	Payload subQ(512);
 	Payload compQ(512);
 	regs->ASQ.ASQB = subQ.getMemoryAddress();
