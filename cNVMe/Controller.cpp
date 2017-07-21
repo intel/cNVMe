@@ -33,6 +33,8 @@ namespace cnvme
 			DoorbellWatcher.start();
 #endif
 
+			PhaseTag = true; // flip me after wrapping around the subQ
+
 			// Todo: in the end, we'll need some form of media bank
 		}
 
@@ -245,6 +247,14 @@ namespace cnvme
 			completionEntry.SQID = submissionQueue->getQueueId();
 			completionEntry.SQHD = submissionQueue->getHeadPointer();
 			completionEntry.CID = command->DWord0Breakdown.CID;
+
+			if (completionQueue.getHeadPointer() == 0)
+			{
+				PhaseTag = !PhaseTag;
+				LOG_INFO("Inverting Phase Tag. Now Phase Tag == " + strings::toString(PhaseTag));
+			}
+
+			completionEntry.P = (UINT_16)PhaseTag;
 
 			UINT_32 completionQueueMemorySize = completionQueue.getQueueMemorySize();
 			completionQueueMemorySize -= (completionQueue.getHeadPointer() * sizeof(COMPLETION_QUEUE_ENTRY)); // calculate new remaining memory size

@@ -115,7 +115,8 @@ namespace cnvme
 
 			/// <summary>
 			/// Posts the given completion to the given queue.
-			/// Fills in sqid, sqhd, cid
+			/// Fills in sqid, sqhd, cid.
+			/// Also can flip the Phase Tag if needed.
 			/// </summary>
 			/// <param name="completionQueue">Queue to post to</param>
 			/// <param name="completionEntry">Entry to post to the queue</param>
@@ -129,6 +130,11 @@ namespace cnvme
 			/// <param name="submissionQueueId">The sub queue id the command was sent to</param>
 			/// <returns>true if valid, False otherwise.</returns>
 			bool isValidCommandIdentifier(UINT_16 commandId, UINT_16 submissionQueueId);
+
+			/// <summary>
+			/// Corresponds with the phase tag in the completion queue entry
+			/// </summary>
+			bool PhaseTag;
 		};
 	}
 }
