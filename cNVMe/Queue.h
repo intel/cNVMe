@@ -56,16 +56,30 @@ namespace cnvme
 			UINT_16* getDoorbell();
 
 			/// <summary>
-			/// Gets the current index
+			/// Get the head pointer
 			/// </summary>
-			/// <returns>index</returns>
-			UINT_32 getIndex() const;
+			/// <returns>Gets the head pointer</returns>
+			UINT_32 getHeadPointer();
 
 			/// <summary>
-			/// Sets the current index
+			/// Get the tail pointer
 			/// </summary>
-			/// <param name="newIndex">the new index</param>
-			void setIndex(UINT_32 newIndex);
+			/// <returns>Gets the tail pointer</returns>
+			UINT_32 getTailPointer();
+
+			/// <summary>
+			/// Sets the tail pointer index
+			/// </summary>
+			/// <param name="newIndex">the new index</param>	 
+			/// <returns>True if successful. False if the new index is out of bounds</returns>
+			bool setTailPointer(UINT_32 newIndex);
+
+			/// <summary>
+			/// Add 1 to the Head Pointer to get it closer to the tail
+			/// Will ASSERT if incremented past the tail.
+			/// </summary>
+			/// <returns>Distance to tail from the new head</returns>
+			UINT_16 incrementAndGetHeadCloserToTail();
 
 			/// <summary>
 			/// Returns the address of the linked memory
@@ -114,9 +128,14 @@ namespace cnvme
 			UINT_16* Doorbell;
 
 			/// <summary>
-			/// Current Index in the queue
+			/// Head pointer of the queue
 			/// </summary>
-			UINT_32 Index;
+			UINT_32 HeadPointer;
+
+			/// <summary>
+			/// Tail pointer of the queue
+			/// </summary>
+			UINT_32 TailPointer;
 
 			/// <summary>
 			/// The memory for this queue to use.

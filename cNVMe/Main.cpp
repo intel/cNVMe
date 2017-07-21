@@ -21,11 +21,11 @@ int main()
 	Controller co;
 	auto regs = co.getControllerRegisters()->getControllerRegisters();
 
-	// Two entries per queue
-	regs->AQA.ACQS = 1;	 // 0-based
-	regs->AQA.ASQS = 1;	 // 0-based
-	Payload subQ(512);
-	Payload compQ(512);
+	// Five entries per queue
+	regs->AQA.ACQS = 4;	 // 0-based
+	regs->AQA.ASQS = 4;	 // 0-based
+	Payload subQ(64 * (regs->AQA.ASQS + 1));
+	Payload compQ(64 * (regs->AQA.ACQS + 1));
 	regs->ASQ.ASQB = subQ.getMemoryAddress();
 	regs->ACQ.ACQB = compQ.getMemoryAddress();
 
@@ -33,6 +33,26 @@ int main()
 	regs->CC.EN = 1;
 	co.getControllerRegisters()->waitForChangeLoop(); // Wait for enable
 
+	for (auto i = 0; i < 11; i++)
+	{
+		NVME_COMMAND* command = (NVME_COMMAND*)subQ.getBuffer();
+		int j = i;
+		j %= (regs->AQA.ASQS + 1);
+		command += j;
+		command->DWord0Breakdown.OPC = 0x18; // Send keep alive
+		command->DWord1 = i;
+		command->DWord0Breakdown.CID = i; // Don't want to hit invalid CID/SQID combo
+
+		auto queueDoorbells = co.getControllerRegisters()->getQueueDoorbells();
+		if (j % 3 == 0)
+		{
+			queueDoorbells[0].SQTDBL.SQT = (j + 1) % (regs->AQA.ASQS + 1);
+			//soon after this, we see the DWs come up from the logging 
+		}
+		co.waitForChangeLoop();
+	}
+
+	/*
 	NVME_COMMAND* command = (NVME_COMMAND*)subQ.getBuffer();
 	command->DWord0Breakdown.OPC = 0x18; // Send keep alive
 	command->DWord1 = 0x1;
@@ -65,7 +85,7 @@ int main()
 	command = (NVME_COMMAND*)subQ.getBuffer();
 	command->DWord0Breakdown.OPC = 0x18; // Send keep alive
 	command->DWord1 = 0x1;
-	command->DWord0Breakdown.CID = 1; // Don't want to hit invalid CID/SQID combo
+	command->DWord0Breakdown.CID = 2; // Don't want to hit invalid CID/SQID combo
 
 	queueDoorbells[0].SQTDBL.SQT = 1;
 	//soon after this, we see the DWs come up from the logging 
@@ -74,7 +94,7 @@ int main()
 
 
 	Payload test = prp.getPayloadCopy();
-
+	*/
 
 	LOG_SET_LEVEL(1);
 

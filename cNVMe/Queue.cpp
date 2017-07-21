@@ -16,7 +16,8 @@ namespace cnvme
 			QueueSize = 0;
 			QueueId = 0;
 			Doorbell = nullptr;
-			Index = 0; // Queue start at 0
+			HeadPointer = 0; // Queue start at 0
+			TailPointer = 0; // Queue start at 0
 			LinkedMemoryAddress = 0;
 			MappedQueue = nullptr;
 		}
@@ -44,14 +45,39 @@ namespace cnvme
 			return Doorbell;
 		}
 
-		UINT_32 Queue::getIndex() const
+		UINT_32 Queue::getHeadPointer()
 		{
-			return Index;
+			return HeadPointer;
 		}
 
-		void Queue::setIndex(UINT_32 newIndex)
+		UINT_32 Queue::getTailPointer()
 		{
-			Index = newIndex;
+			return TailPointer;
+		}
+
+		bool Queue::setTailPointer(UINT_32 newIndex)
+		{
+			if (newIndex < getQueueSize())
+			{
+				TailPointer = newIndex;
+				return true;
+			}
+
+			// Should trigger AER.
+			return false;
+		}
+
+		UINT_16 Queue::incrementAndGetHeadCloserToTail()
+		{
+			ASSERT_IF(HeadPointer == TailPointer, "HeadPointer == TailPointer. Should not be incrementing.");
+
+			HeadPointer++;
+			HeadPointer %= getQueueSize();
+			if (HeadPointer > TailPointer)
+			{
+				return getQueueSize() - HeadPointer + TailPointer; // Wrapped around
+			}
+			return TailPointer - HeadPointer;                      // Not wrapped around
 		}
 
 		UINT_64 Queue::getMemoryAddress()

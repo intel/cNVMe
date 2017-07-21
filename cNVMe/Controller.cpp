@@ -69,7 +69,6 @@ namespace cnvme
 			// Admin doorbell is right after the Controller Registers... though we may not have it yet
 			controller::registers::QUEUE_DOORBELLS* doorbells = getControllerRegisters()->getQueueDoorbells();
 
-
 			if (controllerRegisters->CSTS.RDY == 0)
 			{
 				return; // Not ready... Don't do anything.
@@ -121,51 +120,42 @@ namespace cnvme
 			// This is round-robin right now
 			for (auto &sq : ValidSubmissionQueues)
 			{
-				UINT_16 sqid = sq.getQueueId();
-				UINT_16 sqidHead = sq.getIndex();
-				UINT_16 setIndex = doorbells[sqid].SQTDBL.SQT;
-				if (setIndex != sqidHead) // Index moved, doorbell has rung
+				if (doorbells[sq.getQueueId()].SQTDBL.SQT != sq.getTailPointer())
 				{
-					if (setIndex > sq.getQueueSize())
+					if (!sq.setTailPointer(doorbells[sq.getQueueId()].SQTDBL.SQT)) // Set our internal Queue instance's tail
 					{
-						assert(0); // Invalid doorbell rang. I think this would trigger an async event.
+						LOG_ERROR("Should trigger AER since the Tail pointer given was invalid"); // Stop early.
+						continue;
+					}
+					else
+					{
+						sq.getMappedQueue()->setTailPointer(sq.getTailPointer());  // Set in internal CQ as well
 					}
 
-					// Update my record of the Index
-					sq.setIndex(setIndex);
-
-					processCommandAndPostCompletion(sqid, setIndex); // This calls the command
+					while (sq.getHeadPointer() != sq.getTailPointer())
+					{
+						processCommandAndPostCompletion(sq);
+						sq.incrementAndGetHeadCloserToTail();
+					}
 				}
 			}
 		}
 
-		void Controller::processCommandAndPostCompletion(UINT_16 submissionQueueId, UINT_16 submissionQueueIndex)
+		void Controller::processCommandAndPostCompletion(Queue &submissionQueue)
 		{
-			Queue* theSubmissionQueue = getQueueWithId(ValidSubmissionQueues, submissionQueueId);
-			if (theSubmissionQueue == nullptr)
-			{
-				LOG_ERROR("Somehow we were unable to find a submission queue matching: " + std::to_string(submissionQueueId));
-				return;
-			}
-
-			Queue* theCompletionQueue = theSubmissionQueue->getMappedQueue();
+			Queue* theCompletionQueue = submissionQueue.getMappedQueue();
 			if (theCompletionQueue == nullptr)
 			{
-				LOG_ERROR("Submission Queue " + std::to_string(submissionQueueId) + " doesn't have a mapped completion queue. And yet it recieved a command.");
+				LOG_ERROR("Submission Queue " + std::to_string(submissionQueue.getQueueId()) + " doesn't have a mapped completion queue. And yet it recieved a command.");
 				return;
 			}
 
-			UINT_8* subQPointer = (UINT_8*)theSubmissionQueue->getMemoryAddress(); // This is the address of the 64 byte command
+			UINT_8* subQPointer = (UINT_8*)submissionQueue.getMemoryAddress(); // This is the address of the 64 byte command
 			NVME_COMMAND* command = (NVME_COMMAND*)subQPointer;
 
-			// At this point the index better be valid. The 0 means we wrapped around.
-			// Index == 0 means that we need to look at the last SQ entry.
-			if (theSubmissionQueue->getIndex() == 0)
-			{
-				command += theSubmissionQueue->getQueueSize() - 1;
-			}
+			command += submissionQueue.getHeadPointer();            // Make sure we get the correct command
 
-			if (!isValidCommandIdentifier(command->DWord0Breakdown.CID, submissionQueueId))
+			if (!isValidCommandIdentifier(command->DWord0Breakdown.CID, submissionQueue.getQueueId()))
 			{
 				COMPLETION_QUEUE_ENTRY cqe = { 0 };
 				cqe.SC = constants::status::codes::generic::COMMAND_ID_CONFLICT; // Command ID Conflict 
@@ -186,7 +176,7 @@ namespace cnvme
 				return;
 			}
 
-			if (submissionQueueId == ADMIN_QUEUE_ID)
+			if (submissionQueue.getQueueId() == ADMIN_QUEUE_ID)
 			{
 				// Admin command
 				LOG_INFO(command->toString());
@@ -245,33 +235,28 @@ namespace cnvme
 		void Controller::postCompletion(Queue &completionQueue, COMPLETION_QUEUE_ENTRY completionEntry, NVME_COMMAND* command)
 		{
 			COMPLETION_QUEUE_ENTRY* completionQueueList = (COMPLETION_QUEUE_ENTRY*)MEMORY_ADDRESS_TO_8POINTER(completionQueue.getMemoryAddress());
-
 			ASSERT_IF(completionQueueList == nullptr, "completionQueueList cannot be NULL");
+			LOG_INFO("About to post completion to queue " + std::to_string(completionQueue.getQueueId()) + ". Head (just before moving): " + 
+				std::to_string(completionQueue.getHeadPointer()) + ". Tail: " + std::to_string(completionQueue.getTailPointer()));
 
-			completionQueueList += completionQueue.getIndex(); // Move pointer to correct index
-			LOG_INFO("About to post completion to queue " + std::to_string(completionQueue.getQueueId()) + ". Index " + std::to_string(completionQueue.getIndex()));
-
-			UINT_32 updatedCQIndex = completionQueue.getIndex() + 1;
-			if (updatedCQIndex >= completionQueue.getQueueSize())
-			{
-				updatedCQIndex = 0; // wrap around
-			}
-			completionQueue.setIndex(updatedCQIndex);
+			completionQueueList += completionQueue.getHeadPointer(); // Move pointer to correct index
 
 			Queue* submissionQueue = completionQueue.getMappedQueue();
 			completionEntry.SQID = submissionQueue->getQueueId();
-			completionEntry.SQHD = submissionQueue->getIndex();
+			completionEntry.SQHD = submissionQueue->getHeadPointer();
 			completionEntry.CID = command->DWord0Breakdown.CID;
 
 			UINT_32 completionQueueMemorySize = completionQueue.getQueueMemorySize();
-			completionQueueMemorySize -= (completionQueue.getIndex() * sizeof(COMPLETION_QUEUE_ENTRY)); // calculate new remaining memory size
+			completionQueueMemorySize -= (completionQueue.getHeadPointer() * sizeof(COMPLETION_QUEUE_ENTRY)); // calculate new remaining memory size
 			ASSERT_IF(completionQueueMemorySize < sizeof(COMPLETION_QUEUE_ENTRY), "completionQueueMemorySize must be greater than a single completion queue entry");
 			memcpy_s(completionQueueList, completionQueueMemorySize, &completionEntry, sizeof(completionEntry)); // Post
 			LOG_INFO(completionEntry.toString());
 
+			completionQueue.incrementAndGetHeadCloserToTail(); // Move up CQ head
+
 			// ring doorbell after placing data in completion queue.
 			UINT_16* dbell = completionQueue.getDoorbell();
-			dbell[0] = completionQueue.getIndex();
+			dbell[0] = completionQueue.getHeadPointer();
 		}
 
 		bool Controller::isValidCommandIdentifier(UINT_16 commandId, UINT_16 submissionQueueId)

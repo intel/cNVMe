@@ -99,11 +99,11 @@ namespace cnvme
 			void checkForChanges();
 
 			/// <summary>
-			/// This call will take the command of the given submission queue id and ring the completion doorbell upon completion
+			/// This call will take the command of the given submission queue, process the command and
+			/// pass back completion via the completion queue doorbell.
 			/// </summary>
-			/// <param name="submissionQueueId">The submission queue id</param>
-			/// <param name="submissionQueueIndex">The submission index for this command</param>
-			void processCommandAndPostCompletion(UINT_16 submissionQueueId, UINT_16 submissionQueueIndex);
+			/// <param name="submissionQueue">The internal submission queue object for this command</param>
+			void processCommandAndPostCompletion(Queue &submissionQueue);
 
 			/// <summary>
 			/// Returns a Queue matching the given id
