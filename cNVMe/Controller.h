@@ -132,9 +132,9 @@ namespace cnvme
 			bool isValidCommandIdentifier(UINT_16 commandId, UINT_16 submissionQueueId);
 
 			/// <summary>
-			/// Corresponds with the phase tag in the completion queue entry
+			/// Corresponds with the phase tag in the completion queue entry for a queue
 			/// </summary>
-			bool PhaseTag;
+			std::map<UINT_16, bool> QueueToPhaseTag;
 		};
 	}
 }

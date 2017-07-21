@@ -33,8 +33,6 @@ namespace cnvme
 			DoorbellWatcher.start();
 #endif
 
-			PhaseTag = true; // flip me after wrapping around the subQ
-
 			// Todo: in the end, we'll need some form of media bank
 		}
 
@@ -248,13 +246,26 @@ namespace cnvme
 			completionEntry.SQHD = submissionQueue->getHeadPointer();
 			completionEntry.CID = command->DWord0Breakdown.CID;
 
-			if (completionQueue.getHeadPointer() == 0)
+			bool phaseTag = false;
+			auto node = QueueToPhaseTag.find(submissionQueue->getQueueId());
+			if (node == QueueToPhaseTag.end())
 			{
-				PhaseTag = !PhaseTag;
-				LOG_INFO("Inverting Phase Tag. Now Phase Tag == " + strings::toString(PhaseTag));
+				QueueToPhaseTag[submissionQueue->getQueueId()] = false;    // start at false if not there... though it will flip to true below
+			}
+			else
+			{
+				phaseTag = QueueToPhaseTag[submissionQueue->getQueueId()]; // use existing
 			}
 
-			completionEntry.P = (UINT_16)PhaseTag;
+			if (completionQueue.getHeadPointer() == 0) // need to flip
+			{
+				bool oldPhaseTag = QueueToPhaseTag[submissionQueue->getQueueId()];
+				QueueToPhaseTag[submissionQueue->getQueueId()] = !oldPhaseTag;
+				LOG_INFO("Inverting Phase Tag. Now Phase Tag == " + strings::toString(!oldPhaseTag));
+			}
+			phaseTag = QueueToPhaseTag[submissionQueue->getQueueId()]; // should be ready to be used (and flipped if needed).
+
+			completionEntry.P = (UINT_16)phaseTag;
 
 			UINT_32 completionQueueMemorySize = completionQueue.getQueueMemorySize();
 			completionQueueMemorySize -= (completionQueue.getHeadPointer() * sizeof(COMPLETION_QUEUE_ENTRY)); // calculate new remaining memory size
@@ -322,6 +333,9 @@ namespace cnvme
 
 			// Clear the SubQ to CID listing.
 			this->SubmissionQueueIdToCommandIdentifiers.clear();
+
+			// Clear phase tags.
+			this->QueueToPhaseTag.clear();
 		}
 
 		void Controller::waitForChangeLoop()
