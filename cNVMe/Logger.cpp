@@ -20,6 +20,7 @@ namespace cnvme
 		Logger::Logger()
 		{
 			Level = SILENT;
+			AssertLoud = true;
 			clearStatus();
 		}
 
@@ -58,6 +59,11 @@ namespace cnvme
 			setStatus(CLEARED_STATUS);
 		}
 
+		void Logger::setAssertLoud(bool assertLoud)
+		{
+			AssertLoud = assertLoud;
+		}
+
 		std::string Logger::getCurrentTime()
 		{
 			char buffer[80] = "\0";
@@ -78,7 +84,30 @@ namespace cnvme
 			return buffer;
 		}
 
+		void Logger::_assert(std::string funcName, std::string txt)
+		{
+			std::string finalTxt = "cNVMe ASSERT! " + funcName + "():" + std::to_string(__LINE__) + " - " + std::string(txt);
+			cnvme::logging::theLogger.setStatus(finalTxt);
+			if (AssertLoud)
+			{
+				std::cerr << finalTxt << std::endl;
+			}
+
+#ifdef _DEBUG // only throw on debug builds
+			throw std::exception(finalTxt.c_str());
+#endif // _DEBUG
+		}
+
+		void Logger::_assert_if(std::string funcName, bool condition, std::string txt)
+		{
+			if (condition)
+			{
+				_assert(funcName, txt);
+			}
+		}
+
 		Logger theLogger;
+
+
 	}
 }
-

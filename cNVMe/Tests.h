@@ -90,5 +90,15 @@ namespace cnvme
 			/// </summary>
 			bool testDataIntoExistingPRP();
 		}
+
+		namespace logging
+		{
+#ifdef _DEBUG
+			/// <summary>
+			/// Tests that on a debug build we can assert and catch the C++ exception.
+			/// </summary>
+			bool testAsserting();
+#endif // _DEBUG
+		}
 	}
 }

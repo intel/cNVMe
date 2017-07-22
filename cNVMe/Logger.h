@@ -6,6 +6,7 @@ Logger.h - A header file for the Logging
 
 #pragma once
 
+#include <iostream>
 #include <mutex>
 #include <string>
 
@@ -15,9 +16,8 @@ Logger.h - A header file for the Logging
 #define LOG_INFO(txt) cnvme::logging::theLogger.log(std::string(__func__) + "():" \
 + std::to_string(__LINE__) + " - [" + cnvme::logging::Logger::loggingLevelToString(cnvme::logging::INFO) + "] - " + txt, cnvme::logging::INFO);
 #define LOG_SET_LEVEL(level) cnvme::logging::theLogger.setLevel((cnvme::logging::LOGGING_LEVEL)level);
-#define ASSERT(txt) cnvme::logging::theLogger.setStatus(std::string(__func__) + "():" \
-+ std::to_string(__LINE__) + " - " + std::string(txt));
-#define ASSERT_IF(cond, txt) if (cond){ASSERT(txt);};
+#define ASSERT(txt) cnvme::logging::theLogger._assert(std::string(__func__), txt);
+#define ASSERT_IF(cond, txt) cnvme::logging::theLogger._assert_if(std::string(__func__), cond, txt);
 #define CLEARED_STATUS "Healthy"
 
 namespace cnvme
@@ -95,6 +95,24 @@ namespace cnvme
 			/// </summary>
 			void clearStatus();
 
+			/// <summary>
+			/// Don't set this... normally. Will silence asserts in terms of printing to stderr
+			/// </summary>
+			/// <param name="assertLoud">True if asserts should be loud, False otherwise</param>
+			void setAssertLoud(bool assertLoud);
+
+			/// <summary>
+			/// Cause an assert with the given txt
+			/// Use the ASSERT macro. Do not call directly
+			/// </summary>
+			void _assert(std::string funcName, std::string txt);
+
+			/// <summary>
+			/// Asserts if a condition is met
+			/// Use the ASSERT_IF macro. do not call directly
+			/// </summary>
+			void _assert_if(std::string funcName, bool condition, std::string txt);
+
 		private:
 			/// <summary>
 			/// Current level of logging
@@ -115,11 +133,19 @@ namespace cnvme
 			/// Current status
 			/// </summary>
 			std::string Status;
+
+			/// <summary>
+			/// True if asserts print to stderr
+			/// </summary>
+			bool AssertLoud;
 		};
 
 		/// <summary>
 		/// Global logger, used for logging
 		/// </summary>
 		extern Logger theLogger;
+
 	}
 }
+
+

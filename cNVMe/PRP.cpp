@@ -197,7 +197,7 @@ namespace cnvme
 	{
 		if (payload.getSize() > getNumBytes())
 		{
-			ASSERT("Given payload is larger than the allocated PRPs");
+			LOG_ERROR("Given payload is larger than the allocated PRPs");
 			return false;
 		}
 

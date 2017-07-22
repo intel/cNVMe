@@ -37,6 +37,8 @@ namespace cnvme
 			{
 				std::vector<std::future<bool>> results;
 
+				cnvme::logging::theLogger.setAssertLoud(false);
+
 				// Run all tests 100 times, multi-threaded
 				for (int i = 0; i < 100; i++)
 				{
@@ -46,6 +48,11 @@ namespace cnvme
 					results.push_back(std::async(commands::testNVMeCommandParsing));
 					results.push_back(std::async(prp::testDifferentPRPSizes));
 					results.push_back(std::async(prp::testDataIntoExistingPRP));
+
+#if _DEBUG
+					results.push_back(std::async(logging::testAsserting));
+#endif // _DEBUG
+
 				}
 
 				bool retVal = true;
@@ -53,6 +60,8 @@ namespace cnvme
 				{
 					retVal &= i.get();
 				}
+
+				cnvme::logging::theLogger.setAssertLoud(true);
 
 				return retVal;
 			}
@@ -299,6 +308,36 @@ namespace cnvme
 
 				return true;
 			}
+		}
+
+		namespace logging
+		{
+#ifdef _DEBUG
+			bool testAsserting()
+			{
+				bool retVal = false;
+				try
+				{
+					ASSERT("asserting.");
+				}
+				catch (...)
+				{
+					retVal = true;
+				}
+				FAIL_IF(!retVal, "")
+
+				try
+				{
+					ASSERT_IF(true, "Should assert");
+				}
+				catch (...)
+				{
+					retVal = true;
+				}
+
+				return true;
+			}
+#endif // _DEBUG
 		}
 	}
 }
