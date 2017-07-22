@@ -10,6 +10,7 @@ Logger.h - A header file for the Logging
 #include <mutex>
 #include <set>
 #include <string>
+#include <thread>
 
 // Macros to make this easier to work with
 #define LOG_ERROR(txt) cnvme::logging::theLogger.log(std::string(__func__) + "():" \
@@ -108,21 +109,21 @@ namespace cnvme
 			/// </summary>
 			/// <param name="assertQuiet">True if asserts should be quiet, False otherwise</param>
 			/// <param name="threadId">current thread id</param>
-			void setAssertQuiet(bool assertQuiet, std::thread::id& threadId);
+			void setAssertQuiet(bool assertQuiet, const std::thread::id& threadId);
 
 			/// <summary>
 			/// Add a thread to hide printing for
 			/// Don't do this. Use FAIL_IF_HIDE_LOG in tests.cpp only.
 			/// </summary>
 			/// <param name="hiddenThread">Thread to hide printing for</param>
-			void addHiddenThread(std::thread::id& hiddenThread);
+			void addHiddenThread(const std::thread::id& hiddenThread);
 
 			/// <summary>
 			/// Remove a thread from hiding printing for
 			/// /// Don't do this. Use FAIL_IF_HIDE_LOG in tests.cpp only.
 			/// </summary>
 			/// <param name="hiddenThread">Thread to remove hidden printing for</param>
-			void removeHiddenThread(std::thread::id& hiddenThread);
+			void removeHiddenThread(const std::thread::id& hiddenThread);
 
 			/// <summary>
 			/// Cause an assert with the given txt

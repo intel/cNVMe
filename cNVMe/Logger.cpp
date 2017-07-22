@@ -59,7 +59,7 @@ namespace cnvme
 			setStatus(CLEARED_STATUS);
 		}
 
-		void Logger::setAssertQuiet(bool assertQuiet, std::thread::id& threadId)
+		void Logger::setAssertQuiet(bool assertQuiet, const std::thread::id& threadId)
 		{
 			Mutex.lock();
 			if (assertQuiet)
@@ -77,14 +77,14 @@ namespace cnvme
 			Mutex.unlock();
 		}
 
-		void Logger::addHiddenThread(std::thread::id& hiddenThread)
+		void Logger::addHiddenThread(const std::thread::id& hiddenThread)
 		{
 			Mutex.lock();
 			HiddenThreads.insert(hiddenThread);
 			Mutex.unlock();
 		}
 
-		void Logger::removeHiddenThread(std::thread::id& hiddenThread)
+		void Logger::removeHiddenThread(const std::thread::id& hiddenThread)
 		{
 			Mutex.lock();
 			auto itr = HiddenThreads.find(hiddenThread);
