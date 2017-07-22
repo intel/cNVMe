@@ -95,7 +95,7 @@ int main()
 	Payload test = prp.getPayloadCopy();
 	*/
 
-	LOG_SET_LEVEL(0);
+	LOG_SET_LEVEL(1);
 
 	bool testsPassing = cnvme::tests::helpers::runTests();
 	std::cout << "Tests passing: " << strings::toString(testsPassing) << std::endl;

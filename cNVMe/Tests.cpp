@@ -10,8 +10,9 @@ Tests.cpp - An implementation file for all unit testing
 #include <future>
 
 // Macros to fail a test
-#define FAIL(s) LOG_ERROR(s);return false;
+#define FAIL(s) LOG_ERROR(s); return false;
 #define FAIL_IF(b, s); if (b) {FAIL(s);}
+#define FAIL_IF_AND_HIDE_LOG(b, s) _HIDE_LOG_THREAD(); FAIL_IF(b, s); _UNHIDE_LOG_THREAD(); // FAIL_IF except don't show the log output. Hide the LOG_ERROR we think would happen.
 
 namespace cnvme
 {
@@ -37,8 +38,6 @@ namespace cnvme
 			{
 				std::vector<std::future<bool>> results;
 
-				cnvme::logging::theLogger.setAssertLoud(false);
-
 				// Run all tests 100 times, multi-threaded
 				for (int i = 0; i < 100; i++)
 				{
@@ -48,11 +47,7 @@ namespace cnvme
 					results.push_back(std::async(commands::testNVMeCommandParsing));
 					results.push_back(std::async(prp::testDifferentPRPSizes));
 					results.push_back(std::async(prp::testDataIntoExistingPRP));
-
-#if _DEBUG
 					results.push_back(std::async(logging::testAsserting));
-#endif // _DEBUG
-
 				}
 
 				bool retVal = true;
@@ -60,8 +55,6 @@ namespace cnvme
 				{
 					retVal &= i.get();
 				}
-
-				cnvme::logging::theLogger.setAssertLoud(true);
 
 				return retVal;
 			}
@@ -297,7 +290,7 @@ namespace cnvme
 						PRP prp(payloadWithoutData, pageSize);
 						prp.placePayloadInExistingPRPs(payloadWithData);
 
-						FAIL_IF(prp.placePayloadInExistingPRPs(payloadWithDataTooLarge) , "Placing a larger than allocated Payload into PRPs should have failed!");
+						FAIL_IF_AND_HIDE_LOG(prp.placePayloadInExistingPRPs(payloadWithDataTooLarge) , "Placing a larger than allocated Payload into PRPs should have failed!");
 						// Status will be messed with here. So clear.
 						cnvme::logging::theLogger.clearStatus();
 
@@ -312,9 +305,10 @@ namespace cnvme
 
 		namespace logging
 		{
-#ifdef _DEBUG
 			bool testAsserting()
 			{
+				_START_ASSERT_QUIET();
+
 				bool retVal = false;
 				try
 				{
@@ -324,8 +318,12 @@ namespace cnvme
 				{
 					retVal = true;
 				}
-				FAIL_IF(!retVal, "")
 
+#ifdef _DEBUG
+				FAIL_IF(!retVal, "ASSERT() didn't lead to an exception, even though this is a debug");
+#else // !_DEBUG
+				FAIL_IF(retVal, "ASSERT() led to an exception, even though this is a release");
+#endif // !_DEBUG
 				try
 				{
 					ASSERT_IF(true, "Should assert");
@@ -334,10 +332,16 @@ namespace cnvme
 				{
 					retVal = true;
 				}
+#ifdef _DEBUG
+				FAIL_IF(!retVal, "ASSERT_IF() didn't lead to an exception, even though this is a debug");
+#else // !_DEBUG
+				FAIL_IF(retVal, "ASSERT_IF() led to an exception, even though this is a release");
+#endif // !_DEBUG
+
+				_END_ASSERT_QUIET();
 
 				return true;
 			}
-#endif // _DEBUG
 		}
 	}
 }

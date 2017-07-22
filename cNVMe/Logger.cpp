@@ -36,12 +36,12 @@ namespace cnvme
 
 		void Logger::log(std::string txt, LOGGING_LEVEL level)
 		{
-			if (level <= Level)
+			Mutex.lock();
+			if (level <= Level && HiddenThreads.find(std::this_thread::get_id()) == HiddenThreads.end())
 			{
-				Mutex.lock();
 				std::cerr << getCurrentTime() << " - " << txt << std::endl;
-				Mutex.unlock();
 			}
+			Mutex.unlock();
 		}
 
 		void Logger::setStatus(std::string status)
@@ -59,9 +59,40 @@ namespace cnvme
 			setStatus(CLEARED_STATUS);
 		}
 
-		void Logger::setAssertLoud(bool assertLoud)
+		void Logger::setAssertQuiet(bool assertQuiet, std::thread::id& threadId)
 		{
-			AssertLoud = assertLoud;
+			Mutex.lock();
+			if (assertQuiet)
+			{
+				AssertQuietThreads.insert(threadId);
+			}
+			else
+			{
+				auto itr = AssertQuietThreads.find(threadId);
+				if (itr != AssertQuietThreads.end())
+				{
+					AssertQuietThreads.erase(itr);
+				}
+			}
+			Mutex.unlock();
+		}
+
+		void Logger::addHiddenThread(std::thread::id& hiddenThread)
+		{
+			Mutex.lock();
+			HiddenThreads.insert(hiddenThread);
+			Mutex.unlock();
+		}
+
+		void Logger::removeHiddenThread(std::thread::id& hiddenThread)
+		{
+			Mutex.lock();
+			auto itr = HiddenThreads.find(hiddenThread);
+			if (itr != HiddenThreads.end())
+			{
+				HiddenThreads.erase(itr);
+			}
+			Mutex.unlock();
 		}
 
 		std::string Logger::getCurrentTime()
@@ -70,7 +101,6 @@ namespace cnvme
 
 			time_t rawtime;
 			struct tm timeinfo = { 0 };
-
 
 			time(&rawtime);
 #ifdef _WIN32
@@ -88,9 +118,11 @@ namespace cnvme
 		{
 			std::string finalTxt = "cNVMe ASSERT! " + funcName + "():" + std::to_string(__LINE__) + " - " + std::string(txt);
 			cnvme::logging::theLogger.setStatus(finalTxt);
-			if (AssertLoud)
+			if (AssertQuietThreads.find(std::this_thread::get_id()) == AssertQuietThreads.end()) // not a quiet thread
 			{
+				Mutex.lock();
 				std::cerr << finalTxt << std::endl;
+				Mutex.unlock();
 			}
 
 #ifdef _DEBUG // only throw on debug builds
@@ -107,7 +139,5 @@ namespace cnvme
 		}
 
 		Logger theLogger;
-
-
 	}
 }

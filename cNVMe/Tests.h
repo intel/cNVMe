@@ -93,12 +93,11 @@ namespace cnvme
 
 		namespace logging
 		{
-#ifdef _DEBUG
 			/// <summary>
-			/// Tests that on a debug build we can assert and catch the C++ exception.
+			/// Tests that on this build we can asserts work as expected.
+			/// Debug: throw, Release: don't throw.
 			/// </summary>
 			bool testAsserting();
-#endif // _DEBUG
 		}
 	}
 }
