@@ -299,10 +299,11 @@ namespace cnvme
 
 					ControllerRegistersPointer->CAP.MPSMAX = 0; // 4096 max
 					ControllerRegistersPointer->CAP.MPSMIN = 0; // 4096 min
-					ControllerRegistersPointer->CAP.CSS = 1; // NVM Command set
-					ControllerRegistersPointer->CAP.NSSRS = 1; // NVM Subsystem Reset Supported
-					ControllerRegistersPointer->CAP.TO = 4; // Worst case of 2 seconds
+					ControllerRegistersPointer->CAP.CSS = 1;    // NVM Command set
+					ControllerRegistersPointer->CAP.NSSRS = 1;  // NVM Subsystem Reset Supported
+					ControllerRegistersPointer->CAP.TO = 4;     // Worst case of 2 seconds
 					ControllerRegistersPointer->CAP.MQES = 0xFFFF; // At most 0xFFFF + 1 (zero based) queue entries 
+					ControllerRegistersPointer->CAP.CQR = 1;    // Must use contiguous queues
 
 					// NVMe 1.2.1
 					ControllerRegistersPointer->VS.MJR = 1;
