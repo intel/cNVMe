@@ -189,11 +189,7 @@ namespace cnvme
 			COMPLETION_QUEUE_ENTRY completionQueueEntryToPost = { 0 };
 			UINT_32 memoryPageSize = ControllerRegisters->getMemoryPageSize();
 
-			if (memoryPageSize == 0)
-			{
-				LOG_ERROR("Unable to get memory page size. Did we lose the controller registers?");
-				return;
-			}
+			ASSERT_IF(memoryPageSize == 0, "Unable to get memory page size. Did we lose the controller registers?");
 
 			if (submissionQueue.getQueueId() == ADMIN_QUEUE_ID)
 			{
