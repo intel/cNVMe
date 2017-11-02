@@ -25,6 +25,14 @@ Identify.h - A header file for the NVMe Identify Commands
 
 #include "Types.h"
 
+// Defaults
+#define DEFAULT_MODEL "CNVMe Model Number"
+#define DEFAULT_SERIAL "CNVMe Serial Number"
+#define DEFAULT_FIRMWARE "00000001"
+#define DEFAULT_SUBMISSION_QUEUE_ENTRY_SIZE 6 // 2^6 = 64
+#define DEFAULT_COMPLETION_QUEUE_ENTRY_SIZE 4 // 2^4 = 16
+#define DEFAULT_MAX_NAMESPACES 1
+
 #pragma once
 
 namespace cnvme
@@ -73,11 +81,11 @@ namespace cnvme
 				UINT_8 MDTS;
 				UINT_16 CNTLID;
 				union {
-					typedef struct VERSION {
+					struct {
 						UINT_32 MJR : 16;
 						UINT_32 MNR : 8;
 						UINT_32 TER : 8;
-					} VERSION;
+					};
 					UINT_32 VER;
 				};
 				UINT_32 RTD3R;
@@ -89,7 +97,7 @@ namespace cnvme
 				UINT_8 RSVD_128_239[112];
 				UINT_8 RSVD_240_255_MI[16];
 				union {
-					typedef struct OPTIONAL_ADMIN_COMMAND_SUPPORT {
+					struct {
 						UINT_16 SecuritySupported : 1;
 						UINT_16 FormatNVMSupported : 1;
 						UINT_16 FirmwareDownloadAndCommitSupported : 1;
@@ -100,28 +108,28 @@ namespace cnvme
 						UINT_16 VirtualizationManagementSupported : 1;
 						UINT_16 DoorbellBufferConfigSupported : 1;
 						UINT_16 RSVD_OACS : 7;
-					} OPTIONAL_ADMIN_COMMAND_SUPPORT;
+					};
 					UINT_16 OACS;
 				};
 				UINT_8 ACL;
 				UINT_8 AERL;
 				union {
-					typedef struct FIRMWARE_UPDATES {
+					struct {
 						UINT_8 FirstFirmwareSlotIsReadOnly : 1;
 						UINT_8 NumberOfFirmwareSlots : 3;
 						UINT_8 FirmwareActivationWithoutResetSupported : 1;
 						UINT_8 RSVD_FRMW : 3;
-					} FIRMWARE_UPDATES;
+					};
 					UINT_8 FRMW;
 				};
 				union {
-					typedef struct LOG_PAGE_ATTRIBUTES {
+					struct {
 						UINT_8 SMARTHealthLogOnNamespaceBasisSupported : 1;
 						UINT_8 CommandsEffectsLogSupported : 1;
 						UINT_8 ExtendedDataForGetLogPageSupported : 1;
 						UINT_8 TelemetryLogsSupported : 1;
 						UINT_8 RSVD_LPA : 4;
-					} FIRMWARE_UPDATES;
+					};
 					UINT_8 LPA;
 				};
 				UINT_8 ELPE;
@@ -144,21 +152,33 @@ namespace cnvme
 				UINT_16 MNTMT;
 				UINT_16 MXTMT;
 				union {
-					typedef struct SANITIZE_CAPABILITIES {
+					struct{
 						UINT_32 CryptoEraseSanitizeSupported : 1;
 						UINT_32 BlockEraseSanitizeSupported : 1;
 						UINT_32 OverwriteSanitizeSupported : 1;
 						UINT_32 RSVD_SANICAP : 29;
-					} SANITIZE_CAPABILITIES;
+					};
 					UINT_32 SANICAP;
 				};
 				UINT_8 RSVD_332_511[180];
-				UINT_8 SQES;
-				UINT_8 CQES;
+				union {
+					struct {
+						UINT_8 MaxSubmissionQueueEntrySize : 4;
+						UINT_8 RequiredSubmissionQueueEntrySize : 4;
+					};
+					UINT_8 SQES;
+				};
+				union {
+					struct {
+						UINT_8 MaxCompletionQueueEntrySize : 4;
+						UINT_8 RequiredCompletionQueueEntrySize : 4;
+					};
+					UINT_8 CQES;
+				};
 				UINT_16 MAXCMD;
 				UINT_32 NN;
 				union {
-					typedef struct OPTIONAL_NVM_COMMAND_SUPPORT {
+					struct {
 						UINT_16 CompareSupported : 1;
 						UINT_16 WriteUncorrectableSupported : 1;
 						UINT_16 DatasetManagementSupported : 1;
@@ -167,17 +187,17 @@ namespace cnvme
 						UINT_16 ReservationsSupported : 1;
 						UINT_16 TimestampFeatureSupported : 1;
 						UINT_16 RSVD_ONCS : 9;
-					} OPTIONAL_NVM_COMMAND_SUPPORT;
+					};
 					UINT_16 ONCS;
 				};
 				UINT_16 FUSES;
 				union {
-					typedef struct FORMAT_NVM_ATTRIBUTES {
+					struct {
 						UINT_8 FormatAppliesToAllNamespaces : 1;
 						UINT_8 AllNamespacesErasedOnSecureErase : 1;
 						UINT_8 CryptoEraseSupportedAsPartOfSecureErase : 1;
 						UINT_8 RSVD_FNA : 5;
-					} FORMAT_NVM_ATTRIBUTES;
+					};
 					UINT_8 FNA;
 				};
 				UINT_8 VWC;

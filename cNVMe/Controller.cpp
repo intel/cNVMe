@@ -51,6 +51,8 @@ namespace cnvme
 			DoorbellWatcher = LoopingThread([&] {Controller::checkForChanges(); }, CHANGE_CHECK_SLEEP_MS);
 			DoorbellWatcher.start();
 #endif
+			// Setup the IC with default values.
+			resetIdentifyController();
 
 			// Todo: in the end, we'll need some form of media bank
 		}
@@ -200,13 +202,22 @@ namespace cnvme
 				{
 				case constants::opcodes::admin::IDENTIFY: // Identify
 					LOG_INFO("Got an identify call!");
+					// TODO. check CNS to see if this is Identify Controller or not.
 
-					// TODO : Check if ControllerRegisters is valid.
-					prp = PRP(command->DPTR.DPTR1, command->DPTR.DPTR2, memoryPageSize, memoryPageSize);
-					transferPayload = prp.getPayloadCopy();
-					transferPayload.getBuffer()[0] = 1;
-					transferPayload.getBuffer()[1] = 0xff;
-					prp.placePayloadInExistingPRPs(transferPayload);
+					// Do we have a PRP?
+					if (command->DPTR.DPTR1)
+					{
+						prp = PRP(command->DPTR.DPTR1, command->DPTR.DPTR2, memoryPageSize, memoryPageSize);
+						transferPayload = prp.getPayloadCopy();
+						memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &IdentifyController, sizeof(IdentifyController));
+						prp.placePayloadInExistingPRPs(transferPayload);
+					}
+					else
+					{
+						// No PRP? Huh? Fail.
+						completionQueueEntryToPost.SC = constants::status::codes::generic::PRP_OFFSET_INVALID;
+						completionQueueEntryToPost.DNR = 1;
+					}
 					break;
 				case constants::opcodes::admin::KEEP_ALIVE: //Keep Alive... no data should be easiest
 					break;
@@ -324,6 +335,41 @@ namespace cnvme
 
 			LOG_ERROR("Invalid command identifier was sent (" + std::to_string(commandId) + "). Was it re-used?");
 			return false;
+		}
+
+		void Controller::resetIdentifyController()
+		{
+			auto pciRegistersWrapper = this->getPCIExpressRegisters();
+			if (pciRegistersWrapper)
+			{
+				auto pciRegisters = pciRegistersWrapper->getPciExpressRegisters();
+				this->IdentifyController.VID = pciRegisters.PciHeader->ID.VID;
+				this->IdentifyController.SSID = pciRegisters.PciHeader->ID.DID;
+			}
+
+			memcpy_s(&this->IdentifyController.SN, sizeof(this->IdentifyController.SN), DEFAULT_SERIAL, strlen(DEFAULT_SERIAL));
+			memcpy_s(&this->IdentifyController.MN, sizeof(this->IdentifyController.MN), DEFAULT_MODEL, strlen(DEFAULT_MODEL));
+			memcpy_s(&this->IdentifyController.FR, sizeof(this->IdentifyController.FR), DEFAULT_FIRMWARE, strlen(DEFAULT_FIRMWARE));
+			auto controllerRegistersWrapper = this->getControllerRegisters();
+			if (controllerRegistersWrapper)
+			{
+				auto controllerRegisters = controllerRegistersWrapper->getControllerRegisters();
+				if (controllerRegisters)
+				{
+					memcpy_s(&this->IdentifyController.VER, sizeof(this->IdentifyController.VER), &controllerRegisters->VS, sizeof(controllerRegisters->VS));
+				}
+			}
+
+			this->IdentifyController.MaxSubmissionQueueEntrySize = DEFAULT_SUBMISSION_QUEUE_ENTRY_SIZE;
+			this->IdentifyController.RequiredSubmissionQueueEntrySize = DEFAULT_SUBMISSION_QUEUE_ENTRY_SIZE;
+
+			this->IdentifyController.MaxCompletionQueueEntrySize = DEFAULT_COMPLETION_QUEUE_ENTRY_SIZE;
+			this->IdentifyController.RequiredCompletionQueueEntrySize = DEFAULT_COMPLETION_QUEUE_ENTRY_SIZE;
+
+			this->IdentifyController.NN = DEFAULT_MAX_NAMESPACES;
+
+			// Optional Commands Supported... none yet.
+			// Also I'm not setting the power state to anything. It lets us get away with all 0s for not reported. Wow.
 		}
 
 		void Controller::controllerResetCallback()

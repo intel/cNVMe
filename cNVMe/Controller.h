@@ -27,6 +27,7 @@ Controller.h - A header file for the NVMe Controller
 
 #include "Command.h"
 #include "ControllerRegisters.h"
+#include "Identify.h"
 #include "PCIe.h"
 #include "Types.h"
 #include "Queue.h"
@@ -151,9 +152,19 @@ namespace cnvme
 			bool isValidCommandIdentifier(UINT_16 commandId, UINT_16 submissionQueueId);
 
 			/// <summary>
+			/// Resets the internal identify controller to default values.
+			/// </summary>
+			void resetIdentifyController();
+
+			/// <summary>
 			/// Corresponds with the phase tag in the completion queue entry for a queue
 			/// </summary>
 			std::map<UINT_16, bool> QueueToPhaseTag;
+
+			/// <summary>
+			/// Internal Identify Controller Structure
+			/// </summary>
+			identify::structures::IDENTIFY_CONTROLLER IdentifyController;
 		};
 	}
 }
