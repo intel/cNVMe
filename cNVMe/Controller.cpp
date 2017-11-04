@@ -24,14 +24,13 @@ Controller.cpp - An implementation file for the NVMe Controller
 */
 
 #define ADMIN_QUEUE_ID 0
+#define NVME_CALLER_IMPLEMENTATION(name) void Controller::name(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
 
 #include "Command.h"
 #include "Constants.h"
 #include "Controller.h"
 #include "PRP.h"
 #include "Strings.h"
-
-using namespace cnvme::command;
 
 namespace cnvme
 {
@@ -189,53 +188,26 @@ namespace cnvme
 			PRP prp;
 			bool validCommand = true;
 			COMPLETION_QUEUE_ENTRY completionQueueEntryToPost = { 0 };
-			UINT_32 memoryPageSize = ControllerRegisters->getMemoryPageSize();
-
-			ASSERT_IF(memoryPageSize == 0, "Unable to get memory page size. Did we lose the controller registers?");
 
 			if (submissionQueue.getQueueId() == ADMIN_QUEUE_ID)
 			{
 				// Admin command
 				LOG_INFO(command->toString());
 
-				switch (command->DWord0Breakdown.OPC)
+				// AdminCommandCallers goes from OpCode to Function to call. 
+				//  All functions to call must have the same parameters and return value (no return since they are voids)
+				auto itr = AdminCommandCallers.find(command->DWord0Breakdown.OPC);
+				if (itr != AdminCommandCallers.end())
 				{
-				case constants::opcodes::admin::IDENTIFY: // Identify
-					LOG_INFO("Got an identify call!");
-					// TODO. check CNS to see if this is Identify Controller or not.
-
-					// Do we have a PRP?
-					if (command->DPTR.DPTR1)
-					{
-						prp = PRP(command->DPTR.DPTR1, command->DPTR.DPTR2, memoryPageSize, memoryPageSize);
-						transferPayload = prp.getPayloadCopy();
-						memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &IdentifyController, sizeof(IdentifyController));
-						prp.placePayloadInExistingPRPs(transferPayload);
-					}
-					else
-					{
-						// No PRP? Huh? Fail.
-						completionQueueEntryToPost.SC = constants::status::codes::generic::PRP_OFFSET_INVALID;
-						completionQueueEntryToPost.DNR = 1;
-					}
-					break;
-				case constants::opcodes::admin::KEEP_ALIVE: //Keep Alive... no data should be easiest
-					break;
-
-				default:
-					validCommand = false;
-				}
-
-				if (validCommand)
-				{
-					postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
+					NVMeCaller caller = itr->second;
+					(this->*caller)(*command, completionQueueEntryToPost);
 				}
 				else
 				{
-					assert(0); // kill for now. Need to return invalid command opcode
-					postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
+					// We don't have handling for this command
+					ASSERT("Admin command not supported yet.");
 				}
-
+				postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
 			}
 			else
 			{
@@ -349,7 +321,8 @@ namespace cnvme
 
 			memcpy_s(&this->IdentifyController.SN, sizeof(this->IdentifyController.SN), DEFAULT_SERIAL, strlen(DEFAULT_SERIAL));
 			memcpy_s(&this->IdentifyController.MN, sizeof(this->IdentifyController.MN), DEFAULT_MODEL, strlen(DEFAULT_MODEL));
-			memcpy_s(&this->IdentifyController.FR, sizeof(this->IdentifyController.FR), DEFAULT_FIRMWARE, strlen(DEFAULT_FIRMWARE));
+			memcpy_s(&this->IdentifyController.FR, sizeof(this->IdentifyController.FR), DEFAULT_FIRMWARE, strlen(DEFAULT_FIRMWARE));
+
 			auto controllerRegistersWrapper = this->getControllerRegisters();
 			if (controllerRegistersWrapper)
 			{
@@ -370,6 +343,31 @@ namespace cnvme
 
 			// Optional Commands Supported... none yet.
 			// Also I'm not setting the power state to anything. It lets us get away with all 0s for not reported. Wow.
+		}
+
+		NVME_CALLER_IMPLEMENTATION(adminIdentify)
+		{
+			UINT_32 memoryPageSize = ControllerRegisters->getMemoryPageSize();
+
+			// Do we have a PRP?
+			if (command.DPTR.DPTR1)
+			{
+				auto prp = PRP(command.DPTR.DPTR1, command.DPTR.DPTR2, memoryPageSize, memoryPageSize);
+				auto transferPayload = prp.getPayloadCopy();
+				memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &IdentifyController, sizeof(IdentifyController));
+				prp.placePayloadInExistingPRPs(transferPayload);
+			}
+			else
+			{
+				// No PRP? Huh? Fail.
+				completionQueueEntryToPost.SC = constants::status::codes::generic::PRP_OFFSET_INVALID;
+				completionQueueEntryToPost.DNR = 1;
+			}
+		}
+
+		NVME_CALLER_IMPLEMENTATION(adminKeepAlive)
+		{
+			// nop. We do nothing here.
 		}
 
 		void Controller::controllerResetCallback()
@@ -407,5 +405,10 @@ namespace cnvme
 			checkForChanges();
 #endif
 		}
+
+		const std::map<UINT_8, NVMeCaller> Controller::AdminCommandCallers = {
+			{ cnvme::constants::opcodes::admin::IDENTIFY, &cnvme::controller::Controller::adminIdentify},
+			{ cnvme::constants::opcodes::admin::KEEP_ALIVE, &cnvme::controller::Controller::adminKeepAlive}
+		};
 	}
 }

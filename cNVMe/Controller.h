@@ -36,6 +36,11 @@ Controller.h - A header file for the NVMe Controller
 #define MAX_SUBMISSION_QUEUES  0xFFFF
 
 using namespace cnvme;
+using namespace cnvme::command;
+
+namespace cnvme { namespace controller { class Controller; } }
+typedef void (cnvme::controller::Controller::*NVMeCaller)(NVME_COMMAND&, COMPLETION_QUEUE_ENTRY&);
+#define NVME_CALLER_HEADER(name) void name(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
 
 namespace cnvme
 {
@@ -165,6 +170,12 @@ namespace cnvme
 			/// Internal Identify Controller Structure
 			/// </summary>
 			identify::structures::IDENTIFY_CONTROLLER IdentifyController;
+
+			//std::map<UINT_8, std::function<void(NVME_COMMAND&, COMPLETION_QUEUE_ENTRY&, UINT_32)>> AdminCommandCallers;
+			static const std::map<UINT_8, NVMeCaller> AdminCommandCallers;
+
+			NVME_CALLER_HEADER(adminIdentify);
+			NVME_CALLER_HEADER(adminKeepAlive);
 		};
 	}
 }
