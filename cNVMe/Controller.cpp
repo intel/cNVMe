@@ -352,9 +352,24 @@ namespace cnvme
 			// Do we have a PRP?
 			if (command.DPTR.DPTR1)
 			{
-				auto prp = PRP(command.DPTR.DPTR1, command.DPTR.DPTR2, memoryPageSize, memoryPageSize);
+				PRP prp(command.DPTR.DPTR1, command.DPTR.DPTR2, memoryPageSize, memoryPageSize);
 				auto transferPayload = prp.getPayloadCopy();
-				memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &IdentifyController, sizeof(IdentifyController));
+
+				if (command.DW10_Identify.CNS == constants::commands::identify::cns::CONTROLLER) // Identify Controller
+				{
+					memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &IdentifyController, sizeof(IdentifyController));
+				}
+				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACE_ACTIVE) // Identify Namespace
+				{
+					//todo.. actually do something here
+					memset(transferPayload.getBuffer(), 0, transferPayload.getSize()); // Technically, this is ok if we don't have a namespace with the given NSID. 
+				}
+				else
+				{
+					// I don't know what you wanted.
+					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_FIELD_IN_COMMAND;
+					completionQueueEntryToPost.DNR = 1;
+				}
 				prp.placePayloadInExistingPRPs(transferPayload);
 			}
 			else

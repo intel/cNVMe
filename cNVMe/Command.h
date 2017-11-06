@@ -129,7 +129,16 @@ namespace cnvme
 				UINT_64 SGL1[2]; // Scatter Gather List Entry 1 (placeholder)
 			};
 
-			UINT_32 DWord10; // Command Specific DW10
+			union
+			{
+				struct
+				{
+					UINT_8 CNS; // Controller or Namespace Structure
+					UINT_8 IDENTIFY_DW10_RSVD;
+					UINT_16 CNTID; // Controller Identifier
+				} DW10_Identify;
+				UINT_32 DWord10; // Command Specific DW10
+			};
 			UINT_32 DWord11; // Command Specific DW11
 			UINT_32 DWord12; // Command Specific DW12
 			UINT_32 DWord13; // Command Specific DW13

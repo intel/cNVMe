@@ -174,7 +174,14 @@ namespace cnvme
 			//std::map<UINT_8, std::function<void(NVME_COMMAND&, COMPLETION_QUEUE_ENTRY&, UINT_32)>> AdminCommandCallers;
 			static const std::map<UINT_8, NVMeCaller> AdminCommandCallers;
 
+			/// <summary>
+			/// Handling for the NVMe Identify Command
+			/// </summary>
 			NVME_CALLER_HEADER(adminIdentify);
+
+			/// <summary>
+			/// Handling for the NVMe Keep Alive Command
+			/// </summary>
 			NVME_CALLER_HEADER(adminKeepAlive);
 		};
 	}
