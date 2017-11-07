@@ -41,6 +41,7 @@ Types.h - A header file for all needed type includes
 #include <cstdint>
 #include <exception>
 #include <functional>
+#include <list>
 #include <map>
 #include <mutex>
 #include <set>
