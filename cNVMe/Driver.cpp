@@ -49,6 +49,14 @@ namespace cnvme
 			{
 				return "The command timed out";
 			}
+			else if (s == BUFFER_NOT_LARGE_ENOUGH)
+			{
+				return "The passed in payload was not large enough";
+			}
+			else if (s == INVALID_DATA_DIRECTION)
+			{
+				return "The data direction given was invalid";
+			}
 
 			ASSERT("Status not found in statusToString()");
 			return "Unknown";
@@ -135,6 +143,23 @@ namespace cnvme
 
 		void Driver::sendCommand(UINT_8* driverCommandBuffer, UINT_32 driverCommandBufferSize)
 		{
+			// Make sure the buffer is large enough
+			ASSERT_IF(driverCommandBufferSize < sizeof(Status), "The passed in buffer size wasn't even large enough to return a status");
+			DRIVER_COMMAND* pDriverCommand = (DRIVER_COMMAND*)driverCommandBuffer;
+
+			// If we can return an invalid buffer size, do.
+			if (driverCommandBufferSize < sizeof(DRIVER_COMMAND) || (driverCommandBufferSize < pDriverCommand->TransferDataSize + sizeof(DRIVER_COMMAND)))
+			{
+				pDriverCommand->DriverStatus = BUFFER_NOT_LARGE_ENOUGH;
+				return;
+			}
+
+			if (pDriverCommand->TransferDataDirection >= DATA_DIRECTION_MAX)
+			{
+				pDriverCommand->DriverStatus = INVALID_DATA_DIRECTION;
+				return;
+			}
+
 			ASSERT("Wuh oh. Not implemented yet.");
 		}
 	}

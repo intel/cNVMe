@@ -40,6 +40,8 @@ namespace cnvme
 			SENT_SUCCESSFULLY,
 			NO_MATCHING_QUEUE_ID,
 			TIMEOUT,
+			BUFFER_NOT_LARGE_ENOUGH,
+			INVALID_DATA_DIRECTION,
 		};
 
 		/// <summary>
@@ -58,13 +60,18 @@ namespace cnvme
 			READ,
 			WRITE,
 			BI_DIRECTIONAL,
+			DATA_DIRECTION_MAX,
 		};
 
 		/// <summary>
 		/// Converts the DataDirection to a string
 		/// </summary>
 		std::string dataDirectionToString(DataDirection d);
- 
+
+#ifdef _WIN32
+#pragma warning (push)
+#pragma warning	(disable: 4200)	// Disable 0-sized array warning.
+#endif
 		/// <summary>
 		/// Structure used to send a command via the driver
 		/// </summary>
@@ -77,8 +84,11 @@ namespace cnvme
 			COMPLETION_QUEUE_ENTRY CompletionQueueEntry;// Filled out by the driver
 			DataDirection TransferDataDirection;		// Filled out by the user
 			UINT_32 TransferDataSize;					// Filled out by the user
-			UINT_8 TransferData[1];						// Filled out by the driver on reads, user on writes, both on bidirectional
+			UINT_8 TransferData[0];						// Filled out by the driver on reads, user on writes, both on bidirectional
 		} DRIVER_COMMAND, *PDRIVER_COMMAND;
+#ifdef _WIN32
+#pragma warning(pop) // Disable 0-sized array warning.
+#endif
 
 		class Driver
 		{
