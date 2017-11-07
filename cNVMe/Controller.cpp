@@ -24,7 +24,7 @@ Controller.cpp - An implementation file for the NVMe Controller
 */
 
 #define ADMIN_QUEUE_ID 0
-#define NVME_CALLER_IMPLEMENTATION(name) void Controller::name(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
+#define NVME_CALLER_IMPLEMENTATION(commandName) void Controller::commandName(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
 
 #include "Command.h"
 #include "Constants.h"

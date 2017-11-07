@@ -40,7 +40,7 @@ using namespace cnvme::command;
 
 namespace cnvme { namespace controller { class Controller; } }
 typedef void (cnvme::controller::Controller::*NVMeCaller)(NVME_COMMAND&, COMPLETION_QUEUE_ENTRY&);
-#define NVME_CALLER_HEADER(name) void name(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
+#define NVME_CALLER_HEADER(commandName) void commandName(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
 
 namespace cnvme
 {
