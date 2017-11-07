@@ -169,5 +169,25 @@ namespace cnvme
 				}
 			}
 		}
+
+		namespace commands
+		{
+			namespace identify
+			{
+				namespace cns
+				{
+					const UINT_8 NAMESPACE_ACTIVE = 0x00;
+					const UINT_8 CONTROLLER = 0x01;
+					const UINT_8 NAMESPACES_ACTIVE = 0x02;
+					const UINT_8 NAMESPACES_DESCRIPTOR = 0x03;
+					const UINT_8 NAMESPACES_ALL = 0x10;
+					const UINT_8 NAMESPACES_ALLOCATED = 0x11;
+					const UINT_8 CONTROLLERS_ATTACHED_TO_NAMESPACE = 0x12;
+					const UINT_8 CONTROLLERS_ALL = 0x13;
+					const UINT_8 PRIMARY_CONTROLLER_CAPABILITIES = 0x14;
+					const UINT_8 SECONDARY_CONTROLLER_LIST = 0x15;
+				}
+			}
+		}
 	}
 }

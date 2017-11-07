@@ -119,6 +119,7 @@
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="ControllerRegisters.h" />
+    <ClInclude Include="Identify.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="LoopingThread.h" />
     <ClInclude Include="Payload.h" />
@@ -133,6 +134,7 @@
     <ClCompile Include="Command.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="ControllerRegisters.cpp" />
+    <ClCompile Include="Identify.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="LoopingThread.cpp" />
     <ClCompile Include="Main.cpp" />
