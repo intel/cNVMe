@@ -42,6 +42,7 @@ namespace cnvme
 			TIMEOUT,
 			BUFFER_NOT_LARGE_ENOUGH,
 			INVALID_DATA_DIRECTION,
+			INVALID_DATA_LENGTH,
 		};
 
 		/// <summary>

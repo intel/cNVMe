@@ -57,6 +57,10 @@ namespace cnvme
 			{
 				return "The data direction given was invalid";
 			}
+			else if (s == INVALID_DATA_LENGTH)
+			{
+				return "The data length was invalid";
+			}
 
 			ASSERT("Status not found in statusToString()");
 			return "Unknown";
@@ -150,14 +154,22 @@ namespace cnvme
 			// If we can return an invalid buffer size, do.
 			if (driverCommandBufferSize < sizeof(DRIVER_COMMAND) || (driverCommandBufferSize < pDriverCommand->TransferDataSize + sizeof(DRIVER_COMMAND)))
 			{
+				LOG_ERROR("The provided buffer was not large enough");
 				pDriverCommand->DriverStatus = BUFFER_NOT_LARGE_ENOUGH;
 				return;
 			}
 
 			if (pDriverCommand->TransferDataDirection >= DATA_DIRECTION_MAX)
 			{
+				LOG_ERROR("Invalid data direction was provided");
 				pDriverCommand->DriverStatus = INVALID_DATA_DIRECTION;
 				return;
+			}
+
+			if (pDriverCommand->TransferDataSize == 0 && pDriverCommand->TransferDataDirection != NO_DATA)
+			{
+				LOG_ERROR("Transfer data size was 0 but the data direction is not no-data");
+				pDriverCommand->DriverStatus = INVALID_DATA_LENGTH;
 			}
 
 			ASSERT("Wuh oh. Not implemented yet.");
