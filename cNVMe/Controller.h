@@ -32,6 +32,7 @@ Controller.h - A header file for the NVMe Controller
 #include "Types.h"
 #include "Queue.h"
 
+#define ADMIN_QUEUE_ID 0
 #define MAX_COMMAND_IDENTIFIER 0xFFFF
 #define MAX_SUBMISSION_QUEUES  0xFFFF
 
@@ -171,7 +172,9 @@ namespace cnvme
 			/// </summary>
 			identify::structures::IDENTIFY_CONTROLLER IdentifyController;
 
-			//std::map<UINT_8, std::function<void(NVME_COMMAND&, COMPLETION_QUEUE_ENTRY&, UINT_32)>> AdminCommandCallers;
+			/// <summary>
+			/// Map from the admin command opcode to the function that processes it
+			/// </summary>
 			static const std::map<UINT_8, NVMeCaller> AdminCommandCallers;
 
 			/// <summary>

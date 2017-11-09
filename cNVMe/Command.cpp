@@ -96,7 +96,6 @@ namespace cnvme
 			retStr += strings::toString(ToStringParams(DWord3, "Command DWord 3 / CID / P / SF"));
 			retStr += strings::indentLines(strings::toString(ToStringParams(CID, "Command Identifier")));
 			retStr += strings::indentLines(strings::toString(ToStringParams(P, "Phase Tag")));
-			retStr += strings::indentLines(strings::toString(ToStringParams(SF, "Status Field")));
 			retStr += strings::indentLines(strings::toString(ToStringParams(SC, "Status Code")));
 			retStr += strings::indentLines(strings::toString(ToStringParams(SCT, "Status Code Type")));
 			retStr += strings::indentLines(strings::toString(ToStringParams(M, "More")));

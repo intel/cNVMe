@@ -121,6 +121,12 @@ namespace cnvme
 		/// <param name="otherPayload">another payload</param>
 		void append(const Payload &otherPayload);
 
+		/// <summary>
+		/// Sets if we should free memory on scope loss 
+		/// </summary>
+		/// <param name="delOnScopeLoss">If true, delete on scope loss. If false dont.</param>
+		void setDeleteOnScopeLoss(bool delOnScopeLoss);
+
 	private:
 
 		/// <summary>
@@ -132,5 +138,10 @@ namespace cnvme
 		/// The number of bytes owned
 		/// </summary>
 		UINT_32 ByteSize;
+
+		/// <summary>
+		/// If True, delete memory on scope loss, otherwise don't.
+		/// </summary>
+		bool DeleteOnScopeLoss;
 	};
 }

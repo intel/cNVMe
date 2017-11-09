@@ -23,19 +23,42 @@
 Main.cpp - An implementation file for the Main entry
 */
 
+#include "Driver.h"
 #include "Strings.h"
 #include "Tests.h"
+
 
 #include <iostream>
 
 using namespace cnvme;
 using namespace cnvme::command;
+using namespace cnvme::driver;
 
 int main()
 {
 	// This is testing code.
 	LOG_SET_LEVEL(2);
 
+
+
+	Driver driver;
+	DRIVER_COMMAND d;
+	memset(&d, 0, sizeof(d));
+	d.Timeout = 5;
+	d.Command.DWord0Breakdown.OPC = 0x18;
+
+	driver.sendCommand((UINT_8*)&d, sizeof(d));
+
+	char c = '1';
+	driver.sendCommand((UINT_8*)&d, sizeof(d));
+	c = '1';
+	driver.sendCommand((UINT_8*)&d, sizeof(d));
+	c = '1';
+
+
+
+
+	/*
 	Controller co;
 	auto regs = co.getControllerRegisters()->getControllerRegisters();
 
@@ -69,6 +92,7 @@ int main()
 		}
 		co.waitForChangeLoop();
 	}
+	*/
 
 	/*
 	NVME_COMMAND* command = (NVME_COMMAND*)subQ.getBuffer();

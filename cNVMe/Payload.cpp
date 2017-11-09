@@ -95,7 +95,7 @@ namespace cnvme
 
 	Payload::~Payload()
 	{
-		if (BytePointer)
+		if (BytePointer && DeleteOnScopeLoss)
 		{
 			delete[] BytePointer;
 			BytePointer = nullptr;
@@ -145,5 +145,10 @@ namespace cnvme
 
 		// copy other after this
 		memcpy_s(this->getBuffer() + oldSize, this->getSize() - oldSize, otherPayload.getBuffer(), otherPayload.getSize());
+	}
+
+	void Payload::setDeleteOnScopeLoss(bool delOnScopeLoss)
+	{
+		DeleteOnScopeLoss = delOnScopeLoss;
 	}
 }

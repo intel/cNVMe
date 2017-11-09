@@ -99,6 +99,18 @@ namespace cnvme
 			return TailPointer - HeadPointer;                      // Not wrapped around
 		}
 
+		void Queue::incrementTailPointerAndRingDoorbell()
+		{
+			TailPointer++;
+			// Wrap around as needed
+			if (TailPointer == getQueueSize())
+			{
+				TailPointer = 0;
+			}
+
+			*Doorbell = TailPointer;
+		}
+
 		UINT_64 Queue::getMemoryAddress()
 		{
 			return LinkedMemoryAddress;

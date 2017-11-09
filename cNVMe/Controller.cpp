@@ -23,7 +23,6 @@
 Controller.cpp - An implementation file for the NVMe Controller
 */
 
-#define ADMIN_QUEUE_ID 0
 #define NVME_CALLER_IMPLEMENTATION(commandName) void Controller::commandName(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
 
 #include "Command.h"
@@ -164,32 +163,28 @@ namespace cnvme
 		void Controller::processCommandAndPostCompletion(Queue &submissionQueue)
 		{
 			Queue* theCompletionQueue = submissionQueue.getMappedQueue();
-			if (theCompletionQueue == nullptr)
+			if (!theCompletionQueue)
 			{
-				LOG_ERROR("Submission Queue " + std::to_string(submissionQueue.getQueueId()) + " doesn't have a mapped completion queue. And yet it recieved a command.");
+				ASSERT("Submission Queue " + std::to_string(submissionQueue.getQueueId()) + " doesn't have a mapped completion queue. And yet it recieved a command.");
 				return;
 			}
 
-			UINT_8* subQPointer = (UINT_8*)submissionQueue.getMemoryAddress(); // This is the address of the 64 byte command
-			NVME_COMMAND* command = (NVME_COMMAND*)subQPointer;
-
-			command += submissionQueue.getHeadPointer();            // Make sure we get the correct command
-
-			if (!isValidCommandIdentifier(command->DWord0Breakdown.CID, submissionQueue.getQueueId()))
-			{
-				COMPLETION_QUEUE_ENTRY cqe = { 0 };
-				cqe.SC = constants::status::codes::generic::COMMAND_ID_CONFLICT; // Command ID Conflict 
-				cqe.DNR = 1; // Do not retry
-				postCompletion(*theCompletionQueue, cqe, command);
-				return; // Do not process command since the CID/SQID combo was invalid;
-			}
+			NVME_COMMAND* command = (NVME_COMMAND*)submissionQueue.getMemoryAddress();  // This is the address of the 64 byte command
+			command += submissionQueue.getHeadPointer();                                // Make sure we get the correct command
 
 			Payload transferPayload;
 			PRP prp;
-			bool validCommand = true;
+			bool shouldWeProcessThisCommand = true;
 			COMPLETION_QUEUE_ENTRY completionQueueEntryToPost = { 0 };
 
-			if (submissionQueue.getQueueId() == ADMIN_QUEUE_ID)
+			if (!isValidCommandIdentifier(command->DWord0Breakdown.CID, submissionQueue.getQueueId()))
+			{
+				completionQueueEntryToPost.SC = constants::status::codes::generic::COMMAND_ID_CONFLICT; // Command ID Conflict 
+				completionQueueEntryToPost.DNR = 1;                                                     // Do not retry
+				shouldWeProcessThisCommand = false;                                                     // Do not process this command later on
+			}
+
+			if (submissionQueue.getQueueId() == ADMIN_QUEUE_ID && shouldWeProcessThisCommand)
 			{
 				// Admin command
 				LOG_INFO(command->toString());
@@ -207,13 +202,14 @@ namespace cnvme
 					// We don't have handling for this command
 					ASSERT("Admin command not supported yet.");
 				}
-				postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
 			}
-			else
+			else if (shouldWeProcessThisCommand) // NVM Command
 			{
 				// NVM command
 				assert(0); // Don't send me NVM commands yet.
 			}
+
+			postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
 		}
 
 		Queue* Controller::getQueueWithId(std::vector<Queue> &queues, UINT_16 id)

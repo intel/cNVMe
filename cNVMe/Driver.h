@@ -26,6 +26,7 @@ Driver.h - A header file for the cNVMe 'Driver'
 #pragma once
 
 #include "Controller.h"
+#include "Queue.h"
 #include "Types.h"
 
 namespace cnvme
@@ -38,7 +39,8 @@ namespace cnvme
 		enum Status
 		{
 			SENT_SUCCESSFULLY,
-			NO_MATCHING_QUEUE_ID,
+			NO_MATCHING_SUBMISSION_QUEUE,
+			NO_LINKED_COMPLETION_QUEUE,
 			TIMEOUT,
 			BUFFER_NOT_LARGE_ENOUGH,
 			INVALID_DATA_DIRECTION,
@@ -118,9 +120,19 @@ namespace cnvme
 			controller::Controller TheController;
 
 			/// <summary>
-			/// List of payloads to keep in scope (and not delete)
+			/// Map from id to submission queue
 			/// </summary>
-			std::list<cnvme::Payload> PayloadsInScope;
+			std::map<UINT_16, controller::Queue> SubmissionQueues;
+
+			/// <summary>
+			/// Map from id to completion queue
+			/// </summary>
+			std::map<UINT_16, controller::Queue> CompletionQueues;
+
+			/// <summary>
+			/// Keep track of used command ids and count up
+			/// </summary>
+			UINT_8 CommandIdCounter;
 		};
 	}
 }
