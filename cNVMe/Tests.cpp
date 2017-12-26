@@ -57,13 +57,15 @@ namespace cnvme
 			{
 				std::vector<std::future<bool>> results;
 
-				// Run all tests 100 times, multi-threaded
-				for (int i = 0; i < 100; i++)
+				// Run all tests 10 times, multi-threaded
+				for (int i = 0; i < 10; i++)
 				{
 					results.push_back(std::async(pci::testPciHeaderId));
 					results.push_back(std::async(general::testLoopingThread));
 					results.push_back(std::async(controller_registers::testControllerReset));
 					results.push_back(std::async(commands::testNVMeCommandParsing));
+					results.push_back(std::async(driver::testNoDataCommandViaDriver));
+					results.push_back(std::async(driver::testReadCommandViaDriver));
 					results.push_back(std::async(prp::testDifferentPRPSizes));
 					results.push_back(std::async(prp::testDataIntoExistingPRP));
 					results.push_back(std::async(logging::testAsserting));
@@ -82,7 +84,7 @@ namespace cnvme
 			{
 				// Can't afford to take the time to randomize a 128MB buffer... so just randomly flip some bytes
 				UINT_32 jumpNum = (UINT_32)randInt((UINT_64)payload.getSize() / 4, (UINT_64)payload.getSize() / 2);
-				for (UINT_32 i = 0; i < payload.getSize(); i+=jumpNum)
+				for (UINT_32 i = 0; i < payload.getSize(); i += jumpNum)
 				{
 					payload.getBuffer()[i] = (BYTE)randInt(0, 0xFF);
 				}
@@ -182,7 +184,7 @@ namespace cnvme
 				}
 				FAIL_IF(rdyTo1 == false, "CSTS.RDY did not transition to 1 after CC.EN was set to 1");
 
-				UINT_32 savedAMS = CR->CC.AMS;  
+				UINT_32 savedAMS = CR->CC.AMS;
 				UINT_32 savedACQB = (UINT_32)helpers::randInt(0, 0xFFFF);  // Make sure this does not get reset
 				CR->CC.AMS = helpers::randInt(0, 0b111);          // Make sure most things get reset
 				CR->ACQ.ACQB = savedACQB;
@@ -249,6 +251,80 @@ namespace cnvme
 			}
 		}
 
+		namespace driver
+		{
+			bool testNoDataCommandViaDriver()
+			{
+				cnvme::driver::Driver driver;
+				UINT_32 BUF_SIZE = sizeof(cnvme::driver::DRIVER_COMMAND);
+				BYTE* buffer = new BYTE[BUF_SIZE];
+				memset(buffer, 0, BUF_SIZE);
+
+				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
+				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
+
+				UINT_32 timeout = 5; // arbitrary
+				pDriverCommand->Timeout = timeout;
+				pDriverCommand->TransferDataDirection = cnvme::driver::NO_DATA;
+				pDriverCommand->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::KEEP_ALIVE;
+
+				for (UINT_32 i = 0; i < 8; i++)
+				{
+					driver.sendCommand(buffer, BUF_SIZE);
+					ASSERT_IF(pDriverCommand->DriverStatus != cnvme::driver::SENT_SUCCESSFULLY, "Command did not send successfully");
+					ASSERT_IF(pDriverCommand->TransferDataDirection != cnvme::driver::NO_DATA, "Command transfer data direction somehow changed");
+					ASSERT_IF(pDriverCommand->Timeout != timeout, "Timeout value should not have changed");
+					ASSERT_IF(pDriverCommand->TransferDataSize != 0, "Data transfer size should not have changed");
+					ASSERT_IF(pDriverCommand->Command.DWord0Breakdown.CID != i, "Command's CID should match loop iteration");
+					ASSERT_IF(pDriverCommand->CompletionQueueEntry.CID != pDriverCommand->Command.DWord0Breakdown.CID, "Completion CID should match that of the submission");
+					ASSERT_IF(pDriverCommand->CompletionQueueEntry.SC != 0, "Status wan't success for sending Identify Controller");
+					ASSERT_IF(pDriverCommand->CompletionQueueEntry.SCT != 0, "Status code type wan't generic for sending Identify Controller");
+					ASSERT_IF(pDriverCommand->Command.DPTR.DPTR1 != 0, "DPTR1 was somehow not 0 even though this is non-data");
+					ASSERT_IF(pDriverCommand->Command.DPTR.DPTR2 != 0, "DPTR2 was somehow not 0 even though this is non-data");
+				}
+
+				return true;
+			}
+
+			bool testReadCommandViaDriver()
+			{
+				cnvme::driver::Driver driver;
+				UINT_32 BUF_SIZE = sizeof(cnvme::identify::structures::IDENTIFY_CONTROLLER) + sizeof(cnvme::driver::DRIVER_COMMAND);
+				BYTE* buffer = new BYTE[BUF_SIZE];
+				memset(buffer, 0, BUF_SIZE);
+
+				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
+				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
+
+				UINT_32 timeout = 5; // arbitrary
+				pDriverCommand->Timeout = timeout;
+				pDriverCommand->TransferDataSize = sizeof(cnvme::identify::structures::IDENTIFY_CONTROLLER);
+				pDriverCommand->TransferDataDirection = cnvme::driver::READ;
+				pDriverCommand->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::IDENTIFY;
+				pDriverCommand->Command.DW10_Identify.CNS = cnvme::constants::commands::identify::cns::CONTROLLER;
+
+				for (UINT_32 i = 0; i < 8; i++)
+				{
+					driver.sendCommand(buffer, BUF_SIZE);
+					ASSERT_IF(pDriverCommand->DriverStatus != cnvme::driver::SENT_SUCCESSFULLY, "Command did not send successfully");
+					ASSERT_IF(pDriverCommand->TransferDataDirection != cnvme::driver::READ, "Command transfer data direction somehow changed");
+					ASSERT_IF(pDriverCommand->Timeout != timeout, "Timeout value should not have changed");
+					ASSERT_IF(pDriverCommand->TransferDataSize != sizeof(cnvme::identify::structures::IDENTIFY_CONTROLLER), "Data transfer size should not have changed");
+					ASSERT_IF(pDriverCommand->Command.DWord0Breakdown.CID != i, "Command's CID should match loop iteration");
+					ASSERT_IF(pDriverCommand->CompletionQueueEntry.CID != pDriverCommand->Command.DWord0Breakdown.CID, "Completion CID should match that of the submission");
+					ASSERT_IF(pDriverCommand->CompletionQueueEntry.SC != 0, "Status wan't success for sending Identify Controller");
+					ASSERT_IF(pDriverCommand->CompletionQueueEntry.SCT != 0, "Status code type wan't generic for sending Identify Controller");
+
+					auto pIdentifyController = (cnvme::identify::structures::PIDENTIFY_CONTROLLER)pDriverCommand->TransferData;
+					ASSERT_IF(std::string(pIdentifyController->MN) != std::string(DEFAULT_MODEL), "Model didn't match expectations");
+					ASSERT_IF(std::string(pIdentifyController->SN) != std::string(DEFAULT_SERIAL), "Serial didn't match expectations");
+					ASSERT_IF(std::string(pIdentifyController->FR) != std::string(DEFAULT_FIRMWARE), "Firmware didn't match expectations");
+				}
+
+				return true;
+			}
+		}
+
 		namespace prp
 		{
 			bool testDifferentPRPSizes()
@@ -256,7 +332,7 @@ namespace cnvme
 				// Wide range of sizes to test les than a page, equal to a page, two pages, 
 				//  and a scenario to queue a chained PRP list.
 				std::vector<UINT_32> dataXfrSizes = { 512, 4095, 4096, 4097, 8192, 8193, 4096 * 100 };
-				
+
 				// memory page size is is 2 ^ (12 + CC.MPS). CC.MPS is 4 bits.
 				//  Test all valid page sizes
 				std::vector<UINT_32> memoryPageSizes;
@@ -309,7 +385,7 @@ namespace cnvme
 						PRP prp(payloadWithoutData, pageSize);
 						prp.placePayloadInExistingPRPs(payloadWithData);
 
-						FAIL_IF_AND_HIDE_LOG(prp.placePayloadInExistingPRPs(payloadWithDataTooLarge) , "Placing a larger than allocated Payload into PRPs should have failed!");
+						FAIL_IF_AND_HIDE_LOG(prp.placePayloadInExistingPRPs(payloadWithDataTooLarge), "Placing a larger than allocated Payload into PRPs should have failed!");
 						// Status will be messed with here. So clear.
 						cnvme::logging::theLogger.clearStatus();
 
@@ -364,3 +440,4 @@ namespace cnvme
 		}
 	}
 }
+
