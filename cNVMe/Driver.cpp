@@ -250,7 +250,7 @@ namespace cnvme
 			// Watch for timeout and the completion queue 
 			UINT_64 deathTime = helpers::getTimeInMilliseconds() + (pDriverCommand->Timeout * 1000);
 
-			bool commandTimedOut = false;
+			bool commandTimedOut = true;
 			while (helpers::getTimeInMilliseconds() < deathTime)
 			{
 				bool foundCompletion = false;
@@ -271,6 +271,7 @@ namespace cnvme
 
 				if (foundCompletion)
 				{
+					commandTimedOut = false;
 					break;
 				}
 			}
