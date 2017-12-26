@@ -102,7 +102,12 @@ namespace cnvme
 		namespace driver
 		{
 			/// <summary>
-			/// Tests sending commands via the driver
+			/// Tests sending no data commands via the driver
+			/// <summary>
+			bool testNoDataCommandViaDriver();
+
+			/// <summary>
+			/// Tests sending read commands via the driver
 			/// <summary>
 			bool testReadCommandViaDriver();
 		}

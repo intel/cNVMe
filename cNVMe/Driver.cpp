@@ -271,7 +271,7 @@ namespace cnvme
 						memcpy_s(&pDriverCommand->CompletionQueueEntry, sizeof(pDriverCommand->CompletionQueueEntry), pCompletionQueueEntry, sizeof(COMPLETION_QUEUE_ENTRY));
 						
 						// copy data back if this was a read.
-						if (pDriverCommand->TransferDataDirection = READ)
+						if (pDriverCommand->TransferDataDirection == READ)
 						{
 							auto payloadOfReadData = prps.getPayloadCopy();
 							memcpy_s(&pDriverCommand->TransferData, driverCommandBufferSize - sizeof(DRIVER_COMMAND), payloadOfReadData.getBuffer(), pDriverCommand->TransferDataSize);
@@ -295,7 +295,6 @@ namespace cnvme
 			{
 				LOG_ERROR("The command timed out");
 				pDriverCommand->DriverStatus = TIMEOUT;
-				return;
 			}
 		}
 
