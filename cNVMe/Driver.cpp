@@ -25,6 +25,7 @@ Driver.cpp - An implementation file for the cNVMe 'Driver'
 
 #include "Driver.h"
 #include "Identify.h"
+#include "Strings.h"
 #include "Tests.h"
 
 #define ADMIN_QUEUE_SIZE 15	// This is 0 based
@@ -95,9 +96,6 @@ namespace cnvme
 
 		Driver::Driver()
 		{
-			// setup
-			CommandIdCounter = 0;
-
 			// We have a controller... it is not running.
 			auto controllerRegisters = TheController.getControllerRegisters()->getControllerRegisters();
 
@@ -222,15 +220,18 @@ namespace cnvme
 
 			// here goes nothing... send the command!
 			auto pSubmissionQueue = &submissionQueueItr->second;
-			
-			// Don't let data commands go yet
-			ASSERT_IF(pDriverCommand->TransferDataDirection != NO_DATA, "Not implemented yet!");
 
 			// Add the CID to the command
-			pDriverCommand->Command.DWord0Breakdown.CID = CommandIdCounter;
+			pDriverCommand->Command.DWord0Breakdown.CID = getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(pSubmissionQueue->getQueueId());
 
-			// Incrememnt the CID for later
-			CommandIdCounter++;
+			// create a prps object (even if we don't use it)
+			//  should stay in scope till command is done or we time out.
+			PRP prps(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), TheController.getControllerRegisters()->getMemoryPageSize());
+			if (pDriverCommand->TransferDataDirection != NO_DATA)
+			{
+				pDriverCommand->Command.DPTR.DPTR1 = prps.getPRP1();
+				pDriverCommand->Command.DPTR.DPTR2 = prps.getPRP2();
+			}
 
 			// Get a pointer to the location to place the command
 			UINT_8* theRawSubmissionQueue = MEMORY_ADDRESS_TO_8POINTER(pSubmissionQueue->getMemoryAddress());
@@ -238,6 +239,9 @@ namespace cnvme
 			nvmeCommand += pSubmissionQueue->getTailPointer(); // Make sure we increment to the correct command.
 
 			// Copy the command into the submission queue
+			LOG_INFO("About to copy a command with an opcode of 0x" + cnvme::strings::toHexString(pDriverCommand->Command.DWord0Breakdown.OPC) + \
+				" to submission queue 0x" + cnvme::strings::toHexString(pDriverCommand->QueueId) + " and CID of 0x" + cnvme::strings::toHexString(pDriverCommand->Command.DWord0Breakdown.CID));
+
 			memcpy_s(nvmeCommand, sizeof(NVME_COMMAND), &pDriverCommand->Command, sizeof(pDriverCommand->Command));
 
 			// Move the tail pointer up and ring the doorbell.
@@ -261,7 +265,18 @@ namespace cnvme
 				{
 					if (pCompletionQueueEntry->CID == pDriverCommand->Command.DWord0Breakdown.CID)
 					{
+						LOG_INFO("Found matching completion entry for CID " + strings::toHexString(pCompletionQueueEntry->CID) + " in CQE index " + \
+							strings::toHexString(completionEntryIndex));
+
 						memcpy_s(&pDriverCommand->CompletionQueueEntry, sizeof(pDriverCommand->CompletionQueueEntry), pCompletionQueueEntry, sizeof(COMPLETION_QUEUE_ENTRY));
+						
+						// copy data back if this was a read.
+						if (pDriverCommand->TransferDataDirection = READ)
+						{
+							auto payloadOfReadData = prps.getPayloadCopy();
+							memcpy_s(&pDriverCommand->TransferData, driverCommandBufferSize - sizeof(DRIVER_COMMAND), payloadOfReadData.getBuffer(), pDriverCommand->TransferDataSize);
+						}
+
 						pDriverCommand->DriverStatus = SENT_SUCCESSFULLY;
 						foundCompletion = true;
 						break;
@@ -282,6 +297,25 @@ namespace cnvme
 				pDriverCommand->DriverStatus = TIMEOUT;
 				return;
 			}
+		}
+
+		UINT_16 Driver::getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(UINT_16 submissionQueueId)
+		{
+			auto entry = SubmissionQueueIdToCurrentCommandIdentifiers.find(submissionQueueId);
+			UINT_16 retVal = 0;
+
+			// New Submission Queue?
+			if (entry == SubmissionQueueIdToCurrentCommandIdentifiers.end())
+			{
+				SubmissionQueueIdToCurrentCommandIdentifiers[submissionQueueId] = 0; // Add new set for this queue
+			}
+			// Existing Submission Queue?
+			else
+			{
+				(*entry).second++;
+			}
+
+			return SubmissionQueueIdToCurrentCommandIdentifiers[submissionQueueId];
 		}
 	}
 }

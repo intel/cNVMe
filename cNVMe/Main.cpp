@@ -39,24 +39,22 @@ int main()
 	// This is testing code.
 	LOG_SET_LEVEL(2);
 
-
-
 	Driver driver;
-	DRIVER_COMMAND d;
-	memset(&d, 0, sizeof(d));
-	d.Timeout = 5;
-	d.Command.DWord0Breakdown.OPC = 0x18;
+	UINT_32 BUF_SIZE = 8192;
+	BYTE* buffer = new BYTE[BUF_SIZE];
+	memset(buffer, 0, BUF_SIZE);
 
-	driver.sendCommand((UINT_8*)&d, sizeof(d));
+	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
+	d->Timeout = 5;
+	d->Command.DWord0Breakdown.OPC = 6;
+	d->Command.DWord10 = 1;
+	d->TransferDataDirection = READ;
+	d->TransferDataSize = 4096;
+
+	driver.sendCommand((UINT_8*)d, BUF_SIZE);
 
 	char c = '1';
-	driver.sendCommand((UINT_8*)&d, sizeof(d));
-	c = '1';
-	driver.sendCommand((UINT_8*)&d, sizeof(d));
-	c = '1';
-
-
-
+	driver.sendCommand((UINT_8*)d, BUF_SIZE);
 
 	/*
 	Controller co;

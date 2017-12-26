@@ -25,8 +25,11 @@ Tests.h - A header file for all unit testing
 #pragma once
 
 #include "Command.h"
+#include "Constants.h"
 #include "Controller.h"
 #include "ControllerRegisters.h"
+#include "Driver.h"
+#include "Identify.h"
 #include "LoopingThread.h"
 #include "PCIe.h"
 #include "PRP.h"
@@ -94,6 +97,14 @@ namespace cnvme
 			/// Tests the general NVMe Command parsing
 			/// </summary>
 			bool testNVMeCommandParsing();
+		}
+
+		namespace driver
+		{
+			/// <summary>
+			/// Tests sending commands via the driver
+			/// <summary>
+			bool testReadCommandViaDriver();
 		}
 
 		namespace prp

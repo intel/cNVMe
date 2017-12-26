@@ -130,9 +130,14 @@ namespace cnvme
 			std::map<UINT_16, controller::Queue> CompletionQueues;
 
 			/// <summary>
-			/// Keep track of used command ids and count up
+			/// Used to keep track of CIDs that have been used
 			/// </summary>
-			UINT_8 CommandIdCounter;
+			std::map<UINT_16, UINT_16> SubmissionQueueIdToCurrentCommandIdentifiers;
+
+			/// <summary>
+			/// Will update SubmissionQueueIdToCurrentCommandIdentifiers and return the next CID.
+			/// </summary>
+			UINT_16 getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(UINT_16 submissionQueueId);
 		};
 	}
 }
