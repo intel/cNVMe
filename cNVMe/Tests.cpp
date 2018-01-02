@@ -58,7 +58,7 @@ namespace cnvme
 				std::vector<std::future<bool>> results;
 
 				// Run all tests 10 times, multi-threaded
-				for (int i = 0; i < 1; i++)
+				for (int i = 0; i < 10; i++)
 				{
 					results.push_back(std::async(pci::testPciHeaderId));
 					results.push_back(std::async(general::testLoopingThread));
