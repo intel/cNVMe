@@ -45,6 +45,7 @@ namespace cnvme
 			BUFFER_NOT_LARGE_ENOUGH,
 			INVALID_DATA_DIRECTION,
 			INVALID_DATA_LENGTH,
+			INVALID_DATA_LENGTH_FOR_MANUAL_PRPS,
 		};
 
 		/// <summary>
@@ -63,6 +64,7 @@ namespace cnvme
 			READ,
 			WRITE,
 			BI_DIRECTIONAL,
+			MANUAL_PRPS, // used if the driver should ignore checks for data length since the user is handling PRPs
 			DATA_DIRECTION_MAX,
 		};
 

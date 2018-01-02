@@ -66,6 +66,10 @@ namespace cnvme
 			{
 				return "The data length was invalid";
 			}
+			else if (s == INVALID_DATA_LENGTH_FOR_MANUAL_PRPS)
+			{
+				return "The data length was invalid since the user should be providing their own PRPs embedded in the DWs";
+			}
 
 			ASSERT("Status not found in statusToString()");
 			return "Unknown";
@@ -157,6 +161,7 @@ namespace cnvme
 				if (controllerRegisters->CSTS.RDY)
 				{
 					controllerWentReady = true;
+					break;
 				}
 			}
 
@@ -200,6 +205,14 @@ namespace cnvme
 				return;
 			}
 
+			// If the user gave data but also wanted to passdown their own PRPs
+			if (pDriverCommand->TransferDataDirection == MANUAL_PRPS && pDriverCommand->TransferDataSize != 0)
+			{
+				LOG_ERROR("The user specified that they wanted to create/use their own PRPs, and yet they gave the driver transfer data... Where would it go?");
+				pDriverCommand->DriverStatus = INVALID_DATA_LENGTH_FOR_MANUAL_PRPS;
+				return;
+			}
+
 			// If we don't have a submission queue that matches, fail now
 			auto submissionQueueItr = this->SubmissionQueues.find(pDriverCommand->QueueId);
 			if (submissionQueueItr == this->SubmissionQueues.end())
@@ -224,14 +237,16 @@ namespace cnvme
 			// Add the CID to the command
 			pDriverCommand->Command.DWord0Breakdown.CID = getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(pSubmissionQueue->getQueueId());
 
+
 			// create a prps object (even if we don't use it)
 			//  should stay in scope till command is done or we time out.
-			PRP prps(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), this->TheController.getControllerRegisters()->getMemoryPageSize());
-			if (pDriverCommand->TransferDataDirection != NO_DATA)
+			PRP prps = PRP(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), this->TheController.getControllerRegisters()->getMemoryPageSize());
+			if (pDriverCommand->TransferDataDirection == READ || pDriverCommand->TransferDataDirection == WRITE || pDriverCommand->TransferDataDirection == BI_DIRECTIONAL)
 			{
 				pDriverCommand->Command.DPTR.DPTR1 = prps.getPRP1();
 				pDriverCommand->Command.DPTR.DPTR2 = prps.getPRP2();
 			}
+
 
 			// Get a pointer to the location to place the command
 			UINT_8* theRawSubmissionQueue = MEMORY_ADDRESS_TO_8POINTER(pSubmissionQueue->getMemoryAddress());
@@ -269,7 +284,7 @@ namespace cnvme
 							strings::toHexString(completionEntryIndex));
 
 						memcpy_s(&pDriverCommand->CompletionQueueEntry, sizeof(pDriverCommand->CompletionQueueEntry), pCompletionQueueEntry, sizeof(COMPLETION_QUEUE_ENTRY));
-						
+
 						// copy data back if this was a read.
 						if (pDriverCommand->TransferDataDirection == READ)
 						{
