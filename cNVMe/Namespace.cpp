@@ -1,4 +1,3 @@
-#include "Namespace.h"
 /*
 ###########################################################################################
 // cNVMe - An Open Source NVMe Device Simulation - MIT License
@@ -26,7 +25,10 @@ Namespace.cpp - An implementation file for a cNVMe Namespace
 
 #define DEFAULT_NUMBER_OF_LBA_FORMAT 2; // 0-based!
 
+#include <ctgmath>
+
 #include "Constants.h"
+#include "Namespace.h"
 
 namespace cnvme
 {
