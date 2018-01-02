@@ -25,7 +25,7 @@ Controller.cpp - An implementation file for the NVMe Controller
 
 #define NVME_CALLER_IMPLEMENTATION(commandName) void Controller::commandName(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
 
-#define DEFAULT_NAMESPACE_SIZE 536870912 // 512 megabytes
+#define DEFAULT_NAMESPACE_SIZE 134217728 // 128 megabytes
 
 #include "Command.h"
 #include "Constants.h"
