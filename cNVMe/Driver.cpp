@@ -97,7 +97,7 @@ namespace cnvme
 		Driver::Driver()
 		{
 			// We have a controller... it is not running.
-			auto controllerRegisters = TheController.getControllerRegisters()->getControllerRegisters();
+			auto controllerRegisters = this->TheController.getControllerRegisters()->getControllerRegisters();
 
 			ASSERT_IF(!controllerRegisters, "The controller registers were somehow NULL!");
 
@@ -125,8 +125,8 @@ namespace cnvme
 			adminCompletionQueuePayload.setDeleteOnScopeLoss(false);
 
 			// Get pointers to the doorbells for the admin queues
-			UINT_16* adminSubmissionQueueDoorbell = &TheController.getControllerRegisters()->getQueueDoorbells()->SQTDBL.SQT;
-			UINT_16* adminCompletionQueueDoorbell = &TheController.getControllerRegisters()->getQueueDoorbells()->CQHDBL.CQH;
+			UINT_16* adminSubmissionQueueDoorbell = &this->TheController.getControllerRegisters()->getQueueDoorbells()->SQTDBL.SQT;
+			UINT_16* adminCompletionQueueDoorbell = &this->TheController.getControllerRegisters()->getQueueDoorbells()->CQHDBL.CQH;
 
 			// Place the memory addresses in the registers
 			controllerRegisters->ASQ.ASQB = adminSubmissionQueuePayload.getMemoryAddress();
@@ -137,12 +137,12 @@ namespace cnvme
 			Queue adminCompletionQueue(ONE_BASED_FROM_ZERO_BASED(controllerRegisters->AQA.ACQS), ADMIN_QUEUE_ID, adminCompletionQueueDoorbell, controllerRegisters->ACQ.ACQB);
 
 			// Add Queue objects to our container
-			SubmissionQueues[ADMIN_QUEUE_ID] = adminSubmissionQueue;
-			CompletionQueues[ADMIN_QUEUE_ID] = adminCompletionQueue;
+			this->SubmissionQueues[ADMIN_QUEUE_ID] = adminSubmissionQueue;
+			this->CompletionQueues[ADMIN_QUEUE_ID] = adminCompletionQueue;
 
 			// Link the Queue objects to each other
-			SubmissionQueues[ADMIN_QUEUE_ID].setMappedQueue(&CompletionQueues[ADMIN_QUEUE_ID]);
-			CompletionQueues[ADMIN_QUEUE_ID].setMappedQueue(&SubmissionQueues[ADMIN_QUEUE_ID]);
+			this->SubmissionQueues[ADMIN_QUEUE_ID].setMappedQueue(&this->CompletionQueues[ADMIN_QUEUE_ID]);
+			this->CompletionQueues[ADMIN_QUEUE_ID].setMappedQueue(&this->SubmissionQueues[ADMIN_QUEUE_ID]);
 
 			// Enable the controller
 			controllerRegisters->CC.EN = 1;
@@ -201,8 +201,8 @@ namespace cnvme
 			}
 
 			// If we don't have a submission queue that matches, fail now
-			auto submissionQueueItr = SubmissionQueues.find(pDriverCommand->QueueId);
-			if (submissionQueueItr == SubmissionQueues.end())
+			auto submissionQueueItr = this->SubmissionQueues.find(pDriverCommand->QueueId);
+			if (submissionQueueItr == this->SubmissionQueues.end())
 			{
 				LOG_ERROR("Couldn't find a submission queue with the id: " + std::to_string(pDriverCommand->QueueId));
 				pDriverCommand->DriverStatus = NO_MATCHING_SUBMISSION_QUEUE;
@@ -226,7 +226,7 @@ namespace cnvme
 
 			// create a prps object (even if we don't use it)
 			//  should stay in scope till command is done or we time out.
-			PRP prps(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), TheController.getControllerRegisters()->getMemoryPageSize());
+			PRP prps(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), this->TheController.getControllerRegisters()->getMemoryPageSize());
 			if (pDriverCommand->TransferDataDirection != NO_DATA)
 			{
 				pDriverCommand->Command.DPTR.DPTR1 = prps.getPRP1();
@@ -244,7 +244,7 @@ namespace cnvme
 
 			memcpy_s(nvmeCommand, sizeof(NVME_COMMAND), &pDriverCommand->Command, sizeof(pDriverCommand->Command));
 
-			// Move the tail pointer up and ring the doorbell.
+			// Move the tail pointer up and ring the doorbell. This is the 'sending' per-say.
 			pSubmissionQueue->incrementTailPointerAndRingDoorbell();
 
 			// The head pointer is not used here. Just the tail.
@@ -300,13 +300,13 @@ namespace cnvme
 
 		UINT_16 Driver::getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(UINT_16 submissionQueueId)
 		{
-			auto entry = SubmissionQueueIdToCurrentCommandIdentifiers.find(submissionQueueId);
+			auto entry = this->SubmissionQueueIdToCurrentCommandIdentifiers.find(submissionQueueId);
 			UINT_16 retVal = 0;
 
 			// New Submission Queue?
-			if (entry == SubmissionQueueIdToCurrentCommandIdentifiers.end())
+			if (entry == this->SubmissionQueueIdToCurrentCommandIdentifiers.end())
 			{
-				SubmissionQueueIdToCurrentCommandIdentifiers[submissionQueueId] = 0; // Add new set for this queue
+				this->SubmissionQueueIdToCurrentCommandIdentifiers[submissionQueueId] = 0; // Add new set for this queue
 			}
 			// Existing Submission Queue?
 			else
@@ -314,7 +314,7 @@ namespace cnvme
 				(*entry).second++;
 			}
 
-			return SubmissionQueueIdToCurrentCommandIdentifiers[submissionQueueId];
+			return this->SubmissionQueueIdToCurrentCommandIdentifiers[submissionQueueId];
 		}
 	}
 }
