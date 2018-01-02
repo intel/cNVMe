@@ -25,8 +25,6 @@ Namespace.cpp - An implementation file for a cNVMe Namespace
 
 #define DEFAULT_NUMBER_OF_LBA_FORMAT 2; // 0-based!
 
-#include <ctgmath>
-
 #include "Constants.h"
 #include "Namespace.h"
 
@@ -118,7 +116,7 @@ namespace cnvme
 
 		UINT_32 Namespace::getSectorSize()
 		{
-			UINT_32 sectorSize = (UINT_32)std::powl(2, this->IdentifyNamespace.LBAF[this->IdentifyNamespace.FLBAS.CurrentLBAFormat].LBADS);
+			UINT_32 sectorSize = (UINT_32)std::pow(2, this->IdentifyNamespace.LBAF[this->IdentifyNamespace.FLBAS.CurrentLBAFormat].LBADS);
 			ASSERT_IF(sectorSize < 512, "Sector size shouldn't be less than 512!");
 			return sectorSize;
 		}
