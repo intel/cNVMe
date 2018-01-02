@@ -152,7 +152,7 @@ namespace cnvme
 				UINT_16 MNTMT;
 				UINT_16 MXTMT;
 				union {
-					struct{
+					struct {
 						UINT_32 CryptoEraseSanitizeSupported : 1;
 						UINT_32 BlockEraseSanitizeSupported : 1;
 						UINT_32 OverwriteSanitizeSupported : 1;
@@ -216,6 +216,50 @@ namespace cnvme
 				UINT_8 VendorSpecific[1024];
 			} IDENTIFY_CONTROLLER, *PIDENTIFY_CONTROLLER;
 			static_assert(sizeof(IDENTIFY_CONTROLLER) == 4096, "Identify controller should be 4096 bytes in size");
+
+			typedef struct LBA_FORMAT {
+				UINT_16 MS;
+				UINT_8 LBADS;
+				UINT_8 RP : 2;
+				UINT_8 RSVD : 6;
+			} LBA_FORMAT, *PLBA_FORMAT;
+			static_assert(sizeof(LBA_FORMAT) == 4, "LBA Formats are 4 bytes in size");
+
+			typedef struct IDENTIFY_NAMESPACE {
+				UINT_64 NSZE;
+				UINT_64 NCAP;
+				UINT_64 NUSE;
+				UINT_8 NSFEAT;
+				UINT_8 NLBAF;
+				UINT_8 FLBAS;
+				UINT_8 MC;
+				UINT_8 DPC;
+				UINT_8 DPS;
+				struct {
+					UINT_8 NamespaceMayBeAttachedToMoreThanOneController : 1;
+					UINT_8 RSVD_NMIC : 7;
+				} NMIC;
+				UINT_8 RESCAP;
+				UINT_8 FPI;
+				UINT_8 DLFEAT;
+				UINT_16 NAWUN;
+				UINT_16 NAWUPF;
+				UINT_16 NACWU;
+				UINT_16 NABSN;
+				UINT_16 NABO;
+				UINT_16 NABSPF;
+				UINT_16 NOIOB;
+				struct {
+					UINT_64 NVMCAP_64[2]; // 128 bits
+				} NVMCAP;
+				UINT_8 RSVD_103_64[40];
+				char NGUID[16];
+				UINT_64 EUI64; // big endian
+				LBA_FORMAT LBAF[16];
+				UINT_8 RSVD_192_383[192];
+				UINT_8 VendorSpecific[3712];
+			} IDENTIFY_NAMESPACE, *PIDENTIFY_NAMESPACE;
+			static_assert(sizeof(IDENTIFY_NAMESPACE) == 4096, "Identify Namespace should be 4096 bytes in size");
 		}
 	}
 }

@@ -60,6 +60,9 @@
     <ClInclude Include="Driver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Namespace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PCIe.cpp">
@@ -102,6 +105,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Driver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Namespace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
