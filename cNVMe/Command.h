@@ -174,17 +174,13 @@ namespace cnvme
 						struct
 						{
 							UINT_16 P : 1; // Phase Tag
-							UINT_16 SF : 15; // Status Field
-						};
-						struct
-						{
-							UINT_16 RSVD0 : 1; // Reserved
 							UINT_16 SC : 8; // Status Code
 							UINT_16 SCT : 3; // Status Code Type
 							UINT_16 RSVD1 : 2; // Reserved
 							UINT_16 M : 1; // More
 							UINT_16 DNR : 1; // Do Not Retry
 						};
+
 					};
 				};
 				UINT_32 DWord3;

@@ -47,6 +47,8 @@ namespace cnvme
 
 	PRP::PRP(const Payload &payload, UINT_32 memoryPageSize) : PRP()
 	{
+		LOG_INFO("Payload with a size of " + std::to_string(payload.getSize()) + " was passed to PRP()");
+
 		FreeOnScopeLoss = true;
 		NumberOfBytes = payload.getSize();
 		MemoryPageSize = memoryPageSize;

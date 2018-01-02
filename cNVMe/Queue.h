@@ -101,6 +101,12 @@ namespace cnvme
 			UINT_16 incrementAndGetHeadCloserToTail();
 
 			/// <summary>
+			/// Will add 1 to the tail pointer and wrap as needed
+			///  Then it will ring the doorbell for the queue.
+			/// </summary>
+			void incrementTailPointerAndRingDoorbell();
+
+			/// <summary>
 			/// Returns the address of the linked memory
 			/// </summary>
 			/// <returns>Address</returns>
