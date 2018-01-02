@@ -36,16 +36,16 @@ namespace cnvme
 		MemoryPageSize = 0;
 	}
 
-	PRP::PRP(UINT_64 prp1, UINT_64 prp2, UINT_32 numBytes, UINT_32 memoryPageSize) : PRP()
+	PRP::PRP(UINT_64 prp1, UINT_64 prp2, size_t numBytes, UINT_32 memoryPageSize) : PRP()
 	{
 		FreeOnScopeLoss = false;
 		PRP1 = prp1;
 		PRP2 = prp2;
 		NumberOfBytes = numBytes;
-		MemoryPageSize = memoryPageSize;
+		MemoryPageSize = (size_t)memoryPageSize;
 	}
 
-	PRP::PRP(const Payload &payload, UINT_32 memoryPageSize) : PRP()
+	PRP::PRP(const Payload &payload, size_t memoryPageSize) : PRP()
 	{
 		LOG_INFO("Payload with a size of " + std::to_string(payload.getSize()) + " was passed to PRP()");
 
@@ -53,10 +53,10 @@ namespace cnvme
 		NumberOfBytes = payload.getSize();
 		MemoryPageSize = memoryPageSize;
 
-		UINT_32 bytesRemaining = NumberOfBytes;
+		size_t bytesRemaining = NumberOfBytes;
 
 		// PRP1 will be the first MPS (memory page size) of the data
-		UINT_32 prp1DataSize = std::min(payload.getSize(), MemoryPageSize);
+		size_t prp1DataSize = std::min(payload.getSize(), MemoryPageSize);
 		ALLOC_BYTE_ARRAY(prp1Pointer, prp1DataSize); 
 		// This is sort of not how this works in NVMe. In NVMe, we would have an entire page allocated.
 		// Though for the simulation, this can be really slow. If we only need say 512 bytes instead of a full 128MB page
@@ -101,7 +101,7 @@ namespace cnvme
 
 						ALLOC_BYTE_ARRAY(listItem, MemoryPageSize);
 
-						UINT_32 bytesToCopy = std::min(MemoryPageSize, bytesRemaining);
+						size_t bytesToCopy = std::min(MemoryPageSize, bytesRemaining);
 
 						memcpy_s(listItem, MemoryPageSize, bufPointer, bytesToCopy);
 
@@ -143,8 +143,8 @@ namespace cnvme
 			if (usesPRPList())
 			{
 				// Go through all items in the PRP2 list and free memory
-				std::vector<std::pair<BYTE*, UINT_32>> prpList = getPRPListPointers();
-				for (std::pair<BYTE*, UINT_32> &prp : prpList)
+				std::vector<std::pair<BYTE*, size_t>> prpList = getPRPListPointers();
+				for (std::pair<BYTE*, size_t> &prp : prpList)
 				{
 					delete[]prp.first;
 				}
@@ -163,7 +163,7 @@ namespace cnvme
 		Payload payload;
 		if (NumberOfBytes > 0)
 		{
-			UINT_32 bytesRemaining = NumberOfBytes;
+			size_t bytesRemaining = NumberOfBytes;
 			// no matter what, prp 1 is used
 			BYTE* prp1Pointer = MEMORY_ADDRESS_TO_8POINTER(PRP1);
 			payload.append(Payload(prp1Pointer, std::min(bytesRemaining, MemoryPageSize)));
@@ -172,8 +172,8 @@ namespace cnvme
 			{
 				if (usesPRPList())
 				{
-					std::vector<std::pair<BYTE*, UINT_32>> prpList = getPRPListPointers();
-					for (std::pair<BYTE*, UINT_32> &prp : prpList)
+					std::vector<std::pair<BYTE*, size_t>> prpList = getPRPListPointers();
+					for (std::pair<BYTE*, size_t> &prp : prpList)
 					{
 						payload.append(Payload(prp.first, prp.second));
 					}
@@ -189,7 +189,7 @@ namespace cnvme
 		return payload;
 	}
 
-	UINT_32 PRP::getNumBytes()
+	size_t PRP::getNumBytes()
 	{
 		return NumberOfBytes;
 	}
@@ -199,7 +199,7 @@ namespace cnvme
 		return FreeOnScopeLoss;
 	}
 
-	UINT_32 PRP::getMemoryPageSize()
+	size_t PRP::getMemoryPageSize()
 	{
 		return MemoryPageSize;
 	}
@@ -222,12 +222,12 @@ namespace cnvme
 			return false;
 		}
 
-		UINT_32 bytesRemaining = payload.getSize();
+		size_t bytesRemaining = payload.getSize();
 
 		BYTE* prp1Pointer = MEMORY_ADDRESS_TO_8POINTER(PRP1);
 
 		// Copy in first page of data
-		UINT_32 bytesIntoPrp1 = std::min(MemoryPageSize, bytesRemaining);
+		size_t bytesIntoPrp1 = std::min(MemoryPageSize, bytesRemaining);
 		BYTE* payloadBuf = payload.getBuffer();
 		memcpy_s(prp1Pointer, MemoryPageSize, payloadBuf, bytesIntoPrp1);
 		payloadBuf += bytesIntoPrp1;
@@ -238,8 +238,8 @@ namespace cnvme
 			BYTE* prp2Pointer = MEMORY_ADDRESS_TO_8POINTER(PRP2);
 			if (usesPRPList())
 			{
-				std::vector<std::pair<BYTE*, UINT_32>> prpList = getPRPListPointers();
-				for (std::pair<BYTE*, UINT_32> &prp : prpList)
+				std::vector<std::pair<BYTE*, size_t>> prpList = getPRPListPointers();
+				for (std::pair<BYTE*, size_t> &prp : prpList)
 				{
 					memcpy_s(prp.first, prp.second, payloadBuf, prp.second);
 					payloadBuf += prp.second;
@@ -248,7 +248,7 @@ namespace cnvme
 			else
 			{
 				// Copy the rest of the data into PRP2
-				UINT_32 bytesIntoPrp2 = std::min(MemoryPageSize, bytesRemaining);
+				size_t bytesIntoPrp2 = std::min(MemoryPageSize, bytesRemaining);
 				memcpy_s(prp2Pointer, MemoryPageSize, payloadBuf, bytesIntoPrp2);
 			}
 		}
@@ -264,7 +264,7 @@ namespace cnvme
 	{
 		if (usesPRPList())
 		{
-			UINT_32 bytesRemaining = NumberOfBytes;
+			size_t bytesRemaining = NumberOfBytes;
 			bytesRemaining -= std::min(MemoryPageSize, NumberOfBytes);
 
 			return (UINT_32)std::ceil(bytesRemaining / (double)MemoryPageSize);
@@ -278,12 +278,12 @@ namespace cnvme
 		return (UINT_32)(MemoryPageSize / sizeof(UINT_64));
 	}
 
-	std::vector<std::pair<BYTE*, UINT_32>> PRP::getPRPListPointers()
+	std::vector<std::pair<BYTE*, size_t>> PRP::getPRPListPointers()
 	{
-		std::vector<std::pair<BYTE*, UINT_32>> prpListPointers;
+		std::vector<std::pair<BYTE*, size_t>> prpListPointers;
 		if (usesPRPList())
 		{
-			UINT_32 bytesRemaining = NumberOfBytes - std::min(MemoryPageSize, NumberOfBytes);
+			size_t bytesRemaining = NumberOfBytes - std::min(MemoryPageSize, NumberOfBytes);
 
 			UINT_32 numberOfChainedPRPs = getNumberOfChainedPRPs();
 
@@ -299,7 +299,7 @@ namespace cnvme
 					}
 
 					BYTE* thisPrp = (BYTE*)*singlePrp;
-					UINT_32 dataSize = std::min(MemoryPageSize, bytesRemaining);
+					size_t dataSize = std::min(MemoryPageSize, bytesRemaining);
 					prpListPointers.emplace_back(thisPrp, dataSize);
 					bytesRemaining -= dataSize;
 					singlePrp++; // next item in prp list

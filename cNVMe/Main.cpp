@@ -47,11 +47,14 @@ int main()
 	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
 	d->Timeout = 5;
 	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::IDENTIFY;
-	d->Command.DWord10 = cnvme::constants::commands::identify::cns::CONTROLLER;
+	d->Command.DWord10 = cnvme::constants::commands::identify::cns::NAMESPACE_ACTIVE;
+	d->Command.NSID = 1;
 	d->TransferDataDirection = READ;
 	d->TransferDataSize = 4096;
 
 	driver.sendCommand((UINT_8*)d, BUF_SIZE);
+
+	identify::structures::IDENTIFY_NAMESPACE* i = (identify::structures::IDENTIFY_NAMESPACE*)&d->TransferData;
 
 	LOG_SET_LEVEL(1);
 

@@ -29,14 +29,14 @@ Payload.cpp - An implementation file for the Payload class
 
 namespace cnvme
 {
-	Payload::Payload(UINT_32 byteSize)
+	Payload::Payload(size_t byteSize)
 	{
 		ByteSize = byteSize;
 		BytePointer = new UINT_8[byteSize];
 		memset(BytePointer, 0, ByteSize);
 	}
 
-	Payload::Payload(BYTE * pointer, UINT_32 byteSize) : Payload::Payload(byteSize)
+	Payload::Payload(BYTE * pointer, size_t byteSize) : Payload::Payload(byteSize)
 	{
 		memcpy_s(BytePointer, ByteSize, pointer, byteSize);
 	}
@@ -73,7 +73,7 @@ namespace cnvme
 		{
 
 #ifdef PAYLOAD_CMP_DEBUG // Used for debugging comparison issues
-			for (UINT_32 i = 0; i < getSize(); i++)
+			for (size_t i = 0; i < getSize(); i++)
 			{
 				if (getBuffer()[i] != other.getBuffer()[i])
 				{
@@ -113,12 +113,12 @@ namespace cnvme
 		return BytePointer;
 	}
 
-	UINT_32 Payload::getSize() const
+	size_t Payload::getSize() const
 	{
 		return ByteSize;
 	}
 
-	void Payload::resize(UINT_32 newSize)
+	void Payload::resize(size_t newSize)
 	{
 		if (newSize != ByteSize)
 		{
@@ -140,7 +140,7 @@ namespace cnvme
 
 	void Payload::append(const Payload &otherPayload)
 	{
-		UINT_32 oldSize = getSize();
+		size_t oldSize = getSize();
 		this->resize(oldSize + otherPayload.getSize());
 
 		// copy other after this

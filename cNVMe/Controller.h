@@ -28,6 +28,7 @@ Controller.h - A header file for the NVMe Controller
 #include "Command.h"
 #include "ControllerRegisters.h"
 #include "Identify.h"
+#include "Namespace.h"
 #include "PCIe.h"
 #include "Types.h"
 #include "Queue.h"
@@ -171,6 +172,11 @@ namespace cnvme
 			/// Internal Identify Controller Structure
 			/// </summary>
 			identify::structures::IDENTIFY_CONTROLLER IdentifyController;
+
+			/// <summary>
+			/// Internal map from NSID to Namespace object
+			/// </summary>
+			std::map<UINT_32, ns::Namespace> NamespaceIdToNamespace;
 
 			/// <summary>
 			/// Map from the admin command opcode to the function that processes it

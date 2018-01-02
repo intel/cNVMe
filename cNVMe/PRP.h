@@ -44,14 +44,14 @@ namespace cnvme
 		/// <param name="prp2">Memory Address of PRP2</param>
 		/// <param name="numBytes">Number of bytes for the PRP</param>
 		/// <param name="memoryPageSize">Size in bytes of a memory page (CC.MPS)</param>
-		PRP(UINT_64 prp1, UINT_64 prp2, UINT_32 numBytes, UINT_32 memoryPageSize);
+		PRP(UINT_64 prp1, UINT_64 prp2, size_t numBytes, UINT_32 memoryPageSize);
 
 		/// <summary>
 		/// Constructor from a payload
 		/// </summary>
 		/// <param name="payload">Payload to copy data to created PRP list</param>
 		/// <param name="memoryPageSize">Size in bytes of a memory page (CC.MPS)</param>
-		PRP(const Payload &payload, UINT_32 memoryPageSize);
+		PRP(const Payload &payload, size_t memoryPageSize);
 
 		/// <summary>
 		/// Destructor. Will only deallocate the PRP if it was created by a payload
@@ -70,7 +70,7 @@ namespace cnvme
 		/// Returns the number of bytes represented by the PRP
 		/// </summary>
 		/// <returns>Number of bytes</returns>
-		UINT_32 getNumBytes();
+		size_t getNumBytes();
 
 		/// <summary>
 		/// Returns if the PRP memory will be freed upon scope loss 
@@ -82,7 +82,7 @@ namespace cnvme
 		/// Returns the set memory page size (CC.MPS)
 		/// </summary>
 		/// <returns>Memory Page Size in bytes</returns>
-		UINT_32 getMemoryPageSize();
+		size_t getMemoryPageSize();
 
 		/// <summary>
 		/// Returns PRP1 
@@ -124,12 +124,12 @@ namespace cnvme
 		/// <summary>
 		/// Number of bytes represented by the PRP
 		/// </summary>
-		UINT_32 NumberOfBytes;
+		size_t NumberOfBytes;
 
 		/// <summary>
 		/// CC.MPS. Needed to know the max size of PRP pages / lists
 		/// </summary>
-		UINT_32 MemoryPageSize;
+		size_t MemoryPageSize;
 
 		/// <summary>
 		/// Returns True if this uses a PRP list in PRP2
@@ -154,7 +154,7 @@ namespace cnvme
 		/// Gets a vector of pointers from the PRP2 list
 		/// </summary>
 		/// <returns>vector of byte pointers and the size of the data they point to</returns>
-		std::vector<std::pair<BYTE*, UINT_32>> getPRPListPointers();
+		std::vector<std::pair<BYTE*, size_t>> getPRPListPointers();
 
 		/// <summary>
 		/// Returns the number of chained PRPs needed

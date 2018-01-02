@@ -25,6 +25,7 @@ Namespace.h - A header file for a cNVMe Namespace
 
 #pragma once
 
+#include "Command.h"
 #include "Identify.h"
 
 namespace cnvme
@@ -40,15 +41,50 @@ namespace cnvme
 			Namespace();
 
 			/// <summary>
+			/// Constructor for namespace that takes in a size
+			/// </summary>
+			Namespace(size_t SizeInBytes);
+
+			/// <summary>
 			/// Destructor for namespace
 			/// </summary>
 			~Namespace();
+
+			/// <summary>
+			/// Returns the Identify Namespace structure
+			/// </summary>
+			/// <returns>IDENTIFY_NAMESPACE</returns>
+			identify::structures::IDENTIFY_NAMESPACE& getIdentifyNamespaceStructure();
+
+			/// <summary>
+			/// Perform a format NVM command on the given namespace.
+			/// </summary>
+			/// <param name="nvmeCommand">Complete NVMe command for the format</param>
+			/// <returns>Completion queue entry for command</returns>
+			command::COMPLETION_QUEUE_ENTRY formatNVM(command::NVME_COMMAND nvmeCommand);
 		private:
+
+			/// <summary>
+			/// Gets this namespace's size in sectors. The sector size is variable and should be grabbed from the ID namespace structure
+			/// </summary>
+			/// <returns>Number of sectors for this namespace's size</returns>
+			UINT_64 getNamespaceSizeInSectors();
+
+			/// <summary>
+			/// Gets the sector size for this namespace (in bytes).
+			/// </summary>
+			/// <returns>sector size</returns>
+			UINT_32 getSectorSize();
 
 			/// <summary>
 			/// Internal representation of the Identify Namespace structure
 			/// </summary>
 			identify::structures::IDENTIFY_NAMESPACE IdentifyNamespace;
+
+			/// <summary>
+			/// Internal managed media
+			/// </summary>
+			Payload Media;
 		};
 	}
 }

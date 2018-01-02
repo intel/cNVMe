@@ -39,14 +39,14 @@ namespace cnvme
 		/// Create a payload with byteSize bytes
 		/// </summary>
 		/// <param name="byteSize">Number of bytes for the payload</param>
-		Payload(UINT_32 byteSize);
+		Payload(size_t byteSize);
 
 		/// <summary>
 		/// Create a payload from a pointer/length. This copies the data.
 		/// </summary>
 		/// <param name="pointer">byte array</param>
 		/// <param name="byteSize">size of the array</param>
-		Payload(BYTE* pointer, UINT_32 byteSize);
+		Payload(BYTE* pointer, size_t byteSize);
 
 		/// <summary>
 		/// Default constructor
@@ -101,13 +101,13 @@ namespace cnvme
 		/// Returns the size of the underlying buffer
 		/// </summary>
 		/// <returns>Size in bytes</returns>
-		UINT_32 getSize() const;
+		size_t getSize() const;
 
 		/// <summary>
 		/// Resizes the payload
 		/// </summary>
 		/// <param name="newSize">The new size in bytes</param>
-		void resize(UINT_32 newSize);
+		void resize(size_t newSize);
 
 		/// <summary>
 		/// Returns the memory address for the payload
@@ -137,7 +137,7 @@ namespace cnvme
 		/// <summary>
 		/// The number of bytes owned
 		/// </summary>
-		UINT_32 ByteSize;
+		size_t ByteSize;
 
 		/// <summary>
 		/// If True, delete memory on scope loss, otherwise don't.

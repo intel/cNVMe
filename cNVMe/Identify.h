@@ -231,7 +231,11 @@ namespace cnvme
 				UINT_64 NUSE;
 				UINT_8 NSFEAT;
 				UINT_8 NLBAF;
-				UINT_8 FLBAS;
+				struct {
+					UINT_8 CurrentLBAFormat : 4;
+					UINT_8 MetadataAtEndOfData : 1;
+					UINT_8 RSVD_FLBAS : 3;
+				} FLBAS;
 				UINT_8 MC;
 				UINT_8 DPC;
 				UINT_8 DPS;
