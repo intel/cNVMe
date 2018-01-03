@@ -46,6 +46,8 @@ namespace cnvme
 			INVALID_DATA_DIRECTION,
 			INVALID_DATA_LENGTH,
 			INVALID_DATA_LENGTH_FOR_MANUAL_PRPS,
+			INVALID_IO_QUEUE_MANAGEMENT_PC,
+			INVALID_IO_QUEUE_MANAGEMENT_IEN,
 		};
 
 		/// <summary>
@@ -140,6 +142,13 @@ namespace cnvme
 			/// Will update SubmissionQueueIdToCurrentCommandIdentifiers and return the next CID.
 			/// </summary>
 			UINT_16 getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(UINT_16 submissionQueueId);
+
+			/// <summary>
+			/// Returns True if we should use a raw pointer to contiguous memory instead of PRPs
+			/// </summary>
+			/// <param name="nvmeCommand">command to check</param>
+			/// <returns>bool</returns>
+			bool commandRequiresContiguousBufferInsteadOfPrp(NVME_COMMAND& nvmeCommand);
 		};
 	}
 }

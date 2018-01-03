@@ -70,6 +70,14 @@ namespace cnvme
 			{
 				return "The data length was invalid since the user should be providing their own PRPs embedded in the DWs";
 			}
+			else if (s == INVALID_IO_QUEUE_MANAGEMENT_PC)
+			{
+				return "The PC field must be set to 1 as we do not support non physically contiguous queues";
+			}
+			else if (s == INVALID_IO_QUEUE_MANAGEMENT_IEN)
+			{
+				return "The IEN field must be set to 1 as we do not support disabled interrupt queues";
+			}
 
 			ASSERT("Status not found in statusToString()");
 			return "Unknown";
@@ -213,6 +221,24 @@ namespace cnvme
 				return;
 			}
 
+			// If the user gave Create IO Completion Queue, we need to check the command for what the driver supports
+			if (pDriverCommand->Command.DWord0Breakdown.OPC == cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE)
+			{
+				if (pDriverCommand->Command.DW11_CreateIoCompletionQueue.PC != true)
+				{
+					LOG_ERROR("The user specified a non-contiguous completion queue. We don't support that.");
+					pDriverCommand->DriverStatus = INVALID_IO_QUEUE_MANAGEMENT_PC;
+					return;
+				}
+
+				if (pDriverCommand->Command.DW11_CreateIoCompletionQueue.IEN != true)
+				{
+					LOG_ERROR("The user specified an interrupt-disabled queue. We don't support that.");
+					pDriverCommand->DriverStatus = INVALID_IO_QUEUE_MANAGEMENT_IEN;
+					return;
+				}
+			}
+
 			// If we don't have a submission queue that matches, fail now
 			auto submissionQueueItr = this->SubmissionQueues.find(pDriverCommand->QueueId);
 			if (submissionQueueItr == this->SubmissionQueues.end())
@@ -237,16 +263,41 @@ namespace cnvme
 			// Add the CID to the command
 			pDriverCommand->Command.DWord0Breakdown.CID = getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(pSubmissionQueue->getQueueId());
 
-
 			// create a prps object (even if we don't use it)
 			//  should stay in scope till command is done or we time out.
-			PRP prps = PRP(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), this->TheController.getControllerRegisters()->getMemoryPageSize());
-			if (pDriverCommand->TransferDataDirection == READ || pDriverCommand->TransferDataDirection == WRITE || pDriverCommand->TransferDataDirection == BI_DIRECTIONAL)
-			{
-				pDriverCommand->Command.DPTR.DPTR1 = prps.getPRP1();
-				pDriverCommand->Command.DPTR.DPTR2 = prps.getPRP2();
-			}
+			PRP prps;
+			UINT_64 contiguousBufferAddress = NULL;
 
+			if (this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
+			{
+				size_t allocationSize;
+				if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE)
+				{
+					allocationSize = pDriverCommand->Command.DW10_CreateIoQueue.QSIZE * sizeof(command::COMPLETION_QUEUE_ENTRY);
+				}
+				else if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE)
+				{
+					allocationSize = pDriverCommand->Command.DW10_CreateIoQueue.QSIZE * sizeof(command::NVME_COMMAND);
+				}
+				else
+				{
+					ASSERT("Invalid command for contiguous allocation.");
+				}
+
+
+				ALLOC_BYTE_ARRAY(contig, allocationSize);
+				contiguousBufferAddress = POINTER_TO_MEMORY_ADDRESS(contig); // DONT FORGET TO FREE ME... later.
+				pDriverCommand->Command.DPTR.DPTR1 = prps.getPRP1();
+			}
+			else
+			{
+				prps = PRP(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), this->TheController.getControllerRegisters()->getMemoryPageSize());
+				if (pDriverCommand->TransferDataDirection == READ || pDriverCommand->TransferDataDirection == WRITE || pDriverCommand->TransferDataDirection == BI_DIRECTIONAL)
+				{
+					pDriverCommand->Command.DPTR.DPTR1 = prps.getPRP1();
+					pDriverCommand->Command.DPTR.DPTR2 = prps.getPRP2();
+				}
+			}
 
 			// Get a pointer to the location to place the command
 			UINT_8* theRawSubmissionQueue = MEMORY_ADDRESS_TO_8POINTER(pSubmissionQueue->getMemoryAddress());
@@ -311,6 +362,24 @@ namespace cnvme
 				LOG_ERROR("The command timed out");
 				pDriverCommand->DriverStatus = TIMEOUT;
 			}
+			// We did the command and its a contiguous buffer cmd
+			else if (pDriverCommand->TransferDataDirection != MANUAL_PRPS && this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
+			{
+				// Command failed if SC != 0. Free the memory!
+				if (pDriverCommand->CompletionQueueEntry.SC)
+				{
+					ASSERT_IF(contiguousBufferAddress == 0, "Somehow we sent a contiguous buffer address of 0. That could have killed the drive!");
+
+					LOG_INFO("Freeing memory for contigous queue buffer");
+					delete[]MEMORY_ADDRESS_TO_8POINTER(contiguousBufferAddress);
+				}
+				else
+				{
+					LOG_INFO("Command succeeded... will hold onto memory.");
+
+					// TODO: Hold onto memory!
+				}
+			}
 		}
 
 		UINT_16 Driver::getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(UINT_16 submissionQueueId)
@@ -330,6 +399,11 @@ namespace cnvme
 			}
 
 			return this->SubmissionQueueIdToCurrentCommandIdentifiers[submissionQueueId];
+		}
+
+		bool Driver::commandRequiresContiguousBufferInsteadOfPrp(NVME_COMMAND& nvmeCommand)
+		{
+			return nvmeCommand.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE || nvmeCommand.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE;
 		}
 	}
 }
