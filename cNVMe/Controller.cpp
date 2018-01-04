@@ -513,6 +513,7 @@ namespace cnvme
 				return;
 			}
 
+			// Make sure we have a CQ available for mapping
 			Queue* mappedCompletionQueue = this->getQueueWithId(this->ValidCompletionQueues, command.DW11_CreateIoSubmissionQueue.CQID);
 			if (mappedCompletionQueue == nullptr)
 			{
@@ -520,6 +521,14 @@ namespace cnvme
 				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
 				completionQueueEntryToPost.SC = constants::status::codes::specific::COMPLETION_QUEUE_INVALID;
 				return;
+			}
+
+			// That completion queue is already mapped... we can't map to this SQ.
+			if (mappedCompletionQueue->getMappedQueue())
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER;
 			}
 
 			// Checks passed. Hold onto the queue.
