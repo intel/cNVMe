@@ -150,7 +150,8 @@ namespace cnvme
 
 			// Made it this far, we have at least the admin queue
 			// This is round-robin right now
-			for (UINT_32 idx = 0; idx < this->ValidSubmissionQueues.size(); idx++)
+			size_t currentValidSubmissionQueuesSize = this->ValidSubmissionQueues.size();
+			for (size_t idx = 0; idx < currentValidSubmissionQueuesSize; idx++)
 			{
 				// Using this instead of foreach since the ValidSubmission/Completion Queues can change at runtime.
 				auto sq = this->ValidSubmissionQueues[idx];
@@ -171,6 +172,13 @@ namespace cnvme
 					{
 						processCommandAndPostCompletion(*sq);
 						sq->incrementAndGetHeadCloserToTail();
+					}
+
+					// If the number of queues changed... maybe one got deleted or lost?
+					//  for safety, just break from this loop so that currentValidSubmissionQueuesSize gets updated on the next go.
+					if (currentValidSubmissionQueuesSize != this->ValidSubmissionQueues.size())
+					{
+						break;
 					}
 				}
 			}
