@@ -54,6 +54,19 @@ namespace cnvme
 		PRP(const Payload &payload, size_t memoryPageSize);
 
 		/// <summary>
+		/// Copy constructor
+		/// </summary>
+		/// <param name="other">Another PRP to copy from</param>
+		PRP(PRP &other);
+
+		/// <summary>
+		/// Assignment operator
+		/// </summary>
+		/// <param name="other">Another PRP to copy from</param>
+		/// <returns>Payload</returns>
+		PRP& operator=(PRP& other);
+
+		/// <summary>
 		/// Destructor. Will only deallocate the PRP if it was created by a payload
 		/// The logic is if getting it by address, you don't own it (drive). 
 		/// If getting it from payload, you own it, so you should delete it (host).
@@ -161,5 +174,12 @@ namespace cnvme
 		/// </summary>
 		/// <returns>UINT_32 representing the number of chained PRPs</returns>
 		UINT_32 getNumberOfChainedPRPs();
+
+		/// <summary>
+		/// Constructs this PRP object based off the given payload and memory page size
+		/// </summary>
+		/// <param name="payload"></param>
+		/// <param name="memoryPageSize"></param>
+		void constructFromPayloadAndMemoryPageSize(const Payload &payload, size_t memoryPageSize);
 	};
 }

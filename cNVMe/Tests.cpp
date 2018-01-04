@@ -385,7 +385,24 @@ namespace cnvme
 						PRP prp(payloadWithoutData, pageSize);
 						prp.placePayloadInExistingPRPs(payloadWithData);
 
-						FAIL_IF_AND_HIDE_LOG(prp.placePayloadInExistingPRPs(payloadWithDataTooLarge), "Placing a larger than allocated Payload into PRPs should have failed!");
+#if _DEBUG
+						bool didAssert = false;
+#else
+						bool didAssert = true; // preset to True since release will not assert.
+#endif // _DEBUG
+						_START_ASSERT_QUIET();
+						try
+						{
+							FAIL_IF_AND_HIDE_LOG(prp.placePayloadInExistingPRPs(payloadWithDataTooLarge), "Placing a larger than allocated Payload into PRPs should have failed!");
+						}
+						catch (...)
+						{
+							didAssert = true;
+						}
+						_END_ASSERT_QUIET();
+
+						FAIL_IF(!didAssert, "There should have been an assert on an invalid payload size");
+
 						// Status will be messed with here. So clear.
 						cnvme::logging::theLogger.clearStatus();
 

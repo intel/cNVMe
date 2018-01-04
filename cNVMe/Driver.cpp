@@ -180,7 +180,23 @@ namespace cnvme
 
 		Driver::~Driver()
 		{
-			// nothing to do here
+			for (auto &i : this->SubmissionQueues)
+			{
+				if (i.second.getMemoryAddress())
+				{
+					delete[]MEMORY_ADDRESS_TO_8POINTER(i.second.getMemoryAddress());
+					i.second.setMemoryAddress(0);
+				}
+			}
+
+			for (auto &i : this->CompletionQueues)
+			{
+				if (i.second.getMemoryAddress())
+				{
+					delete[]MEMORY_ADDRESS_TO_8POINTER(i.second.getMemoryAddress());
+					i.second.setMemoryAddress(0);
+				}
+			}
 		}
 
 		void Driver::sendCommand(UINT_8* driverCommandBuffer, UINT_32 driverCommandBufferSize)
@@ -266,6 +282,8 @@ namespace cnvme
 			// create a prps object (even if we don't use it)
 			//  should stay in scope till command is done or we time out.
 			PRP prps;
+
+			// create a contiguous buffer address. If not NULL will be used/deleted later
 			UINT_64 contiguousBufferAddress = NULL;
 
 			if (this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
@@ -286,8 +304,8 @@ namespace cnvme
 
 
 				ALLOC_BYTE_ARRAY(contig, allocationSize);
-				contiguousBufferAddress = POINTER_TO_MEMORY_ADDRESS(contig); // DONT FORGET TO FREE ME... later.
-				pDriverCommand->Command.DPTR.DPTR1 = prps.getPRP1();
+				contiguousBufferAddress = POINTER_TO_MEMORY_ADDRESS(contig);    // DONT FORGET TO FREE ME... later.
+				pDriverCommand->Command.DPTR.DPTR1 = contiguousBufferAddress;   // Give drive new queue location
 			}
 			else
 			{
@@ -370,14 +388,20 @@ namespace cnvme
 				{
 					ASSERT_IF(contiguousBufferAddress == 0, "Somehow we sent a contiguous buffer address of 0. That could have killed the drive!");
 
-					LOG_INFO("Freeing memory for contigous queue buffer");
+					LOG_ERROR("Freeing memory for contigous queue buffer since our queue creation failed!");
 					delete[]MEMORY_ADDRESS_TO_8POINTER(contiguousBufferAddress);
 				}
-				else
+				else if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE)
 				{
-					LOG_INFO("Command succeeded... will hold onto memory.");
+					LOG_INFO("Succeeded in creating IO Completion Queue " + std::to_string(pDriverCommand->Command.DW10_CreateIoQueue.QID) + "will hold onto memory.");
 
-					// TODO: Hold onto memory!
+					auto doorbells = this->TheController.getControllerRegisters()->getQueueDoorbells();
+					doorbells += pDriverCommand->Command.DW10_CreateIoQueue.QID; // find our doorbell
+					this->CompletionQueues[pDriverCommand->Command.DW10_CreateIoQueue.QID] = Queue(ONE_BASED_FROM_ZERO_BASED(pDriverCommand->Command.DW10_CreateIoQueue.QSIZE),
+						pDriverCommand->Command.DW10_CreateIoQueue.QID, 
+						(UINT_16*)&(doorbells->CQHDBL), // doorbell
+						contiguousBufferAddress
+					);
 				}
 			}
 		}

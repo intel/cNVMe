@@ -107,13 +107,13 @@ namespace cnvme
 			/// Used to keep track of the non-deleted but created submission queues
 			/// Vector of queue objects
 			/// </summary>
-			std::vector<Queue> ValidSubmissionQueues;
+			std::vector<Queue*> ValidSubmissionQueues;
 
 			/// <summary>
 			/// Used to keep track of the non-deleted but created completion queues
 			/// Vector of queue objects
 			/// </summary>
-			std::vector<Queue> ValidCompletionQueues;
+			std::vector<Queue*> ValidCompletionQueues;
 
 			/// <summary>
 			/// Used to keep track of CIDs that have been used
@@ -138,7 +138,7 @@ namespace cnvme
 			/// <param name="queues">vector of Queues</param>
 			/// <param name="id">The queue id</param>
 			/// <returns>Queue</returns>
-			Queue *getQueueWithId(std::vector<Queue> &queues, UINT_16 id);
+			Queue *getQueueWithId(std::vector<Queue*> &queues, UINT_16 id);
 
 			/// <summary>
 			/// Posts the given completion to the given queue.
@@ -187,6 +187,11 @@ namespace cnvme
 			/// Handling for the NVMe Identify Command
 			/// </summary>
 			NVME_CALLER_HEADER(adminIdentify);
+
+			/// <summary>
+			/// Handling for the NVMe Create IO Completion Queue Command
+			/// </summary>
+			NVME_CALLER_HEADER(adminCreateIoCompletionQueue);
 
 			/// <summary>
 			/// Handling for the NVMe Keep Alive Command

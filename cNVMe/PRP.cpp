@@ -47,87 +47,24 @@ namespace cnvme
 
 	PRP::PRP(const Payload &payload, size_t memoryPageSize) : PRP()
 	{
-		LOG_INFO("Payload with a size of " + std::to_string(payload.getSize()) + " was passed to PRP()");
+		this->constructFromPayloadAndMemoryPageSize(payload, memoryPageSize);
+	}
 
-		FreeOnScopeLoss = true;
-		NumberOfBytes = payload.getSize();
-		MemoryPageSize = memoryPageSize;
+	PRP::PRP(PRP & other) : PRP::PRP()
+	{
+		*this = other;
+	}
 
-		size_t bytesRemaining = NumberOfBytes;
-
-		// PRP1 will be the first MPS (memory page size) of the data
-		size_t prp1DataSize = std::min(payload.getSize(), MemoryPageSize);
-		ALLOC_BYTE_ARRAY(prp1Pointer, prp1DataSize); 
-		// This is sort of not how this works in NVMe. In NVMe, we would have an entire page allocated.
-		// Though for the simulation, this can be really slow. If we only need say 512 bytes instead of a full 128MB page
-		// We will only allocate the 512 as opposed finding a full page. While here, another oddity is the offset.
-		// I'm not using the offset, it is always 0. Assume that we can always allocate a complete, empty page.
-		
-		memcpy_s(prp1Pointer, prp1DataSize, payload.getBuffer(), prp1DataSize); //do not copy the whole payload. Just the prp1DataSize.
-
-		bytesRemaining -= prp1DataSize;
-
-		if (bytesRemaining > 0)
+	PRP& PRP::operator=(PRP& other)
+	{
+		// check for self-assignment
+		if (&other == this)
 		{
-			// PRP2 will be the next MPS or a pointer to a PRP list 
-			ALLOC_BYTE_ARRAY(prp2Pointer, MemoryPageSize);
-
-			// If the remaining data size is less than a second memory page, just copy to that pointer
-			if (!usesPRPList())
-			{
-				memcpy_s(prp2Pointer, MemoryPageSize, payload.getBuffer() + MemoryPageSize, \
-					std::min(payload.getSize() - MemoryPageSize, MemoryPageSize));
-			}
-			else
-			{
-				UINT_64* prpListPointer = (UINT_64*)prp2Pointer;
-				auto pPrpList = &(*prpListPointer);
-
-				UINT_32 numberOfItemsInPrpList = getTotalNumberOfItemsInPRPList();
-				UINT_32 numberOfChainedPrps = getNumberOfChainedPRPs();
-				UINT_32 numberOfItemsInSinglePrpList = getMaxItemsInSinglePRPList();
-
-				BYTE* bufPointer = payload.getBuffer() + MemoryPageSize;
-				
-				for (UINT_32 i = 0; i < numberOfChainedPrps; i++)
-				{
-					for (UINT_32 j = 0; j < numberOfItemsInSinglePrpList; j++)
-					{
-						// Out of data or we need to create the next chain
-						if (bytesRemaining == 0 || ((j + 1) == numberOfItemsInSinglePrpList && (i + 1) != numberOfChainedPrps))
-						{
-							break;
-						}
-
-						ALLOC_BYTE_ARRAY(listItem, MemoryPageSize);
-
-						size_t bytesToCopy = std::min(MemoryPageSize, bytesRemaining);
-
-						memcpy_s(listItem, MemoryPageSize, bufPointer, bytesToCopy);
-
-						bytesRemaining -= bytesToCopy;
-						bufPointer += bytesToCopy;
-
-						*pPrpList = POINTER_TO_MEMORY_ADDRESS(listItem);
-						pPrpList++;
-					}
-
-					if (bytesRemaining == 0)
-					{
-						break;
-					}
-
-					// Create new chain
-					ALLOC_BYTE_ARRAY(newPrpList, MemoryPageSize);
-
-					*pPrpList = POINTER_TO_MEMORY_ADDRESS(newPrpList);
-					pPrpList = &(*(UINT_64*)newPrpList);
-				}
-			}
-			// Only set PRP2 if needed.
-			PRP2 = POINTER_TO_MEMORY_ADDRESS(prp2Pointer);
+			return *this;
 		}
-		PRP1 = POINTER_TO_MEMORY_ADDRESS(prp1Pointer);
+		
+		this->constructFromPayloadAndMemoryPageSize(other.getPayloadCopy(), other.MemoryPageSize);
+		return *this;
 	}
 
 	PRP::~PRP()
@@ -218,7 +155,7 @@ namespace cnvme
 	{
 		if (payload.getSize() > getNumBytes())
 		{
-			LOG_ERROR("Given payload is larger than the allocated PRPs");
+			ASSERT("Given payload is larger than the allocated PRPs");
 			return false;
 		}
 
@@ -320,5 +257,90 @@ namespace cnvme
 	UINT_32 PRP::getNumberOfChainedPRPs()
 	{
 		return (UINT_32)std::ceil(getTotalNumberOfItemsInPRPList() / (double)getMaxItemsInSinglePRPList());
+	}
+
+	void PRP::constructFromPayloadAndMemoryPageSize(const Payload& payload, size_t memoryPageSize)
+	{
+		LOG_INFO("Payload with a size of " + std::to_string(payload.getSize()) + " was passed to PRP()");
+
+		FreeOnScopeLoss = true;
+		NumberOfBytes = payload.getSize();
+		MemoryPageSize = memoryPageSize;
+
+		size_t bytesRemaining = NumberOfBytes;
+
+		// PRP1 will be the first MPS (memory page size) of the data
+		size_t prp1DataSize = std::min(payload.getSize(), MemoryPageSize);
+		ALLOC_BYTE_ARRAY(prp1Pointer, prp1DataSize);
+		// This is sort of not how this works in NVMe. In NVMe, we would have an entire page allocated.
+		// Though for the simulation, this can be really slow. If we only need say 512 bytes instead of a full 128MB page
+		// We will only allocate the 512 as opposed finding a full page. While here, another oddity is the offset.
+		// I'm not using the offset, it is always 0. Assume that we can always allocate a complete, empty page.
+
+		memcpy_s(prp1Pointer, prp1DataSize, payload.getBuffer(), prp1DataSize); //do not copy the whole payload. Just the prp1DataSize.
+
+		bytesRemaining -= prp1DataSize;
+
+		if (bytesRemaining > 0)
+		{
+			// PRP2 will be the next MPS or a pointer to a PRP list 
+			ALLOC_BYTE_ARRAY(prp2Pointer, MemoryPageSize);
+
+			// If the remaining data size is less than a second memory page, just copy to that pointer
+			if (!usesPRPList())
+			{
+				memcpy_s(prp2Pointer, MemoryPageSize, payload.getBuffer() + MemoryPageSize, \
+					std::min(payload.getSize() - MemoryPageSize, MemoryPageSize));
+			}
+			else
+			{
+				UINT_64* prpListPointer = (UINT_64*)prp2Pointer;
+				auto pPrpList = &(*prpListPointer);
+
+				UINT_32 numberOfItemsInPrpList = getTotalNumberOfItemsInPRPList();
+				UINT_32 numberOfChainedPrps = getNumberOfChainedPRPs();
+				UINT_32 numberOfItemsInSinglePrpList = getMaxItemsInSinglePRPList();
+
+				BYTE* bufPointer = payload.getBuffer() + MemoryPageSize;
+
+				for (UINT_32 i = 0; i < numberOfChainedPrps; i++)
+				{
+					for (UINT_32 j = 0; j < numberOfItemsInSinglePrpList; j++)
+					{
+						// Out of data or we need to create the next chain
+						if (bytesRemaining == 0 || ((j + 1) == numberOfItemsInSinglePrpList && (i + 1) != numberOfChainedPrps))
+						{
+							break;
+						}
+
+						ALLOC_BYTE_ARRAY(listItem, MemoryPageSize);
+
+						size_t bytesToCopy = std::min(MemoryPageSize, bytesRemaining);
+
+						memcpy_s(listItem, MemoryPageSize, bufPointer, bytesToCopy);
+
+						bytesRemaining -= bytesToCopy;
+						bufPointer += bytesToCopy;
+
+						*pPrpList = POINTER_TO_MEMORY_ADDRESS(listItem);
+						pPrpList++;
+					}
+
+					if (bytesRemaining == 0)
+					{
+						break;
+					}
+
+					// Create new chain
+					ALLOC_BYTE_ARRAY(newPrpList, MemoryPageSize);
+
+					*pPrpList = POINTER_TO_MEMORY_ADDRESS(newPrpList);
+					pPrpList = &(*(UINT_64*)newPrpList);
+				}
+			}
+			// Only set PRP2 if needed.
+			PRP2 = POINTER_TO_MEMORY_ADDRESS(prp2Pointer);
+		}
+		PRP1 = POINTER_TO_MEMORY_ADDRESS(prp1Pointer);
 	}
 }

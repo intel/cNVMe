@@ -73,6 +73,16 @@ namespace cnvme
 				delete ControllerRegisters;
 				ControllerRegisters = nullptr;
 			}
+
+			for (Queue* q: this->ValidSubmissionQueues)
+			{
+				delete q;
+			}	
+			
+			for (Queue* q : this->ValidCompletionQueues)
+			{
+				delete q;
+			}
 		}
 
 		cnvme::controller::registers::ControllerRegisters* Controller::getControllerRegisters()
@@ -104,7 +114,7 @@ namespace cnvme
 			// Now that we have a SQ address, make it valid
 			if (ValidSubmissionQueues.size() == 0)
 			{
-				ValidSubmissionQueues.push_back(Queue(controllerRegisters->AQA.ASQS + 1, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].SQTDBL.SQT, controllerRegisters->ASQ.ASQB));
+				ValidSubmissionQueues.push_back(new Queue(controllerRegisters->AQA.ASQS + 1, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].SQTDBL.SQT, controllerRegisters->ASQ.ASQB));
 			}
 			else
 			{
@@ -122,13 +132,13 @@ namespace cnvme
 			// Now that we have a CQ address, make it valid
 			if (ValidCompletionQueues.size() == 0)
 			{
-				Queue AdminCompletionQueue(controllerRegisters->AQA.ACQS + 1, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].CQHDBL.CQH, controllerRegisters->ACQ.ACQB);
-				AdminCompletionQueue.setMappedQueue(&ValidSubmissionQueues[ADMIN_QUEUE_ID]); // Map CQ -> SQ
+				Queue* AdminCompletionQueue = new Queue(controllerRegisters->AQA.ACQS + 1, ADMIN_QUEUE_ID, &doorbells[ADMIN_QUEUE_ID].CQHDBL.CQH, controllerRegisters->ACQ.ACQB);
+				AdminCompletionQueue->setMappedQueue(ValidSubmissionQueues[ADMIN_QUEUE_ID]); // Map CQ -> SQ
 				ValidCompletionQueues.push_back(AdminCompletionQueue);
 
 				Queue* adminSubQ = getQueueWithId(ValidSubmissionQueues, ADMIN_QUEUE_ID);
 				ASSERT_IF(!adminSubQ, "Couldn't find the admin submission queue, to link it to the admin completion queue!");
-				adminSubQ->setMappedQueue(&ValidCompletionQueues[ADMIN_QUEUE_ID]); // Map SQ -> CQ
+				adminSubQ->setMappedQueue(ValidCompletionQueues[ADMIN_QUEUE_ID]); // Map SQ -> CQ
 			}
 			else
 			{
@@ -140,24 +150,27 @@ namespace cnvme
 
 			// Made it this far, we have at least the admin queue
 			// This is round-robin right now
-			for (auto &sq : ValidSubmissionQueues)
+			for (UINT_32 idx = 0; idx < this->ValidSubmissionQueues.size(); idx++)
 			{
-				if (doorbells[sq.getQueueId()].SQTDBL.SQT != sq.getTailPointer())
+				// Using this instead of foreach since the ValidSubmission/Completion Queues can change at runtime.
+				auto sq = this->ValidSubmissionQueues[idx];
+
+				if (doorbells[sq->getQueueId()].SQTDBL.SQT != sq->getTailPointer())
 				{
-					if (!sq.setTailPointer(doorbells[sq.getQueueId()].SQTDBL.SQT)) // Set our internal Queue instance's tail
+					if (!sq->setTailPointer(doorbells[sq->getQueueId()].SQTDBL.SQT)) // Set our internal Queue instance's tail
 					{
 						LOG_ERROR("Should trigger AER since the Tail pointer given was invalid"); // Stop early.
 						continue;
 					}
 					else
 					{
-						sq.getMappedQueue()->setTailPointer(sq.getTailPointer());  // Set in internal CQ as well
+						sq->getMappedQueue()->setTailPointer(sq->getTailPointer());  // Set in internal CQ as well
 					}
 
-					while (sq.getHeadPointer() != sq.getTailPointer())
+					while (sq->getHeadPointer() != sq->getTailPointer())
 					{
-						processCommandAndPostCompletion(sq);
-						sq.incrementAndGetHeadCloserToTail();
+						processCommandAndPostCompletion(*sq);
+						sq->incrementAndGetHeadCloserToTail();
 					}
 				}
 			}
@@ -203,7 +216,9 @@ namespace cnvme
 				else
 				{
 					// We don't have handling for this command
-					ASSERT("Admin command not supported yet.");
+					LOG_INFO("Unknown command recv'd by the controller.");
+					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
+					completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
 				}
 			}
 			else if (shouldWeProcessThisCommand) // NVM Command
@@ -215,13 +230,13 @@ namespace cnvme
 			postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
 		}
 
-		Queue* Controller::getQueueWithId(std::vector<Queue> &queues, UINT_16 id)
+		Queue* Controller::getQueueWithId(std::vector<Queue*> &queues, UINT_16 id)
 		{
 			for (size_t i = 0; i < queues.size(); i++)
 			{
-				if (queues[i].getQueueId() == id)
+				if (queues[i]->getQueueId() == id)
 				{
-					return &queues[i];
+					return queues[i];
 				}
 			}
 
@@ -233,12 +248,14 @@ namespace cnvme
 		{
 			COMPLETION_QUEUE_ENTRY* completionQueueList = (COMPLETION_QUEUE_ENTRY*)MEMORY_ADDRESS_TO_8POINTER(completionQueue.getMemoryAddress());
 			ASSERT_IF(completionQueueList == nullptr, "completionQueueList cannot be NULL");
-			LOG_INFO("About to post completion to queue " + std::to_string(completionQueue.getQueueId()) + ". Head (just before moving): " + 
+			LOG_INFO("About to post completion to queue " + std::to_string(completionQueue.getQueueId()) + ". Head (just before moving): " +
 				std::to_string(completionQueue.getHeadPointer()) + ". Tail: " + std::to_string(completionQueue.getTailPointer()));
 
 			completionQueueList += completionQueue.getHeadPointer(); // Move pointer to correct index
 
 			Queue* submissionQueue = completionQueue.getMappedQueue();
+			ASSERT_IF(!submissionQueue, "Submission queue is NULL!");
+
 			completionEntry.SQID = submissionQueue->getQueueId();
 			completionEntry.SQHD = submissionQueue->getHeadPointer();
 			completionEntry.CID = command->DWord0Breakdown.CID;
@@ -388,6 +405,62 @@ namespace cnvme
 			}
 		}
 
+		NVME_CALLER_IMPLEMENTATION(adminCreateIoCompletionQueue)
+		{
+			auto controllerRegistersPointer = ControllerRegisters->getControllerRegisters();
+			ASSERT_IF(!controllerRegistersPointer, "The controller registers are NULL... oh no!");
+
+			// Check for the Physically Contiguous field. Also make sure the interrupt is enabled. If not, fail the command.
+			if (command.DW11_CreateIoCompletionQueue.PC != controllerRegistersPointer->CAP.CQR || !command.DW11_CreateIoCompletionQueue.IEN)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_FIELD_IN_COMMAND;
+				return;
+			}
+
+			// Check to make sure we were give something that looks like a valid address
+			if (command.DPTR.DPTR1 == 0)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SC = constants::status::codes::generic::PRP_OFFSET_INVALID;
+				return;
+			}
+
+			// Check if the queue exists. If it does already, fail the command
+			if (this->getQueueWithId(this->ValidCompletionQueues, command.DW10_CreateIoQueue.QID) != nullptr)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER;
+				return;
+			}
+
+			// Check if the queue size is valid.
+			if (command.DW10_CreateIoQueue.QSIZE > controllerRegistersPointer->CAP.MQES)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_SIZE;
+				return;
+			}
+
+			// We don't handle actual interupt vectors, so you can't get that back.
+
+			// Checks passed. Hold onto the queue.
+
+			auto doorbells = this->ControllerRegisters->getQueueDoorbells();
+			doorbells += command.DW10_CreateIoQueue.QID; // find our doorbell
+
+			Queue* q = new Queue(ONE_BASED_FROM_ZERO_BASED(command.DW10_CreateIoQueue.QSIZE),
+				command.DW10_CreateIoQueue.QID,
+				(UINT_16*)&(doorbells->CQHDBL), // doorbell
+				command.DPTR.DPTR1
+			);
+			this->ValidCompletionQueues.push_back(q);
+
+			LOG_INFO("Held onto completion queue with an id of " + std::to_string(command.DW10_CreateIoQueue.QID));
+		}
+
 		NVME_CALLER_IMPLEMENTATION(adminKeepAlive)
 		{
 			// nop. We do nothing here.
@@ -399,7 +472,7 @@ namespace cnvme
 
 			for (size_t i = ValidSubmissionQueues.size() - 1; i != -1; i--)
 			{
-				if (ValidSubmissionQueues[i].getQueueId() != ADMIN_QUEUE_ID)
+				if (ValidSubmissionQueues[i]->getQueueId() != ADMIN_QUEUE_ID)
 				{
 					ValidSubmissionQueues.erase(ValidSubmissionQueues.begin() + i);
 				}
@@ -407,7 +480,7 @@ namespace cnvme
 
 			for (size_t i = ValidCompletionQueues.size() - 1; i != -1; i--)
 			{
-				if (ValidCompletionQueues[i].getQueueId() != ADMIN_QUEUE_ID)
+				if (ValidCompletionQueues[i]->getQueueId() != ADMIN_QUEUE_ID)
 				{
 					ValidCompletionQueues.erase(ValidCompletionQueues.begin() + i);
 				}
@@ -427,11 +500,12 @@ namespace cnvme
 #else
 			checkForChanges();
 #endif
-		}
+	}
 
 		const std::map<UINT_8, NVMeCaller> Controller::AdminCommandCallers = {
+			{ cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE, &cnvme::controller::Controller::adminCreateIoCompletionQueue},
 			{ cnvme::constants::opcodes::admin::IDENTIFY, &cnvme::controller::Controller::adminIdentify},
 			{ cnvme::constants::opcodes::admin::KEEP_ALIVE, &cnvme::controller::Controller::adminKeepAlive}
 		};
-	}
+}
 }
