@@ -97,6 +97,11 @@ namespace cnvme
 			/// Tests the general NVMe Command parsing
 			/// </summary>
 			bool testNVMeCommandParsing();
+
+			/// <summary>
+			/// Tests that the controller can fail a command with an unknown command opcode
+			/// </summary>
+			bool testNVMeCommandOpcodeInvalid();
 		}
 
 		namespace driver

@@ -249,6 +249,29 @@ namespace cnvme
 
 				return true;
 			}
+
+			bool testNVMeCommandOpcodeInvalid()
+			{
+				cnvme::driver::Driver driver;
+
+				UINT_32 BUF_SIZE = sizeof(cnvme::driver::DRIVER_COMMAND);
+				BYTE* buffer = new BYTE[BUF_SIZE];
+				memset(buffer, 0, BUF_SIZE);
+
+				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
+				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
+
+				UINT_32 timeout = 5; // arbitrary
+				pDriverCommand->Timeout = timeout;
+				pDriverCommand->TransferDataDirection = cnvme::driver::NO_DATA;
+				pDriverCommand->Command.DWord0Breakdown.OPC = 0xFE; // invalid.. hopefully
+
+				driver.sendCommand(buffer, BUF_SIZE);
+				
+				ASSERT_IF(pDriverCommand->CompletionQueueEntry.SC != constants::status::codes::generic::INVALID_COMMAND_OPCODE, "Controller did not fail invalid opcode correctly");
+
+				return true;
+			}
 		}
 
 		namespace driver

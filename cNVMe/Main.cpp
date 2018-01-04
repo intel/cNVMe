@@ -33,7 +33,7 @@ using namespace cnvme;
 using namespace cnvme::command;
 using namespace cnvme::driver;
 
-void sendIdentifyController(Driver &driver)
+void sendIdentifyController(Driver &driver, UINT_16 queue=0)
 {
 	UINT_32 BUF_SIZE = 8192;
 	BYTE* buffer = new BYTE[BUF_SIZE];
@@ -41,6 +41,7 @@ void sendIdentifyController(Driver &driver)
 
 	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
 	d->Timeout = 6000;
+	d->QueueId = queue; // for testing
 	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::IDENTIFY;
 	d->Command.DW10_Identify.CNS = constants::commands::identify::cns::CONTROLLER;
 	d->TransferDataDirection = READ;
@@ -114,12 +115,10 @@ int main()
 
 	//sendIdentifyController(driver);
 	//sendIdentifyController(driver);
-	//sendIdentifyController(driver);
 
 	sendCreateIOCompletionQueue(driver, 1);
 	sendCreateIOSubmissionQueue(driver, 1, 1);
-
-
+	//sendIdentifyController(driver, 1);
 
 	UINT_32 BUF_SIZE = 8192;
 	BYTE* buffer = new BYTE[BUF_SIZE];
