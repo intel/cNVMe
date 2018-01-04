@@ -389,6 +389,7 @@ namespace cnvme
 				pDriverCommand->DriverStatus = TIMEOUT;
 
 				// its debatable if we should free memory on a timeout...
+				// on the real (tm) driver they would do an NVMe Controller Reset and then deallocate everything.
 				//  the command could be in progress or something..
 				//   though right now this would leak on IO Queue Creation.
 			}
