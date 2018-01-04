@@ -65,7 +65,9 @@ namespace cnvme
 
 		void Logger::setStatus(std::string status)
 		{
+			Mutex.lock();
 			Status = status;
+			Mutex.unlock();
 		}
 
 		std::string Logger::getStatus()
