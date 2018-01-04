@@ -63,6 +63,7 @@ namespace cnvme
 					results.push_back(std::async(pci::testPciHeaderId));
 					results.push_back(std::async(general::testLoopingThread));
 					results.push_back(std::async(controller_registers::testControllerReset));
+					results.push_back(std::async(commands::testNVMeCommandOpcodeInvalid));
 					results.push_back(std::async(commands::testNVMeCommandParsing));
 					results.push_back(std::async(driver::testNoDataCommandViaDriver));
 					results.push_back(std::async(driver::testReadCommandViaDriver));
