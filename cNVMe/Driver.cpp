@@ -409,7 +409,7 @@ namespace cnvme
 				}
 				else if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE)
 				{
-					LOG_INFO("Succeeded in creating IO Completion Queue " + std::to_string(pDriverCommand->Command.DW10_CreateIoQueue.QID) + "will hold onto memory.");
+					LOG_INFO("Succeeded in creating IO Completion Queue " + std::to_string(pDriverCommand->Command.DW10_CreateIoQueue.QID) + " will hold onto memory.");
 
 					this->CompletionQueues[pDriverCommand->Command.DW10_CreateIoQueue.QID] = new Queue(ONE_BASED_FROM_ZERO_BASED(pDriverCommand->Command.DW10_CreateIoQueue.QSIZE),
 						pDriverCommand->Command.DW10_CreateIoQueue.QID, 
@@ -427,7 +427,7 @@ namespace cnvme
 						return; // if asserts are off (mercy on our soul)... move on.
 					}
 
-					LOG_INFO("Succeeded in creating IO Submission Queue " + std::to_string(pDriverCommand->Command.DW10_CreateIoQueue.QID) + "will hold onto memory.");
+					LOG_INFO("Succeeded in creating IO Submission Queue " + std::to_string(pDriverCommand->Command.DW10_CreateIoQueue.QID) + " will hold onto memory.");
 
 					Queue* subQ = new Queue(ONE_BASED_FROM_ZERO_BASED(pDriverCommand->Command.DW10_CreateIoQueue.QSIZE),
 						pDriverCommand->Command.DW10_CreateIoQueue.QID, 

@@ -208,10 +208,11 @@ namespace cnvme
 				shouldWeProcessThisCommand = false;                                                     // Do not process this command later on
 			}
 
+			LOG_INFO("Controller got a command:\n" + command->toString());
+
 			if (submissionQueue.getQueueId() == ADMIN_QUEUE_ID && shouldWeProcessThisCommand)
 			{
-				// Admin command
-				LOG_INFO(command->toString());
+				LOG_INFO("That was an Admin command!");
 
 				// AdminCommandCallers goes from OpCode to Function to call. 
 				//  All functions to call must have the same parameters and return value (no return since they are voids)
@@ -231,8 +232,12 @@ namespace cnvme
 			}
 			else if (shouldWeProcessThisCommand) // NVM Command
 			{
-				// NVM command
-				assert(0); // Don't send me NVM commands yet.
+				LOG_INFO("That was an NVM command!");
+
+				// lol don't do anything yet
+
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
+				completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
 			}
 
 			postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);

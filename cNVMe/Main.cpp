@@ -118,8 +118,9 @@ int main()
 
 	sendCreateIOCompletionQueue(driver, 1);
 	sendCreateIOSubmissionQueue(driver, 1, 1);
-	//sendIdentifyController(driver, 1);
+	sendIdentifyController(driver, 1);
 
+	/*
 	UINT_32 BUF_SIZE = 8192;
 	BYTE* buffer = new BYTE[BUF_SIZE];
 	memset(buffer, 0, BUF_SIZE);
@@ -137,6 +138,7 @@ int main()
 	driver.sendCommand((UINT_8*)d, BUF_SIZE);
 
 	delete[]buffer;
+	*/
 
 	LOG_SET_LEVEL(1);
 
