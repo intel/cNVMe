@@ -242,7 +242,7 @@ namespace cnvme
 			}
 
 			// If the user gave Create IO Completion Queue, we need to check the command for what the driver supports
-			if (pDriverCommand->Command.DWord0Breakdown.OPC == cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE)
+			if (this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
 			{
 				if (pDriverCommand->Command.DW11_CreateIoCompletionQueue.PC != true)
 				{
@@ -251,7 +251,8 @@ namespace cnvme
 					return;
 				}
 
-				if (pDriverCommand->Command.DW11_CreateIoCompletionQueue.IEN != true)
+				if (pDriverCommand->Command.DWord0Breakdown.OPC == cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE && \
+					pDriverCommand->Command.DW11_CreateIoCompletionQueue.IEN != true)
 				{
 					LOG_ERROR("The user specified an interrupt-disabled queue. We don't support that.");
 					pDriverCommand->DriverStatus = INVALID_IO_QUEUE_MANAGEMENT_IEN;
