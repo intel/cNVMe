@@ -116,6 +116,12 @@ namespace cnvme
 		/// <returns>True if the FULL payload has been sent to the PRPs. False otherwise.</returns>
 		bool placePayloadInExistingPRPs(Payload &payload);
 
+		/// <summary>
+		/// Constructs this PRP object based off the given payload and memory page size
+		/// </summary>
+		/// <param name="payload"></param>
+		/// <param name="memoryPageSize"></param>
+		void constructFromPayloadAndMemoryPageSize(const Payload &payload, size_t memoryPageSize);
 	private:
 
 		/// <summary>
@@ -174,12 +180,5 @@ namespace cnvme
 		/// </summary>
 		/// <returns>UINT_32 representing the number of chained PRPs</returns>
 		UINT_32 getNumberOfChainedPRPs();
-
-		/// <summary>
-		/// Constructs this PRP object based off the given payload and memory page size
-		/// </summary>
-		/// <param name="payload"></param>
-		/// <param name="memoryPageSize"></param>
-		void constructFromPayloadAndMemoryPageSize(const Payload &payload, size_t memoryPageSize);
 	};
 }

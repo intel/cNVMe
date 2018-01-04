@@ -309,7 +309,7 @@ namespace cnvme
 			}
 			else
 			{
-				prps = PRP(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), this->TheController.getControllerRegisters()->getMemoryPageSize());
+				prps.constructFromPayloadAndMemoryPageSize(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), this->TheController.getControllerRegisters()->getMemoryPageSize());
 				if (pDriverCommand->TransferDataDirection == READ || pDriverCommand->TransferDataDirection == WRITE || pDriverCommand->TransferDataDirection == BI_DIRECTIONAL)
 				{
 					pDriverCommand->Command.DPTR.DPTR1 = prps.getPRP1();
