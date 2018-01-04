@@ -111,14 +111,14 @@ int main()
 	// This is testing code.
 	LOG_SET_LEVEL(2);
 
-	Driver driver;
+	//Driver driver;
 
 	//sendIdentifyController(driver);
 	//sendIdentifyController(driver);
 
-	sendCreateIOCompletionQueue(driver, 1);
-	sendCreateIOSubmissionQueue(driver, 1, 1);
-	sendIdentifyController(driver, 1);
+	//sendCreateIOCompletionQueue(driver, 1);
+	//sendCreateIOSubmissionQueue(driver, 1, 1);
+	//sendIdentifyController(driver, 1);
 
 	/*
 	UINT_32 BUF_SIZE = 8192;
