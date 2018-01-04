@@ -126,12 +126,12 @@ namespace cnvme
 			/// <summary>
 			/// Map from id to submission queue
 			/// </summary>
-			std::map<UINT_16, controller::Queue> SubmissionQueues;
+			std::map<UINT_16, controller::Queue*> SubmissionQueues;
 
 			/// <summary>
 			/// Map from id to completion queue
 			/// </summary>
-			std::map<UINT_16, controller::Queue> CompletionQueues;
+			std::map<UINT_16, controller::Queue*> CompletionQueues;
 
 			/// <summary>
 			/// Used to keep track of CIDs that have been used

@@ -162,10 +162,18 @@ namespace cnvme
 				struct
 				{
 					UINT_32 PC : 1; // Physically Contiguous
-					UINT_32 IEN : 1; //Interrupts Enabled
+					UINT_32 IEN : 1; // Interrupts Enabled
 					UINT_32 CREATE_IO_COMPLETION_QUEUE_DW11_RSVD : 14;
 					UINT_32 IV : 16; // Interrupt Vector
 				} DW11_CreateIoCompletionQueue;
+
+				struct
+				{
+					UINT_32 PC : 1; // Physically Contiguous
+					UINT_32 QPRIO : 2; // Queue Priority
+					UINT_32 CREATE_IO_SUBMISSION_QUEUE_DW11_RSVD : 13;
+					UINT_32 CQID : 16; // Completion Queue Identifier
+				} DW11_CreateIoSubmissionQueue;
 
 				UINT_32 DWord11; // Command Specific DW11
 			};
