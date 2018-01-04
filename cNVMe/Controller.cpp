@@ -452,7 +452,7 @@ namespace cnvme
 				return;
 			}
 
-			// We don't handle actual interupt vectors, so you can't get that back.
+			// We don't handle actual interupt vectors, so you can't get that status back.
 
 			// Checks passed. Hold onto the queue.
 
@@ -467,6 +467,72 @@ namespace cnvme
 			this->ValidCompletionQueues.push_back(q);
 
 			LOG_INFO("Held onto completion queue with an id of " + std::to_string(command.DW10_CreateIoQueue.QID));
+		}
+
+		NVME_CALLER_IMPLEMENTATION(adminCreateIoSubmissionQueue)
+		{
+			auto controllerRegistersPointer = ControllerRegisters->getControllerRegisters();
+			ASSERT_IF(!controllerRegistersPointer, "The controller registers are NULL... oh no!");
+
+			// Check for the Physically Contiguous field. If not, fail the command.
+			if (command.DW11_CreateIoCompletionQueue.PC != controllerRegistersPointer->CAP.CQR)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_FIELD_IN_COMMAND;
+				return;
+			}
+
+			// Check to make sure we were give something that looks like a valid address
+			if (command.DPTR.DPTR1 == 0)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SC = constants::status::codes::generic::PRP_OFFSET_INVALID;
+				return;
+			}
+
+			// Check if the queue exists. If it does already, fail the command
+			if (this->getQueueWithId(this->ValidSubmissionQueues, command.DW10_CreateIoQueue.QID) != nullptr)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER;
+				return;
+			}
+
+			// Check if the queue size is valid.
+			if (command.DW10_CreateIoQueue.QSIZE > controllerRegistersPointer->CAP.MQES)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_SIZE;
+				return;
+			}
+
+			Queue* mappedCompletionQueue = this->getQueueWithId(this->ValidCompletionQueues, command.DW11_CreateIoSubmissionQueue.CQID);
+			if (mappedCompletionQueue == nullptr)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::COMPLETION_QUEUE_INVALID;
+				return;
+			}
+
+			// Checks passed. Hold onto the queue.
+
+			auto doorbells = this->ControllerRegisters->getQueueDoorbells();
+			doorbells += command.DW10_CreateIoQueue.QID; // find our doorbell
+
+			Queue* subQ = new Queue(ONE_BASED_FROM_ZERO_BASED(command.DW10_CreateIoQueue.QSIZE),
+				command.DW10_CreateIoQueue.QID,
+				(UINT_16*)&(doorbells->CQHDBL), // doorbell
+				command.DPTR.DPTR1
+			);
+			this->ValidSubmissionQueues.push_back(subQ);
+
+			subQ->setMappedQueue(mappedCompletionQueue); // SQ -> CQ
+			mappedCompletionQueue->setMappedQueue(subQ); // CQ -> SQ
+
+			LOG_INFO("Held onto submission queue with an id of " + std::to_string(command.DW10_CreateIoQueue.QID));
 		}
 
 		NVME_CALLER_IMPLEMENTATION(adminKeepAlive)
@@ -512,6 +578,7 @@ namespace cnvme
 
 		const std::map<UINT_8, NVMeCaller> Controller::AdminCommandCallers = {
 			{ cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE, &cnvme::controller::Controller::adminCreateIoCompletionQueue},
+			{ cnvme::constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminCreateIoSubmissionQueue},
 			{ cnvme::constants::opcodes::admin::IDENTIFY, &cnvme::controller::Controller::adminIdentify},
 			{ cnvme::constants::opcodes::admin::KEEP_ALIVE, &cnvme::controller::Controller::adminKeepAlive}
 		};

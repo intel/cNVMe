@@ -194,6 +194,11 @@ namespace cnvme
 			NVME_CALLER_HEADER(adminCreateIoCompletionQueue);
 
 			/// <summary>
+			/// Handling for the NVMe Create IO Submission Queue Command
+			/// </summary>
+			NVME_CALLER_HEADER(adminCreateIoSubmissionQueue);
+
+			/// <summary>
 			/// Handling for the NVMe Keep Alive Command
 			/// </summary>
 			NVME_CALLER_HEADER(adminKeepAlive);

@@ -387,6 +387,10 @@ namespace cnvme
 			{
 				LOG_ERROR("The command timed out");
 				pDriverCommand->DriverStatus = TIMEOUT;
+
+				// its debatable if we should free memory on a timeout...
+				//  the command could be in progress or something..
+				//   though right now this would leak on IO Queue Creation.
 			}
 			// We did the command and its a contiguous buffer cmd
 			else if (pDriverCommand->TransferDataDirection != MANUAL_PRPS && this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
