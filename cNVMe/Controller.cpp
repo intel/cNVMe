@@ -74,11 +74,11 @@ namespace cnvme
 				ControllerRegisters = nullptr;
 			}
 
-			for (Queue* q: this->ValidSubmissionQueues)
+			for (Queue* q : this->ValidSubmissionQueues)
 			{
 				delete q;
-			}	
-			
+			}
+
 			for (Queue* q : this->ValidCompletionQueues)
 			{
 				delete q;
@@ -253,7 +253,7 @@ namespace cnvme
 				}
 			}
 
-			LOG_ERROR("Invalid queue id specified: " + std::to_string(id));
+			LOG_INFO("Invalid queue id specified: " + std::to_string(id));
 			return nullptr;
 		}
 
@@ -551,6 +551,60 @@ namespace cnvme
 			LOG_INFO("Held onto submission queue with an id of " + std::to_string(command.DW10_CreateIoQueue.QID));
 		}
 
+		NVME_CALLER_IMPLEMENTATION(adminDeleteIoCompletionQueue)
+		{
+			Queue* q = this->getQueueWithId(this->ValidCompletionQueues, command.DW10_DeleteIoQueue.QID);
+
+			// You can't delete my admin queue!
+			if (command.DW10_DeleteIoQueue.QID == ADMIN_QUEUE_ID || !q)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER;
+				return;
+			}
+
+			// We are still mapped to a submission queue.
+			// Submission queues must be deleted first
+			if (q->getMappedQueue())
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_DELETION;
+				return;
+			}
+
+			// free the memory!
+			delete q;
+
+			// Remove from validity
+			this->ValidCompletionQueues.erase(std::remove(this->ValidCompletionQueues.begin(), this->ValidCompletionQueues.end(), q), this->ValidCompletionQueues.end());
+		}
+
+		NVME_CALLER_IMPLEMENTATION(adminDeleteIoSubmissionQueue)
+		{
+			Queue* q = this->getQueueWithId(this->ValidSubmissionQueues, command.DW10_DeleteIoQueue.QID);
+
+			// You can't delete my admin queue!
+			if (command.DW10_DeleteIoQueue.QID == ADMIN_QUEUE_ID || !q)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER;
+				return;
+			}
+
+			// don't let the completion queue map here anymore
+			q->getMappedQueue()->setMappedQueue(nullptr);
+
+			// free the memory!
+			delete q;
+
+			// Remove from validity
+			this->ValidSubmissionQueues.erase(std::remove(this->ValidSubmissionQueues.begin(), this->ValidSubmissionQueues.end(), q), this->ValidSubmissionQueues.end());
+			this->SubmissionQueueIdToCommandIdentifiers[command.DW10_DeleteIoQueue.QID].clear();
+		}
+
 		NVME_CALLER_IMPLEMENTATION(adminKeepAlive)
 		{
 			// nop. We do nothing here.
@@ -564,6 +618,7 @@ namespace cnvme
 			{
 				if (ValidSubmissionQueues[i]->getQueueId() != ADMIN_QUEUE_ID)
 				{
+					delete ValidSubmissionQueues[i];
 					ValidSubmissionQueues.erase(ValidSubmissionQueues.begin() + i);
 				}
 			}
@@ -572,6 +627,7 @@ namespace cnvme
 			{
 				if (ValidCompletionQueues[i]->getQueueId() != ADMIN_QUEUE_ID)
 				{
+					delete ValidCompletionQueues[i];
 					ValidCompletionQueues.erase(ValidCompletionQueues.begin() + i);
 				}
 			}
@@ -590,13 +646,15 @@ namespace cnvme
 #else
 			checkForChanges();
 #endif
-	}
+		}
 
 		const std::map<UINT_8, NVMeCaller> Controller::AdminCommandCallers = {
 			{ cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE, &cnvme::controller::Controller::adminCreateIoCompletionQueue},
 			{ cnvme::constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminCreateIoSubmissionQueue},
+			{ cnvme::constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE, &cnvme::controller::Controller::adminDeleteIoCompletionQueue},
+			{ cnvme::constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminDeleteIoSubmissionQueue},
 			{ cnvme::constants::opcodes::admin::IDENTIFY, &cnvme::controller::Controller::adminIdentify},
 			{ cnvme::constants::opcodes::admin::KEEP_ALIVE, &cnvme::controller::Controller::adminKeepAlive}
 		};
-}
+	}
 }

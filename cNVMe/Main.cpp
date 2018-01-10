@@ -80,7 +80,7 @@ void sendCreateIOCompletionQueue(Driver &driver, UINT_16 QID)
 
 	ASSERT_IF(statusCode != 0, "Create IO Completion Queue Failed!");
 }
-	
+
 void sendCreateIOSubmissionQueue(Driver &driver, UINT_16 QID, UINT_16 CQID)
 {
 	UINT_32 BUF_SIZE = 8192;
@@ -106,39 +106,57 @@ void sendCreateIOSubmissionQueue(Driver &driver, UINT_16 QID, UINT_16 CQID)
 	ASSERT_IF(statusCode != 0, "Create IO Submission Queue Failed!");
 }
 
-int main()
+void sendDeleteIOSubmissionQueue(Driver &driver, UINT_16 QID)
 {
-	// This is testing code.
-	LOG_SET_LEVEL(2);
-
-	//Driver driver;
-
-	//sendIdentifyController(driver);
-	//sendIdentifyController(driver);
-
-	//sendCreateIOCompletionQueue(driver, 1);
-	//sendCreateIOSubmissionQueue(driver, 1, 1);
-	//sendIdentifyController(driver, 1);
-
-	/*
 	UINT_32 BUF_SIZE = 8192;
 	BYTE* buffer = new BYTE[BUF_SIZE];
 	memset(buffer, 0, BUF_SIZE);
 
 	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
 	d->Timeout = 6000;
-	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE;
-	d->Command.DW10_CreateIoQueue.QID = 1;
-	d->Command.DW10_CreateIoQueue.QSIZE = 15; // 0-based 16
-	d->Command.DW11_CreateIoCompletionQueue.IEN = 1;
-	d->Command.DW11_CreateIoCompletionQueue.PC = 1;
+	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE;
+	d->Command.DW10_DeleteIoQueue.QID = QID;
 
 	d->TransferDataDirection = NO_DATA;
 
 	driver.sendCommand((UINT_8*)d, BUF_SIZE);
 
+	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
+
 	delete[]buffer;
-	*/
+
+	ASSERT_IF(statusCode != 0, "Delete IO Submission Queue Failed!");
+}
+
+void sendDeleteIOCompletionQueue(Driver &driver, UINT_16 QID)
+{
+	UINT_32 BUF_SIZE = 8192;
+	BYTE* buffer = new BYTE[BUF_SIZE];
+	memset(buffer, 0, BUF_SIZE);
+
+	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
+	d->Timeout = 6000;
+	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE;
+	d->Command.DW10_DeleteIoQueue.QID = QID;
+
+	d->TransferDataDirection = NO_DATA;
+
+	driver.sendCommand((UINT_8*)d, BUF_SIZE);
+
+	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
+
+	delete[]buffer;
+
+	ASSERT_IF(statusCode != 0, "Delete IO Completion Queue Failed!");
+}
+
+
+int main()
+{
+	// This is testing code.
+	LOG_SET_LEVEL(2);
+
+	//Driver driver;
 
 	LOG_SET_LEVEL(1);
 
