@@ -23,10 +23,11 @@
 Namespace.cpp - An implementation file for a cNVMe Namespace
 */
 
-#define DEFAULT_NUMBER_OF_LBA_FORMAT 2; // 0-based!
-
 #include "Constants.h"
 #include "Namespace.h"
+
+#define DEFAULT_NUMBER_OF_LBA_FORMAT 2; // 0-based!
+#define LBA_IN_BYTES_TO_LBADS(lbaSizeInBytes) ((UINT_8)(log2(lbaSizeInBytes)))
 
 namespace cnvme
 {
@@ -50,9 +51,9 @@ namespace cnvme
 		identify::structures::IDENTIFY_NAMESPACE& Namespace::getIdentifyNamespaceStructure()
 		{
 			this->IdentifyNamespace.NLBAF = DEFAULT_NUMBER_OF_LBA_FORMAT; // support 512/4096/8192 byte sectors
-			this->IdentifyNamespace.LBAF[0].LBADS = 9; // 2^9 = 512
-			this->IdentifyNamespace.LBAF[1].LBADS = 12; // 2^12 = 4096
-			this->IdentifyNamespace.LBAF[2].LBADS = 13; // 2^13 = 8192
+			this->IdentifyNamespace.LBAF[0].LBADS = LBA_IN_BYTES_TO_LBADS(512);
+			this->IdentifyNamespace.LBAF[1].LBADS = LBA_IN_BYTES_TO_LBADS(4096);
+			this->IdentifyNamespace.LBAF[2].LBADS = LBA_IN_BYTES_TO_LBADS(8192);
 
 			auto currentLbaFormat = this->IdentifyNamespace.LBAF[this->IdentifyNamespace.FLBAS.CurrentLBAFormat];
 			ASSERT_IF(currentLbaFormat.LBADS < 9, "Minimum posssible selected LBADS should be 9. 2^9 = 512.");

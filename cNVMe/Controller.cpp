@@ -370,6 +370,8 @@ namespace cnvme
 					else
 					{
 						memset(transferPayload.getBuffer(), 0, transferPayload.getSize()); // Technically, this is ok if we don't have a namespace with the given NSID
+						// See Figure 106 of NVMe 1.3 for details:
+						//   If the specified namespace is not an active NSID, then the controller returns a zero filled data structure.
 					}
 				}
 				else
