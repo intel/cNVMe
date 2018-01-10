@@ -188,6 +188,16 @@ namespace cnvme
 					const UINT_8 SECONDARY_CONTROLLER_LIST = 0x15;
 				}
 			}
+
+			namespace format
+			{
+				namespace ses
+				{
+					const UINT_8 NO_SECURE_ERASE = 0b000;
+					const UINT_8 USER_DATA_ERASE = 0b001;
+					const UINT_8 CRYPTOGRAPHIC_ERASE = 0b010;
+				}
+			}
 		}
 	}
 }

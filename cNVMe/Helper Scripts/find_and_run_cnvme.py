@@ -7,6 +7,7 @@ Author:
     Charles Machalow
 '''
 import os
+import subprocess
 import sys
 
 def getExeExtension():
@@ -22,7 +23,7 @@ if __name__ == '__main__':
             filePath = os.path.join(root, file)
             if file == ('cNVMe.%s' % getExeExtension()):
                 print 'Found cNVMe: %s' % filePath
-                sys.exit(os.system(filePath))
+                sys.exit(subprocess.call(filePath, shell=True))
                 
     print 'Couldn\'t find cNVMe'
     sys.exit(-1) # faillure to find exe

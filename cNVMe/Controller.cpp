@@ -25,6 +25,8 @@ Controller.cpp - An implementation file for the NVMe Controller
 
 #define NVME_CALLER_IMPLEMENTATION(commandName) void Controller::commandName(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
 
+#define DEFAULT_NAMESPACE_SIZE 16384 // 16 kilobytes
+
 #include "Command.h"
 #include "Constants.h"
 #include "Controller.h"
@@ -52,7 +54,8 @@ namespace cnvme
 			// Setup the IC with default values.
 			resetIdentifyController();
 
-			// Todo: in the end, we'll need some form of media bank
+			// create default namespace
+			this->NamespaceIdToNamespace[1] = ns::Namespace(DEFAULT_NAMESPACE_SIZE);
 		}
 
 		Controller::~Controller()
@@ -357,8 +360,19 @@ namespace cnvme
 				}
 				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACE_ACTIVE) // Identify Namespace
 				{
-					//todo.. actually do something here
-					memset(transferPayload.getBuffer(), 0, transferPayload.getSize()); // Technically, this is ok if we don't have a namespace with the given NSID. 
+					auto namespaceSelected = this->NamespaceIdToNamespace.find(command.NSID);
+					if (namespaceSelected != this->NamespaceIdToNamespace.end())
+					{
+						LOG_INFO("Grabbing Identify Namespace for NSID " + std::to_string(namespaceSelected->first));
+						auto identifyNamespaceStructure = namespaceSelected->second.getIdentifyNamespaceStructure();
+						memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &identifyNamespaceStructure, sizeof(identifyNamespaceStructure));
+					}
+					else
+					{
+						memset(transferPayload.getBuffer(), 0, transferPayload.getSize()); // Technically, this is ok if we don't have a namespace with the given NSID
+						// See Figure 106 of NVMe 1.3 for details:
+						//   If the specified namespace is not an active NSID, then the controller returns a zero filled data structure.
+					}
 				}
 				else
 				{
