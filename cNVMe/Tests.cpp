@@ -63,6 +63,7 @@ namespace cnvme
 					results.push_back(std::async(pci::testPciHeaderId));
 					results.push_back(std::async(general::testLoopingThread));
 					results.push_back(std::async(controller_registers::testControllerReset));
+					results.push_back(std::async(commands::testNVMeCommandOpcodeInvalid));
 					results.push_back(std::async(commands::testNVMeCommandParsing));
 					results.push_back(std::async(driver::testNoDataCommandViaDriver));
 					results.push_back(std::async(driver::testReadCommandViaDriver));
@@ -249,6 +250,29 @@ namespace cnvme
 
 				return true;
 			}
+
+			bool testNVMeCommandOpcodeInvalid()
+			{
+				cnvme::driver::Driver driver;
+
+				UINT_32 BUF_SIZE = sizeof(cnvme::driver::DRIVER_COMMAND);
+				BYTE* buffer = new BYTE[BUF_SIZE];
+				memset(buffer, 0, BUF_SIZE);
+
+				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
+				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
+
+				UINT_32 timeout = 5; // arbitrary
+				pDriverCommand->Timeout = timeout;
+				pDriverCommand->TransferDataDirection = cnvme::driver::NO_DATA;
+				pDriverCommand->Command.DWord0Breakdown.OPC = 0xFE; // invalid.. hopefully
+
+				driver.sendCommand(buffer, BUF_SIZE);
+				
+				ASSERT_IF(pDriverCommand->CompletionQueueEntry.SC != constants::status::codes::generic::INVALID_COMMAND_OPCODE, "Controller did not fail invalid opcode correctly");
+
+				return true;
+			}
 		}
 
 		namespace driver
@@ -385,7 +409,24 @@ namespace cnvme
 						PRP prp(payloadWithoutData, pageSize);
 						prp.placePayloadInExistingPRPs(payloadWithData);
 
-						FAIL_IF_AND_HIDE_LOG(prp.placePayloadInExistingPRPs(payloadWithDataTooLarge), "Placing a larger than allocated Payload into PRPs should have failed!");
+#if _DEBUG
+						bool didAssert = false;
+#else
+						bool didAssert = true; // preset to True since release will not assert.
+#endif // _DEBUG
+						_START_ASSERT_QUIET();
+						try
+						{
+							FAIL_IF_AND_HIDE_LOG(prp.placePayloadInExistingPRPs(payloadWithDataTooLarge), "Placing a larger than allocated Payload into PRPs should have failed!");
+						}
+						catch (...)
+						{
+							didAssert = true;
+						}
+						_END_ASSERT_QUIET();
+
+						FAIL_IF(!didAssert, "There should have been an assert on an invalid payload size");
+
 						// Status will be messed with here. So clear.
 						cnvme::logging::theLogger.clearStatus();
 

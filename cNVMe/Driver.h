@@ -45,6 +45,9 @@ namespace cnvme
 			BUFFER_NOT_LARGE_ENOUGH,
 			INVALID_DATA_DIRECTION,
 			INVALID_DATA_LENGTH,
+			INVALID_DATA_LENGTH_FOR_MANUAL_PRPS,
+			INVALID_IO_QUEUE_MANAGEMENT_PC,
+			INVALID_IO_QUEUE_MANAGEMENT_IEN,
 		};
 
 		/// <summary>
@@ -63,6 +66,7 @@ namespace cnvme
 			READ,
 			WRITE,
 			BI_DIRECTIONAL,
+			MANUAL_PRPS, // used if the driver should ignore checks for data length since the user is handling PRPs
 			DATA_DIRECTION_MAX,
 		};
 
@@ -122,12 +126,12 @@ namespace cnvme
 			/// <summary>
 			/// Map from id to submission queue
 			/// </summary>
-			std::map<UINT_16, controller::Queue> SubmissionQueues;
+			std::map<UINT_16, controller::Queue*> SubmissionQueues;
 
 			/// <summary>
 			/// Map from id to completion queue
 			/// </summary>
-			std::map<UINT_16, controller::Queue> CompletionQueues;
+			std::map<UINT_16, controller::Queue*> CompletionQueues;
 
 			/// <summary>
 			/// Used to keep track of CIDs that have been used
@@ -138,6 +142,13 @@ namespace cnvme
 			/// Will update SubmissionQueueIdToCurrentCommandIdentifiers and return the next CID.
 			/// </summary>
 			UINT_16 getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(UINT_16 submissionQueueId);
+
+			/// <summary>
+			/// Returns True if we should use a raw pointer to contiguous memory instead of PRPs
+			/// </summary>
+			/// <param name="nvmeCommand">command to check</param>
+			/// <returns>bool</returns>
+			bool commandRequiresContiguousBufferInsteadOfPrp(NVME_COMMAND& nvmeCommand);
 		};
 	}
 }

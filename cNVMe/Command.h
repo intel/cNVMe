@@ -147,9 +147,36 @@ namespace cnvme
 					UINT_32 SES : 3; // Secure Erase Settings
 					UINT_32 FORMAT_DW10_RSVD : 20;
 				} DW10_Format;
+
+				struct
+				{
+					UINT_16 QID; // Queue ID
+					UINT_16 QSIZE; // Queue Size (in entries)
+				} DW10_CreateIoQueue; // Both submission/completion
+
 				UINT_32 DWord10; // Command Specific DW10
 			};
-			UINT_32 DWord11; // Command Specific DW11
+
+			union
+			{
+				struct
+				{
+					UINT_32 PC : 1; // Physically Contiguous
+					UINT_32 IEN : 1; // Interrupts Enabled
+					UINT_32 CREATE_IO_COMPLETION_QUEUE_DW11_RSVD : 14;
+					UINT_32 IV : 16; // Interrupt Vector
+				} DW11_CreateIoCompletionQueue;
+
+				struct
+				{
+					UINT_32 PC : 1; // Physically Contiguous
+					UINT_32 QPRIO : 2; // Queue Priority
+					UINT_32 CREATE_IO_SUBMISSION_QUEUE_DW11_RSVD : 13;
+					UINT_32 CQID : 16; // Completion Queue Identifier
+				} DW11_CreateIoSubmissionQueue;
+
+				UINT_32 DWord11; // Command Specific DW11
+			};
 			UINT_32 DWord12; // Command Specific DW12
 			UINT_32 DWord13; // Command Specific DW13
 			UINT_32 DWord14; // Command Specific DW14

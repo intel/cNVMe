@@ -27,41 +27,124 @@ Main.cpp - An implementation file for the Main entry
 #include "Strings.h"
 #include "Tests.h"
 
-
 #include <iostream>
 
 using namespace cnvme;
 using namespace cnvme::command;
 using namespace cnvme::driver;
 
-int main()
+void sendIdentifyController(Driver &driver, UINT_16 queue=0)
 {
-	// This is testing code.
-	LOG_SET_LEVEL(2);
-
-	Driver driver;
 	UINT_32 BUF_SIZE = 8192;
 	BYTE* buffer = new BYTE[BUF_SIZE];
 	memset(buffer, 0, BUF_SIZE);
 
 	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
-	d->Timeout = 5;
+	d->Timeout = 6000;
+	d->QueueId = queue; // for testing
 	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::IDENTIFY;
-	d->Command.DWord10 = cnvme::constants::commands::identify::cns::NAMESPACE_ACTIVE;
-	d->Command.NSID = 1;
+	d->Command.DW10_Identify.CNS = constants::commands::identify::cns::CONTROLLER;
 	d->TransferDataDirection = READ;
 	d->TransferDataSize = 4096;
 
 	driver.sendCommand((UINT_8*)d, BUF_SIZE);
 
-	identify::structures::IDENTIFY_NAMESPACE* i = (identify::structures::IDENTIFY_NAMESPACE*)&d->TransferData;
+	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
+	
+	delete[]buffer;
+
+	ASSERT_IF(statusCode != 0, "Identify Controller Failed!");
+}
+
+void sendCreateIOCompletionQueue(Driver &driver, UINT_16 QID)
+{
+	UINT_32 BUF_SIZE = 8192;
+	BYTE* buffer = new BYTE[BUF_SIZE];
+	memset(buffer, 0, BUF_SIZE);
+
+	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
+	d->Timeout = 6000;
+	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE;
+	d->Command.DW10_CreateIoQueue.QID = QID;
+	d->Command.DW10_CreateIoQueue.QSIZE = 15; // 0-based 16
+	d->Command.DW11_CreateIoCompletionQueue.IEN = 1;
+	d->Command.DW11_CreateIoCompletionQueue.PC = 1;
+
+	d->TransferDataDirection = NO_DATA;
+
+	driver.sendCommand((UINT_8*)d, BUF_SIZE);
+
+	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
+
+	delete[]buffer;
+
+	ASSERT_IF(statusCode != 0, "Create IO Completion Queue Failed!");
+}
+	
+void sendCreateIOSubmissionQueue(Driver &driver, UINT_16 QID, UINT_16 CQID)
+{
+	UINT_32 BUF_SIZE = 8192;
+	BYTE* buffer = new BYTE[BUF_SIZE];
+	memset(buffer, 0, BUF_SIZE);
+
+	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
+	d->Timeout = 6000;
+	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE;
+	d->Command.DW10_CreateIoQueue.QID = QID;
+	d->Command.DW10_CreateIoQueue.QSIZE = 15; // 0-based 16
+	d->Command.DW11_CreateIoSubmissionQueue.CQID = CQID;
+	d->Command.DW11_CreateIoSubmissionQueue.PC = 1;
+
+	d->TransferDataDirection = NO_DATA;
+
+	driver.sendCommand((UINT_8*)d, BUF_SIZE);
+
+	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
+	
+	delete[]buffer;
+
+	ASSERT_IF(statusCode != 0, "Create IO Submission Queue Failed!");
+}
+
+int main()
+{
+	// This is testing code.
+	LOG_SET_LEVEL(2);
+
+	//Driver driver;
+
+	//sendIdentifyController(driver);
+	//sendIdentifyController(driver);
+
+	//sendCreateIOCompletionQueue(driver, 1);
+	//sendCreateIOSubmissionQueue(driver, 1, 1);
+	//sendIdentifyController(driver, 1);
+
+	/*
+	UINT_32 BUF_SIZE = 8192;
+	BYTE* buffer = new BYTE[BUF_SIZE];
+	memset(buffer, 0, BUF_SIZE);
+
+	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
+	d->Timeout = 6000;
+	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE;
+	d->Command.DW10_CreateIoQueue.QID = 1;
+	d->Command.DW10_CreateIoQueue.QSIZE = 15; // 0-based 16
+	d->Command.DW11_CreateIoCompletionQueue.IEN = 1;
+	d->Command.DW11_CreateIoCompletionQueue.PC = 1;
+
+	d->TransferDataDirection = NO_DATA;
+
+	driver.sendCommand((UINT_8*)d, BUF_SIZE);
+
+	delete[]buffer;
+	*/
 
 	LOG_SET_LEVEL(1);
 
 	bool testsPassing = cnvme::tests::helpers::runTests();
 	std::cout << "Tests passing: " << strings::toString(testsPassing) << std::endl;
-
-	exit(!testsPassing); // 0 is pass
+	return(!testsPassing); // 0 is pass
 
 	// End testing code.
 }

@@ -65,7 +65,9 @@ namespace cnvme
 
 		void Logger::setStatus(std::string status)
 		{
+			Mutex.lock();
 			Status = status;
+			Mutex.unlock();
 		}
 
 		std::string Logger::getStatus()
@@ -137,12 +139,13 @@ namespace cnvme
 		{
 			std::string finalTxt = "cNVMe ASSERT! " + funcName + "():" + std::to_string(__LINE__) + " - " + std::string(txt);
 			cnvme::logging::theLogger.setStatus(finalTxt);
+			Mutex.lock();
 			if (AssertQuietThreads.find(std::this_thread::get_id()) == AssertQuietThreads.end()) // not a quiet thread
 			{
-				Mutex.lock();
 				std::cerr << finalTxt << std::endl;
-				Mutex.unlock();
 			}
+			Mutex.unlock();
+
 
 #ifdef _DEBUG // only throw on debug builds
 			throw std::exception(finalTxt.c_str());

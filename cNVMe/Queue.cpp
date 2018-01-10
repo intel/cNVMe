@@ -49,6 +49,13 @@ namespace cnvme
 			LinkedMemoryAddress = linkedMemoryAddress;
 		}
 
+		Queue::~Queue()
+		{
+			// lol maybe we should delete the mapped memory.
+			// lol but we won't since that would require other changes.
+			// The owner of the memory should deallocate.
+		}
+
 		UINT_32 Queue::getQueueSize() const
 		{
 			return QueueSize;

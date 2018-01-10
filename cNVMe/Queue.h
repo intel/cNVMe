@@ -54,7 +54,7 @@ namespace cnvme
 			/// <summary>
 			/// Destructor
 			/// </summary>
-			~Queue() = default;
+			~Queue();
 
 			/// <summary>
 			/// Returns the queue size

@@ -29,11 +29,11 @@ Payload.cpp - An implementation file for the Payload class
 
 namespace cnvme
 {
-	Payload::Payload(size_t byteSize)
+	Payload::Payload(size_t byteSize) : Payload()
 	{
 		ByteSize = byteSize;
 		BytePointer = new UINT_8[byteSize];
-		memset(BytePointer, 0, ByteSize);
+		memset(BytePointer, 0x00, ByteSize);
 	}
 
 	Payload::Payload(BYTE * pointer, size_t byteSize) : Payload::Payload(byteSize)
@@ -45,6 +45,7 @@ namespace cnvme
 	{
 		ByteSize = 0;
 		BytePointer = nullptr;
+		DeleteOnScopeLoss = true;
 	}
 
 	Payload::Payload(const Payload& other) : Payload::Payload()

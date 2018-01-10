@@ -237,16 +237,9 @@ namespace cnvme
 #endif
 			}
 
-			ControllerRegisters::ControllerRegisters(UINT_64 memoryLocation, cnvme::controller::Controller* controller)
+			ControllerRegisters::ControllerRegisters(UINT_64 memoryLocation, cnvme::controller::Controller* controller) : ControllerRegisters(memoryLocation)
 			{
 				Controller = controller;
-				ControllerRegistersPointer = (CONTROLLER_REGISTERS*)memoryLocation;
-				controllerReset();
-
-#ifndef SINGLE_THREADED
-				RegisterWatcher = LoopingThread([&] {ControllerRegisters::checkForChanges(); }, CHANGE_CHECK_SLEEP_MS);
-				RegisterWatcher.start();
-#endif
 			}
 
 			CONTROLLER_REGISTERS* ControllerRegisters::getControllerRegisters()
@@ -258,20 +251,18 @@ namespace cnvme
 			{
 				if (ControllerRegistersPointer)
 				{
-					CONTROLLER_REGISTERS* controllerRegisters = getControllerRegisters();
-
-					if (controllerRegisters->CC.EN == 0 && !controllerResetInitiated)
+					if (ControllerRegistersPointer->CC.EN == 0 && !controllerResetInitiated)
 					{
 						LOG_INFO("CC.EN was flipped to 0. Initiating controller reset.");
 						controllerReset();
 						// CSTS.RDY should now be 0
 					}
 
-					if (controllerResetInitiated && controllerRegisters->CC.EN == 1)
+					if (controllerResetInitiated && ControllerRegistersPointer->CC.EN == 1)
 					{
 						LOG_INFO("CC.EN was set back to 1. Setting CSTS.RDY to 1.");
 						controllerResetInitiated = false; // the reset is complete
-						controllerRegisters->CSTS.RDY = 1; // Controller has been re-enabled. We are now ready.
+						ControllerRegistersPointer->CSTS.RDY = 1; // Controller has been re-enabled. We are now ready.
 					}
 				}
 			}

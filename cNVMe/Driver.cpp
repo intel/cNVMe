@@ -66,6 +66,18 @@ namespace cnvme
 			{
 				return "The data length was invalid";
 			}
+			else if (s == INVALID_DATA_LENGTH_FOR_MANUAL_PRPS)
+			{
+				return "The data length was invalid since the user should be providing their own PRPs embedded in the DWs";
+			}
+			else if (s == INVALID_IO_QUEUE_MANAGEMENT_PC)
+			{
+				return "The PC field must be set to 1 as we do not support non physically contiguous queues";
+			}
+			else if (s == INVALID_IO_QUEUE_MANAGEMENT_IEN)
+			{
+				return "The IEN field must be set to 1 as we do not support disabled interrupt queues";
+			}
 
 			ASSERT("Status not found in statusToString()");
 			return "Unknown";
@@ -133,16 +145,16 @@ namespace cnvme
 			controllerRegisters->ACQ.ACQB = adminCompletionQueuePayload.getMemoryAddress();
 
 			// Make Queue objects to hang onto
-			Queue adminSubmissionQueue(ONE_BASED_FROM_ZERO_BASED(controllerRegisters->AQA.ASQS), ADMIN_QUEUE_ID, adminSubmissionQueueDoorbell, controllerRegisters->ASQ.ASQB);
-			Queue adminCompletionQueue(ONE_BASED_FROM_ZERO_BASED(controllerRegisters->AQA.ACQS), ADMIN_QUEUE_ID, adminCompletionQueueDoorbell, controllerRegisters->ACQ.ACQB);
+			Queue* adminSubmissionQueue = new Queue(ONE_BASED_FROM_ZERO_BASED(controllerRegisters->AQA.ASQS), ADMIN_QUEUE_ID, adminSubmissionQueueDoorbell, controllerRegisters->ASQ.ASQB);
+			Queue* adminCompletionQueue = new Queue(ONE_BASED_FROM_ZERO_BASED(controllerRegisters->AQA.ACQS), ADMIN_QUEUE_ID, adminCompletionQueueDoorbell, controllerRegisters->ACQ.ACQB);
 
 			// Add Queue objects to our container
 			this->SubmissionQueues[ADMIN_QUEUE_ID] = adminSubmissionQueue;
 			this->CompletionQueues[ADMIN_QUEUE_ID] = adminCompletionQueue;
 
 			// Link the Queue objects to each other
-			this->SubmissionQueues[ADMIN_QUEUE_ID].setMappedQueue(&this->CompletionQueues[ADMIN_QUEUE_ID]);
-			this->CompletionQueues[ADMIN_QUEUE_ID].setMappedQueue(&this->SubmissionQueues[ADMIN_QUEUE_ID]);
+			this->SubmissionQueues[ADMIN_QUEUE_ID]->setMappedQueue(this->CompletionQueues[ADMIN_QUEUE_ID]);
+			this->CompletionQueues[ADMIN_QUEUE_ID]->setMappedQueue(this->SubmissionQueues[ADMIN_QUEUE_ID]);
 
 			// Enable the controller
 			controllerRegisters->CC.EN = 1;
@@ -157,6 +169,7 @@ namespace cnvme
 				if (controllerRegisters->CSTS.RDY)
 				{
 					controllerWentReady = true;
+					break;
 				}
 			}
 
@@ -167,7 +180,27 @@ namespace cnvme
 
 		Driver::~Driver()
 		{
-			// nothing to do here
+			// Delete all Submission Queues
+			for (auto &i : this->SubmissionQueues)
+			{
+				if (i.second->getMemoryAddress())
+				{
+					delete[]MEMORY_ADDRESS_TO_8POINTER(i.second->getMemoryAddress());
+					i.second->setMemoryAddress(0);
+				}
+				delete i.second;
+			}
+
+			// Delete all Completion Queues
+			for (auto &i : this->CompletionQueues)
+			{
+				if (i.second->getMemoryAddress())
+				{
+					delete[]MEMORY_ADDRESS_TO_8POINTER(i.second->getMemoryAddress());
+					i.second->setMemoryAddress(0);
+				}
+				delete i.second;
+			}
 		}
 
 		void Driver::sendCommand(UINT_8* driverCommandBuffer, UINT_32 driverCommandBufferSize)
@@ -200,6 +233,33 @@ namespace cnvme
 				return;
 			}
 
+			// If the user gave data but also wanted to passdown their own PRPs
+			if (pDriverCommand->TransferDataDirection == MANUAL_PRPS && pDriverCommand->TransferDataSize != 0)
+			{
+				LOG_ERROR("The user specified that they wanted to create/use their own PRPs, and yet they gave the driver transfer data... Where would it go?");
+				pDriverCommand->DriverStatus = INVALID_DATA_LENGTH_FOR_MANUAL_PRPS;
+				return;
+			}
+
+			// If the user gave Create IO Completion Queue, we need to check the command for what the driver supports
+			if (this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
+			{
+				if (pDriverCommand->Command.DW11_CreateIoCompletionQueue.PC != true)
+				{
+					LOG_ERROR("The user specified a non-contiguous completion queue. We don't support that.");
+					pDriverCommand->DriverStatus = INVALID_IO_QUEUE_MANAGEMENT_PC;
+					return;
+				}
+
+				if (pDriverCommand->Command.DWord0Breakdown.OPC == cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE && \
+					pDriverCommand->Command.DW11_CreateIoCompletionQueue.IEN != true)
+				{
+					LOG_ERROR("The user specified an interrupt-disabled queue. We don't support that.");
+					pDriverCommand->DriverStatus = INVALID_IO_QUEUE_MANAGEMENT_IEN;
+					return;
+				}
+			}
+
 			// If we don't have a submission queue that matches, fail now
 			auto submissionQueueItr = this->SubmissionQueues.find(pDriverCommand->QueueId);
 			if (submissionQueueItr == this->SubmissionQueues.end())
@@ -210,7 +270,7 @@ namespace cnvme
 			}
 
 			// If we don't know what completion queue that submission queue maps to, fail now.
-			auto pCompletionQueue = submissionQueueItr->second.getMappedQueue();
+			auto pCompletionQueue = submissionQueueItr->second->getMappedQueue();
 			if (!pCompletionQueue)
 			{
 				LOG_ERROR("Couldn't find a linked completion queue for a submission queue with the id: " + std::to_string(pDriverCommand->QueueId));
@@ -219,18 +279,50 @@ namespace cnvme
 			}
 
 			// here goes nothing... send the command!
-			auto pSubmissionQueue = &submissionQueueItr->second;
+			auto pSubmissionQueue = submissionQueueItr->second;
 
 			// Add the CID to the command
 			pDriverCommand->Command.DWord0Breakdown.CID = getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(pSubmissionQueue->getQueueId());
 
 			// create a prps object (even if we don't use it)
 			//  should stay in scope till command is done or we time out.
-			PRP prps(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), this->TheController.getControllerRegisters()->getMemoryPageSize());
-			if (pDriverCommand->TransferDataDirection != NO_DATA)
+			PRP prps;
+
+			// create a contiguous buffer address. If not NULL will be used/deleted later
+			UINT_64 contiguousBufferAddress = NULL;
+
+			// If MANUAL_PRPS, let the user deal with the PRP magic.
+			if (pDriverCommand->TransferDataDirection != MANUAL_PRPS)
 			{
-				pDriverCommand->Command.DPTR.DPTR1 = prps.getPRP1();
-				pDriverCommand->Command.DPTR.DPTR2 = prps.getPRP2();
+				if (this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
+				{
+					size_t allocationSize;
+					if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE)
+					{
+						allocationSize = pDriverCommand->Command.DW10_CreateIoQueue.QSIZE * sizeof(command::COMPLETION_QUEUE_ENTRY);
+					}
+					else if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE)
+					{
+						allocationSize = pDriverCommand->Command.DW10_CreateIoQueue.QSIZE * sizeof(command::NVME_COMMAND);
+					}
+					else
+					{
+						ASSERT("Invalid command for contiguous allocation.");
+					}
+
+					ALLOC_BYTE_ARRAY(contig, allocationSize);
+					contiguousBufferAddress = POINTER_TO_MEMORY_ADDRESS(contig);    // DONT FORGET TO FREE ME... later.
+					pDriverCommand->Command.DPTR.DPTR1 = contiguousBufferAddress;   // Give drive new queue location
+				}
+				else
+				{
+					prps.constructFromPayloadAndMemoryPageSize(cnvme::Payload(pDriverCommand->TransferData, pDriverCommand->TransferDataSize), this->TheController.getControllerRegisters()->getMemoryPageSize());
+					if (pDriverCommand->TransferDataDirection == READ || pDriverCommand->TransferDataDirection == WRITE || pDriverCommand->TransferDataDirection == BI_DIRECTIONAL)
+					{
+						pDriverCommand->Command.DPTR.DPTR1 = prps.getPRP1();
+						pDriverCommand->Command.DPTR.DPTR2 = prps.getPRP2();
+					}
+				}
 			}
 
 			// Get a pointer to the location to place the command
@@ -269,7 +361,7 @@ namespace cnvme
 							strings::toHexString(completionEntryIndex));
 
 						memcpy_s(&pDriverCommand->CompletionQueueEntry, sizeof(pDriverCommand->CompletionQueueEntry), pCompletionQueueEntry, sizeof(COMPLETION_QUEUE_ENTRY));
-						
+
 						// copy data back if this was a read.
 						if (pDriverCommand->TransferDataDirection == READ)
 						{
@@ -295,6 +387,58 @@ namespace cnvme
 			{
 				LOG_ERROR("The command timed out");
 				pDriverCommand->DriverStatus = TIMEOUT;
+
+				// its debatable if we should free memory on a timeout...
+				// on the real (tm) driver they would do an NVMe Controller Reset and then deallocate everything.
+				//  the command could be in progress or something..
+				//   though right now this would leak on IO Queue Creation.
+			}
+			// We did the command and its a contiguous buffer cmd
+			else if (pDriverCommand->TransferDataDirection != MANUAL_PRPS && this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
+			{
+				auto doorbells = this->TheController.getControllerRegisters()->getQueueDoorbells();
+				doorbells += pDriverCommand->Command.DW10_CreateIoQueue.QID; // find our doorbell
+
+				// Command failed if SC != 0. Free the memory!
+				if (pDriverCommand->CompletionQueueEntry.SC)
+				{
+					ASSERT_IF(contiguousBufferAddress == 0, "Somehow we sent a contiguous buffer address of 0. That could have killed the drive!");
+
+					LOG_ERROR("Freeing memory for contigous queue buffer since our queue creation failed!");
+					delete[]MEMORY_ADDRESS_TO_8POINTER(contiguousBufferAddress);
+				}
+				else if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE)
+				{
+					LOG_INFO("Succeeded in creating IO Completion Queue " + std::to_string(pDriverCommand->Command.DW10_CreateIoQueue.QID) + " will hold onto memory.");
+
+					this->CompletionQueues[pDriverCommand->Command.DW10_CreateIoQueue.QID] = new Queue(ONE_BASED_FROM_ZERO_BASED(pDriverCommand->Command.DW10_CreateIoQueue.QSIZE),
+						pDriverCommand->Command.DW10_CreateIoQueue.QID, 
+						(UINT_16*)&(doorbells->CQHDBL), // doorbell
+						contiguousBufferAddress
+					);
+				}
+				else if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE)
+				{
+					auto mappedCompletionQueueItr = this->CompletionQueues.find(pDriverCommand->Command.DW11_CreateIoSubmissionQueue.CQID);
+
+					if (mappedCompletionQueueItr == this->CompletionQueues.end())
+					{
+						ASSERT("Somehow the Controller passed a command to create a submission queue with an unknown submission queue. The Driver can't map.");
+						return; // if asserts are off (mercy on our soul)... move on.
+					}
+
+					LOG_INFO("Succeeded in creating IO Submission Queue " + std::to_string(pDriverCommand->Command.DW10_CreateIoQueue.QID) + " will hold onto memory.");
+
+					Queue* subQ = new Queue(ONE_BASED_FROM_ZERO_BASED(pDriverCommand->Command.DW10_CreateIoQueue.QSIZE),
+						pDriverCommand->Command.DW10_CreateIoQueue.QID, 
+						(UINT_16*)&(doorbells->SQTDBL), // doorbell
+						contiguousBufferAddress
+					);
+					this->SubmissionQueues[pDriverCommand->Command.DW10_CreateIoQueue.QID] = subQ;
+
+					subQ->setMappedQueue(mappedCompletionQueueItr->second); // SQ -> CQ
+					mappedCompletionQueueItr->second->setMappedQueue(subQ); // CQ -> SQ
+				}
 			}
 		}
 
@@ -315,6 +459,11 @@ namespace cnvme
 			}
 
 			return this->SubmissionQueueIdToCurrentCommandIdentifiers[submissionQueueId];
+		}
+
+		bool Driver::commandRequiresContiguousBufferInsteadOfPrp(NVME_COMMAND& nvmeCommand)
+		{
+			return nvmeCommand.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE || nvmeCommand.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE;
 		}
 	}
 }
