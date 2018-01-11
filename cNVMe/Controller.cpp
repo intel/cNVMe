@@ -25,6 +25,7 @@ Controller.cpp - An implementation file for the NVMe Controller
 
 #define NVME_CALLER_IMPLEMENTATION(commandName) void Controller::commandName(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
 
+#define ALL_NAMESPACES 0xFFFFFFFF
 #define DEFAULT_NAMESPACE_SIZE 16384 // 16 kilobytes
 
 #include "Command.h"
@@ -370,7 +371,9 @@ namespace cnvme
 
 			this->IdentifyController.NN = DEFAULT_MAX_NAMESPACES;
 
-			// Optional Commands Supported... none yet.
+			// Optional Commands Supported
+			this->IdentifyController.FormatNVMSupported = true;
+
 			// Also I'm not setting the power state to anything. It lets us get away with all 0s for not reported. Wow.
 		}
 
@@ -605,6 +608,65 @@ namespace cnvme
 			this->SubmissionQueueIdToCommandIdentifiers[command.DW10_DeleteIoQueue.QID].clear();
 		}
 
+		NVME_CALLER_IMPLEMENTATION(adminFormatNvm)
+		{
+			// Make sure this optional command is supported
+			if (!this->IdentifyController.FormatNVMSupported)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::GENERIC_COMMAND;
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE;
+				return;
+			}
+
+			std::set<UINT_32> namespacesToFormat;
+			bool shouldFormatAll = (command.NSID == ALL_NAMESPACES);
+
+			// Should format all if IC says format all on crypto so and this is a crypto erase
+			shouldFormatAll |= (command.DW10_Format.SES == constants::commands::format::ses::CRYPTOGRAPHIC_ERASE && this->IdentifyController.AllNamespacesErasedOnSecureErase);
+
+			// Should format all if IC says format all on namespaces so and this is not a crypto erase
+			shouldFormatAll |= (command.DW10_Format.SES != constants::commands::format::ses::CRYPTOGRAPHIC_ERASE && this->IdentifyController.FormatAppliesToAllNamespaces);
+
+			// If we should format all namespaces, make sure we have all of them
+			if (shouldFormatAll)
+			{
+				LOG_INFO("I should format all namespaces!");
+
+				for (auto &i : this->NamespaceIdToNamespace)
+				{
+					namespacesToFormat.insert(i.first);
+				}
+			}
+			else
+			{
+				// Make sure we have the namespace.
+				auto nsid = this->NamespaceIdToNamespace.find(command.NSID);
+				
+				// If we don't have this namespace fail.
+				if (nsid == this->NamespaceIdToNamespace.end())
+				{
+					completionQueueEntryToPost.DNR = 1; // Do Not Retry
+					completionQueueEntryToPost.SCT = constants::status::types::GENERIC_COMMAND;
+					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+					return;
+				}
+
+				namespacesToFormat.insert(nsid->first);
+			}
+
+			// Call format on all namespacesToFormat... if any fail... fail the command
+			for (auto &nsid : namespacesToFormat)
+			{
+				completionQueueEntryToPost = this->NamespaceIdToNamespace[nsid].formatNVM(command);
+
+				if (completionQueueEntryToPost.SC != 0)
+				{
+					break; // make sure we leave this loop now.
+				}
+			}
+		}
+
 		NVME_CALLER_IMPLEMENTATION(adminKeepAlive)
 		{
 			// nop. We do nothing here.
@@ -653,6 +715,7 @@ namespace cnvme
 			{ cnvme::constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminCreateIoSubmissionQueue},
 			{ cnvme::constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE, &cnvme::controller::Controller::adminDeleteIoCompletionQueue},
 			{ cnvme::constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminDeleteIoSubmissionQueue},
+			{ cnvme::constants::opcodes::admin::FORMAT_NVM, &cnvme::controller::Controller::adminFormatNvm},
 			{ cnvme::constants::opcodes::admin::IDENTIFY, &cnvme::controller::Controller::adminIdentify},
 			{ cnvme::constants::opcodes::admin::KEEP_ALIVE, &cnvme::controller::Controller::adminKeepAlive}
 		};
