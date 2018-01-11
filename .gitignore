@@ -242,3 +242,7 @@ ModelManifest.xml
 .fake/
 *.gch
 *.out
+/cNVMe/Debug DLL
+/cNVMe/Release DLL/cNVMe.tlog
+/Debug DLL
+/Release DLL
