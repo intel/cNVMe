@@ -35,6 +35,16 @@ typedef enum StatusCodes {
 	ALREADY_UNINITIALIZED
 } StatusCodes;
 
+char* getCharStarOfStringToSendOut(std::string retStr)
+{
+	// Add 1 for \0
+	size_t allocatedRetStrSize = retStr.size() + 1;
+	char* allocatedRetStr = new char[allocatedRetStrSize];
+	memcpy_s(allocatedRetStr, allocatedRetStrSize, retStr.c_str(), retStr.size());
+	allocatedRetStr[allocatedRetStrSize - 1] = 0; // terminating NULL
+	return allocatedRetStr; // To the heavens above: Please free me.
+}
+
 long Initialize()
 {
 	if (!staticDriver)
@@ -73,12 +83,14 @@ char* GetStatusString(long statusCode)
 		retStr = "The DLL was already uninitialized";
 	}
 
-	// Add 1 for \0
-	size_t allocatedRetStrSize = retStr.size() + 1;
-	char* allocatedRetStr = new char[allocatedRetStrSize];
-	memcpy_s(allocatedRetStr, allocatedRetStrSize, retStr.c_str(), retStr.size());
-	allocatedRetStr[allocatedRetStrSize - 1] = 0; // terminating NULL
-	return allocatedRetStr; // To the heavens above: Please free me.
+	return getCharStarOfStringToSendOut(retStr);
+}
+
+char* GetDriverStatusString(long statusCode)
+{
+	std::string retStr = driver::statusToString((driver::Status)statusCode);
+
+	return getCharStarOfStringToSendOut(retStr);
 }
 
 long Uninitialze()
@@ -94,4 +106,3 @@ long Uninitialze()
 }
 
 #endif // DLL_BUILD
-

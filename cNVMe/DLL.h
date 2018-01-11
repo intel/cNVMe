@@ -41,7 +41,7 @@ extern "C" {
 *
 * Rules:
 * 1. All parameters must be primitive C types 
-* 2. All functions other than GetStatusString() should return a long (status code)
+* 2. All functions other than GetStatusString/GetDriverStatusString() should return a long (status code)
 * 3. That status code can be converted to a string via GetStatusString
 * 4. All functions should be Title Case
 *
@@ -63,6 +63,12 @@ extern "C" {
 	/// It is the responsibility of caller to free the memory returned!
 	/// </summary>
 	EXPORT char* GetStatusString(long statusCode);
+
+	/// <summary>
+	/// Returns a NULL-delmitied char* for the driver status string of the given status code.
+	/// It is the responsibility of caller to free the memory returned!
+	/// </summary>
+	EXPORT char* GetDriverStatusString(long statusCode);
 
 	/// <summary>
 	/// Should be the last method called. Uninitializes the DLL
