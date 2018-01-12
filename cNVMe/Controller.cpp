@@ -667,7 +667,7 @@ namespace cnvme
 			{
 				LOG_INFO("I should format all namespaces!");
 
-				for (auto &i : this->NamespaceIdToNamespace)
+				for (auto &i : this->NamespaceIdToActiveNamespace)
 				{
 					namespacesToFormat.insert(i.first);
 				}
@@ -675,10 +675,10 @@ namespace cnvme
 			else
 			{
 				// Make sure we have the namespace.
-				auto nsid = this->NamespaceIdToNamespace.find(command.NSID);
+				auto nsid = this->NamespaceIdToActiveNamespace.find(command.NSID);
 				
 				// If we don't have this namespace fail.
-				if (nsid == this->NamespaceIdToNamespace.end())
+				if (nsid == this->NamespaceIdToActiveNamespace.end())
 				{
 					completionQueueEntryToPost.DNR = 1; // Do Not Retry
 					completionQueueEntryToPost.SCT = constants::status::types::GENERIC_COMMAND;
@@ -692,7 +692,7 @@ namespace cnvme
 			// Call format on all namespacesToFormat... if any fail... fail the command
 			for (auto &nsid : namespacesToFormat)
 			{
-				completionQueueEntryToPost = this->NamespaceIdToNamespace[nsid].formatNVM(command);
+				completionQueueEntryToPost = this->NamespaceIdToActiveNamespace[nsid].formatNVM(command);
 
 				if (completionQueueEntryToPost.SC != 0)
 				{

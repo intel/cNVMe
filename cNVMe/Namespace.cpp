@@ -106,6 +106,60 @@ namespace cnvme
 			return completionQueueEntry;
 		}
 
+		command::COMPLETION_QUEUE_ENTRY Namespace::read(command::NVME_COMMAND nvmeCommand, Payload &outputPayload)
+		{
+			command::COMPLETION_QUEUE_ENTRY completionQueueEntry = { 0 };
+
+			// Assume metadata is not supported.
+
+			UINT_64 namespaceSizeInSectors = this->getNamespaceSizeInSectors();
+
+			// Make sure the LBA is in range
+			if (nvmeCommand.SLBA > namespaceSizeInSectors && nvmeCommand.SLBA + ONE_BASED_FROM_ZERO_BASED(nvmeCommand.DW12_IO.NLB) < namespaceSizeInSectors)
+			{
+				completionQueueEntry.DNR = true;
+				completionQueueEntry.SCT = constants::status::types::GENERIC_COMMAND;
+				completionQueueEntry.SC = constants::status::codes::generic::LBA_OUT_OF_RANGE;
+				return completionQueueEntry;
+			}
+
+			UINT_64 transferSize = this->getSectorSize() * ONE_BASED_FROM_ZERO_BASED(nvmeCommand.DW12_IO.NLB);
+			UINT_64 byteOffset = this->getSectorSize() * nvmeCommand.SLBA;
+
+			// Give data back
+			outputPayload = Payload(this->Media.getBuffer() + byteOffset, (size_t)transferSize);
+
+			return completionQueueEntry;
+		}
+
+		command::COMPLETION_QUEUE_ENTRY Namespace::write(command::NVME_COMMAND nvmeCommand, const Payload &inputPayload)
+		{
+			command::COMPLETION_QUEUE_ENTRY completionQueueEntry = { 0 };
+
+			// Assume metadata is not supported.
+
+			UINT_64 namespaceSizeInSectors = this->getNamespaceSizeInSectors();
+
+			// Make sure the LBA is in range
+			if (nvmeCommand.SLBA > namespaceSizeInSectors && nvmeCommand.SLBA + ONE_BASED_FROM_ZERO_BASED(nvmeCommand.DW12_IO.NLB) < namespaceSizeInSectors)
+			{
+				completionQueueEntry.DNR = true;
+				completionQueueEntry.SCT = constants::status::types::GENERIC_COMMAND;
+				completionQueueEntry.SC = constants::status::codes::generic::LBA_OUT_OF_RANGE;
+				return completionQueueEntry;
+			}
+
+			UINT_64 transferSize = this->getSectorSize() * ONE_BASED_FROM_ZERO_BASED(nvmeCommand.DW12_IO.NLB);
+			UINT_64 byteOffset = this->getSectorSize() * nvmeCommand.SLBA;
+
+			ASSERT_IF(inputPayload.getSize() >= transferSize, "The input payload is smaller than the size we need to copy.");
+
+			// Give data back
+			memcpy_s(this->Media.getBuffer() + byteOffset, (size_t)(this->Media.getSize() - byteOffset), inputPayload.getBuffer(), (size_t)transferSize);
+
+			return completionQueueEntry;
+		}
+
 		UINT_64 Namespace::getNamespaceSizeInSectors()
 		{
 			UINT_32 sectorSize = this->getSectorSize();
