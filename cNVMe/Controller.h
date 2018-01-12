@@ -184,6 +184,11 @@ namespace cnvme
 			static const std::map<UINT_8, NVMeCaller> AdminCommandCallers;
 
 			/// <summary>
+			/// Map from the NVM command opcode to the function that processes it
+			/// </summary>
+			static const std::map<UINT_8, NVMeCaller> NVMCommandCallers;
+
+			/// <summary>
 			/// Handling for the NVMe Identify Command
 			/// </summary>
 			NVME_CALLER_HEADER(adminIdentify);
@@ -202,6 +207,16 @@ namespace cnvme
 			/// Handling for the NVMe Keep Alive Command
 			/// </summary>
 			NVME_CALLER_HEADER(adminKeepAlive);
+
+			/// <summary>
+			/// Handling for the NVM Read command
+			/// </summary>
+			NVME_CALLER_HEADER(nvmRead);
+
+			/// <summary>
+			/// Handling for the NVM Write command
+			/// </summary>
+			NVME_CALLER_HEADER(nvmWrite);
 		};
 	}
 }
