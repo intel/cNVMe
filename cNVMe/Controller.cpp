@@ -72,12 +72,15 @@ namespace cnvme
 				ControllerRegisters = nullptr;
 			}
 
+<<<<<<< HEAD
       if (PCIExpressRegisters)
 			{
 				delete PCIExpressRegisters;
 				PCIExpressRegisters = nullptr;
 			}
       
+=======
+>>>>>>> Add bare-bone NVM plumbing.
 			for (Queue* q : this->ValidSubmissionQueues)
 			{
 				delete q;
@@ -220,8 +223,8 @@ namespace cnvme
 
 				// AdminCommandCallers goes from OpCode to Function to call. 
 				//  All functions to call must have the same parameters and return value (no return since they are voids)
-				auto itr = AdminCommandCallers.find(command->DWord0Breakdown.OPC);
-				if (itr != AdminCommandCallers.end())
+				auto itr = this->AdminCommandCallers.find(command->DWord0Breakdown.OPC);
+				if (itr != this->AdminCommandCallers.end())
 				{
 					NVMeCaller caller = itr->second;
 					(this->*caller)(*command, completionQueueEntryToPost);
@@ -229,7 +232,7 @@ namespace cnvme
 				else
 				{
 					// We don't have handling for this command
-					LOG_INFO("Unknown command recv'd by the controller.");
+					LOG_INFO("Unknown Admin command recv'd by the controller.");
 					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
 					completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
 				}
@@ -238,10 +241,21 @@ namespace cnvme
 			{
 				LOG_INFO("That was an NVM command!");
 
-				// lol don't do anything yet
-
-				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
-				completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
+				// AdminCommandCallers goes from OpCode to Function to call. 
+				//  All functions to call must have the same parameters and return value (no return since they are voids)
+				auto itr = this->NVMCommandCallers.find(command->DWord0Breakdown.OPC);
+				if (itr != this->NVMCommandCallers.end())
+				{
+					NVMeCaller caller = itr->second;
+					(this->*caller)(*command, completionQueueEntryToPost);
+				}
+				else
+				{
+					// We don't have handling for this command
+					LOG_INFO("Unknown NVM command recv'd by the controller.");
+					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
+					completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
+				}
 			}
 
 			postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
@@ -707,6 +721,16 @@ namespace cnvme
 			// nop. We do nothing here.
 		}
 
+		NVME_CALLER_IMPLEMENTATION(nvmRead)
+		{
+			// todo. Call read on the namespace.
+		}
+
+		NVME_CALLER_IMPLEMENTATION(nvmWrite)
+		{
+			// todo. Call write on the namespace.
+		}
+
 		void Controller::controllerResetCallback()
 		{
 			LOG_INFO("Recv'd a controllerResetCallback request.");
@@ -753,6 +777,11 @@ namespace cnvme
 			{ cnvme::constants::opcodes::admin::FORMAT_NVM, &cnvme::controller::Controller::adminFormatNvm},
 			{ cnvme::constants::opcodes::admin::IDENTIFY, &cnvme::controller::Controller::adminIdentify},
 			{ cnvme::constants::opcodes::admin::KEEP_ALIVE, &cnvme::controller::Controller::adminKeepAlive}
+		};
+
+		const std::map<UINT_8, NVMeCaller> Controller::NVMCommandCallers = {
+			{ cnvme::constants::opcodes::nvm::READ, &cnvme::controller::Controller::nvmRead},
+			{ cnvme::constants::opcodes::nvm::WRITE, &cnvme::controller::Controller::nvmWrite}
 		};
 	}
 }
