@@ -242,6 +242,11 @@ namespace cnvme
 				Controller = controller;
 			}
 
+			ControllerRegisters::~ControllerRegisters()
+			{
+				RegisterWatcher.end(); // Make sure the registers aren't watched at this point.
+			}
+
 			CONTROLLER_REGISTERS* ControllerRegisters::getControllerRegisters()
 			{
 				return ControllerRegistersPointer;
@@ -267,7 +272,7 @@ namespace cnvme
 				}
 			}
 
-			QUEUE_DOORBELLS * ControllerRegisters::getQueueDoorbells()
+			QUEUE_DOORBELLS* ControllerRegisters::getQueueDoorbells()
 			{
 				return (controller::registers::QUEUE_DOORBELLS*)((UINT_8*)this->getControllerRegisters() \
 					+ sizeof(registers::CONTROLLER_REGISTERS));

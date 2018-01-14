@@ -64,16 +64,17 @@ namespace cnvme
 		{
 			DoorbellWatcher.end();
 
-			if (PCIExpressRegisters)
-			{
-				delete PCIExpressRegisters;
-				PCIExpressRegisters = nullptr;
-			}
-
+			// Delete Controller Registers first, because deleting the PCI registers first could lead to the ControllerRegisters loop segfaulting
 			if (ControllerRegisters)
 			{
 				delete ControllerRegisters;
 				ControllerRegisters = nullptr;
+			}
+
+			if (PCIExpressRegisters)
+			{
+				delete PCIExpressRegisters;
+				PCIExpressRegisters = nullptr;
 			}
 
 			for (Queue* q: this->ValidSubmissionQueues)
