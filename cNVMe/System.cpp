@@ -32,25 +32,53 @@ System.cpp - An implementation file for a System-specific calls for cNVMe
 #include <sys/statvfs.h>
 #endif // _WIN32
 
-#define MAX_FILE_PATH 2048
+#define MAX_FILE_PATH 4096
 
 namespace cnvme
 {
 	namespace system
 	{
-		std::string getExecutableFolder()
+		std::string getCNVMeFolder()
 		{
 			char filename[MAX_FILE_PATH] = "\0";
 			INT_32 len = 0;
+			std::string retStr = "";
 
 #ifdef _WIN32
-			len = (INT_32)GetModuleFileNameA(NULL, filename, MAX_FILE_PATH);
+			HMODULE mod = NULL; // for exe builds
+#if DLL_BUILD
+			// for DLL builds, get the location of the DLL
+			mod = GetModuleHandleA("cNVMe.dll"); // todo: if i change this to be like Linux and have 32/64 in naming, change this.
+#endif // DLL_BUILD
+			len = (INT_32)GetModuleFileNameA(mod, filename, MAX_FILE_PATH);
+	   // ^ _WIN32
 #else // Linux
+
+#if DLL_BUILD
+			// for DLL builds, get the location of the DLL
+			std::string cmd = "pmap -p -q " + std::to_string(getpid()) + " | grep -i cnvme | awk \'{print $4}\' | tail -1";
+			FILE* fp = popen(cmd.c_str(), "r");
+			ASSERT_IF(fp == NULL, "popen() failed!");
+
+			// get command output
+			while (fgets(filename, MAX_FILE_PATH, fp) != NULL) 
+			{
+				retStr += std::string(filename);
+			}
+			pclose(fp);
+			len = strlen(filename);      // set len so the rest of the code works
+			*filename = *retStr.c_str(); // point the filename to this so the rest of the code works
+
+	  // ^ DLL_BUILD
+#else // EXE_BUILD
 			len = (INT_32)readlink("/proc/self/exe", filename, MAX_FILE_PATH);
+	  // ^ EXE_BUILD
+#endif // DLL_BUILD
+
 #endif // _WIN32
 			
 			ASSERT_IF(len < 0, "Failed to get the executable folder");
-			std::string retStr = std::string(filename, len);
+			retStr = std::string(filename, len);
 			return retStr.substr(0, retStr.find_last_of("\\/"));
 		}
 
@@ -58,11 +86,12 @@ namespace cnvme
 		{
 			UINT_64 retBytes = 0;
 #ifdef _WIN32
-			GetDiskFreeSpaceExA(getExecutableFolder().c_str(), NULL, (PULARGE_INTEGER)&retBytes, NULL);
+			GetDiskFreeSpaceExA(getCNVMeFolder().c_str(), NULL, (PULARGE_INTEGER)&retBytes, NULL);
 #else // Linux
 			struct statvfs buf = { 0 };
-			statvfs(getExecutableFolder().c_str(), &buf);
+			statvfs(getCNVMeFolder().c_str(), &buf);
 			retBytes = buf.f_blocks * buf.f_frsize;
+	  // ^ Linux
 #endif // _WIN32
 
 			return retBytes;
@@ -72,11 +101,12 @@ namespace cnvme
 		{
 			UINT_64 retBytes = 0;
 #ifdef _WIN32
-			GetDiskFreeSpaceExA(getExecutableFolder().c_str(), NULL, NULL, (PULARGE_INTEGER)&retBytes);
+			GetDiskFreeSpaceExA(getCNVMeFolder().c_str(), NULL, NULL, (PULARGE_INTEGER)&retBytes);
 #else // Linux
 			struct statvfs buf = { 0 };
-			statvfs(getExecutableFolder().c_str(), &buf);
+			statvfs(getCNVMeFolder().c_str(), &buf);
 			retBytes = buf.f_bfree  * buf.f_frsize;
+	  // ^ Linux
 #endif // _WIN32
 
 			return retBytes;

@@ -32,9 +32,10 @@ namespace cnvme
 	namespace system
 	{
 		/// <summary>
-		/// Returns the folder for the cNVMe executable
+		/// Returns the folder that cNVMe's binary data is in.
+		/// If we are a DLL build, this is the folder the DLL is in
 		/// </summary>
-		std::string getExecutableFolder();
+		std::string getCNVMeFolder();
 
 		/// <summary>
 		/// Returns the total capacity of the drive the executable is on
