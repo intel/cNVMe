@@ -174,9 +174,14 @@ namespace cnvme
 			identify::structures::IDENTIFY_CONTROLLER IdentifyController;
 
 			/// <summary>
-			/// Internal map from NSID to Namespace object
+			/// Internal map from NSID to active Namespace objects
 			/// </summary>
-			std::map<UINT_32, ns::Namespace> NamespaceIdToNamespace;
+			std::map<UINT_32, ns::Namespace> NamespaceIdToActiveNamespace;
+
+			/// <summary>
+			/// Internal map from NSID to inactive Namespace objects
+			/// </summary>
+			std::map<UINT_32, ns::Namespace> NamespaceIdToInactiveNamespace;
 
 			/// <summary>
 			/// Map from the admin command opcode to the function that processes it

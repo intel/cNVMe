@@ -152,4 +152,9 @@ namespace cnvme
 	{
 		DeleteOnScopeLoss = delOnScopeLoss;
 	}
+
+	void Payload::clear()
+	{
+		memset(this->getBuffer(), 0, this->getSize());
+	}
 }

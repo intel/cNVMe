@@ -57,7 +57,7 @@ namespace cnvme
 			resetIdentifyController();
 
 			// create default namespace
-			this->NamespaceIdToNamespace[1] = ns::Namespace(DEFAULT_NAMESPACE_SIZE);
+			this->NamespaceIdToActiveNamespace[1] = ns::Namespace(DEFAULT_NAMESPACE_SIZE);
 		}
 
 		Controller::~Controller()
@@ -386,6 +386,7 @@ namespace cnvme
 			{
 				PRP prp(command.DPTR.DPTR1, command.DPTR.DPTR2, memoryPageSize, memoryPageSize);
 				auto transferPayload = prp.getPayloadCopy();
+				transferPayload.clear();
 
 				if (command.DW10_Identify.CNS == constants::commands::identify::cns::CONTROLLER) // Identify Controller
 				{
@@ -393,8 +394,8 @@ namespace cnvme
 				}
 				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACE_ACTIVE) // Identify Namespace
 				{
-					auto namespaceSelected = this->NamespaceIdToNamespace.find(command.NSID);
-					if (namespaceSelected != this->NamespaceIdToNamespace.end())
+					auto namespaceSelected = this->NamespaceIdToActiveNamespace.find(command.NSID);
+					if (namespaceSelected != this->NamespaceIdToActiveNamespace.end())
 					{
 						LOG_INFO("Grabbing Identify Namespace for NSID " + std::to_string(namespaceSelected->first));
 						auto identifyNamespaceStructure = namespaceSelected->second.getIdentifyNamespaceStructure();
@@ -402,10 +403,40 @@ namespace cnvme
 					}
 					else
 					{
-						memset(transferPayload.getBuffer(), 0, transferPayload.getSize()); // Technically, this is ok if we don't have a namespace with the given NSID
 						// See Figure 106 of NVMe 1.3 for details:
 						//   If the specified namespace is not an active NSID, then the controller returns a zero filled data structure.
 					}
+				}
+				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACES_ACTIVE) // Idenitfy Namespace Active List
+				{
+					UINT_32 maxNsid = this->NamespaceIdToActiveNamespace.rbegin()->first;
+
+					if (command.NSID > maxNsid)
+					{
+						completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+						completionQueueEntryToPost.DNR = 1;
+					}
+					else
+					{
+						UINT_32 counter = 0;
+						UINT_32* outputNsids = (UINT_32*)transferPayload.getBuffer();
+
+						for (auto &nsidToNs : this->NamespaceIdToActiveNamespace)
+						{
+							if (counter == constants::commands::identify::sizes::MAX_NSID_IN_NAMESPACE_LIST)
+							{
+								break; // we've hit the max
+							}
+
+							if (nsidToNs.first >= command.NSID)
+							{
+								*outputNsids = nsidToNs.first;
+								outputNsids++;
+								counter++;
+							}
+						}
+					}
+
 				}
 				else
 				{

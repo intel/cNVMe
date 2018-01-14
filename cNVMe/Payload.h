@@ -127,6 +127,11 @@ namespace cnvme
 		/// <param name="delOnScopeLoss">If true, delete on scope loss. If false dont.</param>
 		void setDeleteOnScopeLoss(bool delOnScopeLoss);
 
+		/// <summary>
+		/// Clears the payload to all 0
+		/// </summary>
+		void clear();
+
 	private:
 
 		/// <summary>

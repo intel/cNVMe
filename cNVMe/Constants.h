@@ -187,6 +187,11 @@ namespace cnvme
 					const UINT_8 PRIMARY_CONTROLLER_CAPABILITIES = 0x14;
 					const UINT_8 SECONDARY_CONTROLLER_LIST = 0x15;
 				}
+
+				namespace sizes
+				{
+					const UINT_32 MAX_NSID_IN_NAMESPACE_LIST = 1024;
+				}
 			}
 
 			namespace format
