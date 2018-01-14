@@ -364,7 +364,6 @@ namespace cnvme
 				}
 			}
 
-			// Todo: Check these in create IO queues calls.
 			this->IdentifyController.MaxSubmissionQueueEntrySize = DEFAULT_SUBMISSION_QUEUE_ENTRY_SIZE;
 			this->IdentifyController.RequiredSubmissionQueueEntrySize = DEFAULT_SUBMISSION_QUEUE_ENTRY_SIZE;
 
