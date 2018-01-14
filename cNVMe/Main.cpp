@@ -25,6 +25,7 @@ Main.cpp - An implementation file for the Main entry
 
 #include "Driver.h"
 #include "Strings.h"
+#include "System.h"
 #include "Tests.h"
 
 #include <iostream>
