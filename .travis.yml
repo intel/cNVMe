@@ -9,7 +9,7 @@ notifications:
 before_script:
   - sudo unlink /usr/bin/g++ && sudo ln -s /usr/bin/g++-5 /usr/bin/g++
   - cd cNVMe
-  - ./build.sh
+  - python build.py
   
 script:
   - python "Helper Scripts/find_and_run_cnvme.py"
