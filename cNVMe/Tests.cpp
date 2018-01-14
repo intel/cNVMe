@@ -313,6 +313,7 @@ namespace cnvme
 			bool testReadCommandViaDriver()
 			{
 				cnvme::driver::Driver driver;
+
 				UINT_32 BUF_SIZE = sizeof(cnvme::identify::structures::IDENTIFY_CONTROLLER) + sizeof(cnvme::driver::DRIVER_COMMAND);
 				BYTE* buffer = new BYTE[BUF_SIZE];
 				memset(buffer, 0, BUF_SIZE);

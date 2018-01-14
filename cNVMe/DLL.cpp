@@ -60,7 +60,7 @@ long SendCommand(UINT_8* driverCommandData, size_t driverCommandDataLength)
 {
 	if (staticDriver)
 	{
-		staticDriver->sendCommand(driverCommandData, driverCommandDataLength);
+		staticDriver->sendCommand(driverCommandData, (UINT_32)driverCommandDataLength);
 		return NO_ERRORS;
 	}
 

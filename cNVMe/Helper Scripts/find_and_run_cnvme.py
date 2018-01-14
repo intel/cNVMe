@@ -21,7 +21,7 @@ if __name__ == '__main__':
     for root, dirs, files in os.walk(cnvmeTopDir):
         for file in files:
             filePath = os.path.join(root, file)
-            if file == ('cNVMe.%s' % getExeExtension()):
+            if file.startswith('cNVMe') and file.endswith(getExeExtension()):
                 print 'Found cNVMe: %s' % filePath
                 sys.exit(subprocess.call(filePath, shell=True))
                 

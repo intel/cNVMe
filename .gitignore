@@ -246,3 +246,5 @@ ModelManifest.xml
 /cNVMe/Release DLL/cNVMe.tlog
 /Debug DLL
 /Release DLL
+
+**/*.so

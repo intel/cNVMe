@@ -51,7 +51,9 @@ namespace cnvme
 			DoorbellWatcher = LoopingThread([&] {Controller::checkForChanges(); }, CHANGE_CHECK_SLEEP_MS);
 			DoorbellWatcher.start();
 #endif
+
 			// Setup the IC with default values.
+			memset(&this->IdentifyController, 0, sizeof(this->IdentifyController));
 			resetIdentifyController();
 
 			// create default namespace
@@ -362,6 +364,7 @@ namespace cnvme
 				}
 			}
 
+			// Todo: Check these in create IO queues calls.
 			this->IdentifyController.MaxSubmissionQueueEntrySize = DEFAULT_SUBMISSION_QUEUE_ENTRY_SIZE;
 			this->IdentifyController.RequiredSubmissionQueueEntrySize = DEFAULT_SUBMISSION_QUEUE_ENTRY_SIZE;
 
