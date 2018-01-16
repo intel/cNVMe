@@ -440,6 +440,44 @@ namespace cnvme
 					mappedCompletionQueueItr->second->setMappedQueue(subQ); // CQ -> SQ
 				}
 			}
+			else if ((pDriverCommand->CompletionQueueEntry.SC | pDriverCommand->CompletionQueueEntry.SCT) == 0) // command passed
+			{
+				if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE)
+				{
+					LOG_INFO("Passed a command to delete IO Submission Queue: " + std::to_string(pDriverCommand->Command.DW10_DeleteIoQueue.QID));
+
+					auto subQ = this->SubmissionQueues.find(pDriverCommand->Command.DW10_DeleteIoQueue.QID);
+					if (subQ == this->SubmissionQueues.end())
+					{
+						LOG_INFO("The controller let us delete that queue... but the driver didn't know it existed.");
+					}
+					else
+					{
+						delete[] MEMORY_ADDRESS_TO_8POINTER(subQ->second->getMemoryAddress());
+						delete subQ->second;
+						this->SubmissionQueues.erase(subQ);
+					}
+
+					// Reset SQID->CID mapping
+					this->SubmissionQueueIdToCurrentCommandIdentifiers[pDriverCommand->Command.DW10_DeleteIoQueue.QID] = 0;
+				}
+				else if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE)
+				{
+					LOG_INFO("Passed a command to delete IO Completion Queue: " + std::to_string(pDriverCommand->Command.DW10_DeleteIoQueue.QID));
+
+					auto compQ = this->CompletionQueues.find(pDriverCommand->Command.DW10_DeleteIoQueue.QID);
+					if (compQ == this->CompletionQueues.end())
+					{
+						LOG_INFO("The controller let us delete that queue... but the driver didn't know it existed.");
+					}
+					else
+					{
+						delete[] MEMORY_ADDRESS_TO_8POINTER(compQ->second->getMemoryAddress());
+						delete compQ->second;
+						this->CompletionQueues.erase(compQ);
+					}
+				}
+			}
 		}
 
 		UINT_16 Driver::getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(UINT_16 submissionQueueId)

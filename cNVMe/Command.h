@@ -154,6 +154,12 @@ namespace cnvme
 					UINT_16 QSIZE; // Queue Size (in entries)
 				} DW10_CreateIoQueue; // Both submission/completion
 
+				struct
+				{
+					UINT_16 QID; // Queue ID
+					UINT_16 DELETE_QUEUE_RSVD;
+				} DW10_DeleteIoQueue; // Both submission/completion
+
 				UINT_32 DWord10; // Command Specific DW10
 			};
 

@@ -25,6 +25,7 @@ Controller.cpp - An implementation file for the NVMe Controller
 
 #define NVME_CALLER_IMPLEMENTATION(commandName) void Controller::commandName(NVME_COMMAND& command, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
 
+#define ALL_NAMESPACES 0xFFFFFFFF
 #define DEFAULT_NAMESPACE_SIZE 16384 // 16 kilobytes
 
 #include "Command.h"
@@ -71,17 +72,17 @@ namespace cnvme
 				ControllerRegisters = nullptr;
 			}
 
-			if (PCIExpressRegisters)
+      if (PCIExpressRegisters)
 			{
 				delete PCIExpressRegisters;
 				PCIExpressRegisters = nullptr;
 			}
-
-			for (Queue* q: this->ValidSubmissionQueues)
+      
+			for (Queue* q : this->ValidSubmissionQueues)
 			{
 				delete q;
-			}	
-			
+			}
+
 			for (Queue* q : this->ValidCompletionQueues)
 			{
 				delete q;
@@ -256,7 +257,7 @@ namespace cnvme
 				}
 			}
 
-			LOG_ERROR("Invalid queue id specified: " + std::to_string(id));
+			LOG_INFO("Invalid queue id specified: " + std::to_string(id));
 			return nullptr;
 		}
 
@@ -373,7 +374,9 @@ namespace cnvme
 
 			this->IdentifyController.NN = DEFAULT_MAX_NAMESPACES;
 
-			// Optional Commands Supported... none yet.
+			// Optional Commands Supported
+			this->IdentifyController.FormatNVMSupported = true;
+
 			// Also I'm not setting the power state to anything. It lets us get away with all 0s for not reported. Wow.
 		}
 
@@ -585,6 +588,120 @@ namespace cnvme
 			LOG_INFO("Held onto submission queue with an id of " + std::to_string(command.DW10_CreateIoQueue.QID));
 		}
 
+		NVME_CALLER_IMPLEMENTATION(adminDeleteIoCompletionQueue)
+		{
+			Queue* q = this->getQueueWithId(this->ValidCompletionQueues, command.DW10_DeleteIoQueue.QID);
+
+			// You can't delete my admin queue!
+			if (command.DW10_DeleteIoQueue.QID == ADMIN_QUEUE_ID || !q)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER;
+				return;
+			}
+
+			// We are still mapped to a submission queue.
+			// Submission queues must be deleted first
+			if (q->getMappedQueue())
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_DELETION;
+				return;
+			}
+
+			// free the memory!
+			delete q;
+
+			// Remove from validity
+			this->ValidCompletionQueues.erase(std::remove(this->ValidCompletionQueues.begin(), this->ValidCompletionQueues.end(), q), this->ValidCompletionQueues.end());
+		}
+
+		NVME_CALLER_IMPLEMENTATION(adminDeleteIoSubmissionQueue)
+		{
+			Queue* q = this->getQueueWithId(this->ValidSubmissionQueues, command.DW10_DeleteIoQueue.QID);
+
+			// You can't delete my admin queue!
+			if (command.DW10_DeleteIoQueue.QID == ADMIN_QUEUE_ID || !q)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER;
+				return;
+			}
+
+			// don't let the completion queue map here anymore
+			q->getMappedQueue()->setMappedQueue(nullptr);
+
+			// free the memory!
+			delete q;
+
+			// Remove from validity
+			this->ValidSubmissionQueues.erase(std::remove(this->ValidSubmissionQueues.begin(), this->ValidSubmissionQueues.end(), q), this->ValidSubmissionQueues.end());
+			this->SubmissionQueueIdToCommandIdentifiers[command.DW10_DeleteIoQueue.QID].clear();
+		}
+
+		NVME_CALLER_IMPLEMENTATION(adminFormatNvm)
+		{
+			// Make sure this optional command is supported
+			if (!this->IdentifyController.FormatNVMSupported)
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::GENERIC_COMMAND;
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE;
+				return;
+			}
+
+			std::set<UINT_32> namespacesToFormat;
+			bool shouldFormatAll = (command.NSID == ALL_NAMESPACES);
+
+			// Should format all if IC says format all on crypto so and this is a crypto erase
+			shouldFormatAll |= (command.DW10_Format.SES == constants::commands::format::ses::CRYPTOGRAPHIC_ERASE && this->IdentifyController.AllNamespacesErasedOnSecureErase);
+
+			// Should format all if IC says format all on namespaces so and this is not a crypto erase
+			shouldFormatAll |= (command.DW10_Format.SES != constants::commands::format::ses::CRYPTOGRAPHIC_ERASE && this->IdentifyController.FormatAppliesToAllNamespaces);
+
+			// If we should format all namespaces, place all of them into the nameespaceToFormat table
+			if (shouldFormatAll)
+			{
+				LOG_INFO("I should format all namespaces!");
+
+				for (auto &i : this->NamespaceIdToNamespace)
+				{
+					namespacesToFormat.insert(i.first);
+				}
+			}
+			else
+			{
+				// Make sure we have the namespace.
+				auto nsid = this->NamespaceIdToNamespace.find(command.NSID);
+				
+				// If we don't have this namespace fail.
+				if (nsid == this->NamespaceIdToNamespace.end())
+				{
+					completionQueueEntryToPost.DNR = 1; // Do Not Retry
+					completionQueueEntryToPost.SCT = constants::status::types::GENERIC_COMMAND;
+					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+					return;
+				}
+
+				namespacesToFormat.insert(nsid->first);
+			}
+
+			// Call format on all namespacesToFormat... if any fail... fail the command
+			for (auto &nsid : namespacesToFormat)
+			{
+				completionQueueEntryToPost = this->NamespaceIdToNamespace[nsid].formatNVM(command);
+
+				if (completionQueueEntryToPost.SC != 0)
+				{
+					LOG_ERROR("Failed to format NSID " + std::to_string(nsid));
+					break; // make sure we leave this loop now.
+				}
+			}
+		}
+
 		NVME_CALLER_IMPLEMENTATION(adminKeepAlive)
 		{
 			// nop. We do nothing here.
@@ -598,6 +715,7 @@ namespace cnvme
 			{
 				if (ValidSubmissionQueues[i]->getQueueId() != ADMIN_QUEUE_ID)
 				{
+					delete ValidSubmissionQueues[i];
 					ValidSubmissionQueues.erase(ValidSubmissionQueues.begin() + i);
 				}
 			}
@@ -606,6 +724,7 @@ namespace cnvme
 			{
 				if (ValidCompletionQueues[i]->getQueueId() != ADMIN_QUEUE_ID)
 				{
+					delete ValidCompletionQueues[i];
 					ValidCompletionQueues.erase(ValidCompletionQueues.begin() + i);
 				}
 			}
@@ -624,13 +743,16 @@ namespace cnvme
 #else
 			checkForChanges();
 #endif
-	}
+		}
 
 		const std::map<UINT_8, NVMeCaller> Controller::AdminCommandCallers = {
 			{ cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE, &cnvme::controller::Controller::adminCreateIoCompletionQueue},
 			{ cnvme::constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminCreateIoSubmissionQueue},
+			{ cnvme::constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE, &cnvme::controller::Controller::adminDeleteIoCompletionQueue},
+			{ cnvme::constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminDeleteIoSubmissionQueue},
+			{ cnvme::constants::opcodes::admin::FORMAT_NVM, &cnvme::controller::Controller::adminFormatNvm},
 			{ cnvme::constants::opcodes::admin::IDENTIFY, &cnvme::controller::Controller::adminIdentify},
 			{ cnvme::constants::opcodes::admin::KEEP_ALIVE, &cnvme::controller::Controller::adminKeepAlive}
 		};
-}
+	}
 }

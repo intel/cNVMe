@@ -102,6 +102,11 @@ namespace cnvme
 			/// Tests that the controller can fail a command with an unknown command opcode
 			/// </summary>
 			bool testNVMeCommandOpcodeInvalid();
+
+			/// <summary>
+			/// Tests that if we create an SQ/CQ we have to delete the SQ first
+			/// </summary>
+			bool testNVMeQueueDeletionFailures();
 		}
 
 		namespace driver

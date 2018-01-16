@@ -65,6 +65,7 @@ namespace cnvme
 					results.push_back(std::async(controller_registers::testControllerReset));
 					results.push_back(std::async(commands::testNVMeCommandOpcodeInvalid));
 					results.push_back(std::async(commands::testNVMeCommandParsing));
+					results.push_back(std::async(commands::testNVMeQueueDeletionFailures));
 					results.push_back(std::async(driver::testNoDataCommandViaDriver));
 					results.push_back(std::async(driver::testReadCommandViaDriver));
 					results.push_back(std::async(prp::testDifferentPRPSizes));
@@ -268,9 +269,82 @@ namespace cnvme
 				pDriverCommand->Command.DWord0Breakdown.OPC = 0xFE; // invalid.. hopefully
 
 				driver.sendCommand(buffer, BUF_SIZE);
-				
-				ASSERT_IF(pDriverCommand->CompletionQueueEntry.SC != constants::status::codes::generic::INVALID_COMMAND_OPCODE, "Controller did not fail invalid opcode correctly");
 
+				auto status = pDriverCommand->CompletionQueueEntry.SC;
+				delete[] buffer;
+				
+				ASSERT_IF(status != constants::status::codes::generic::INVALID_COMMAND_OPCODE, "Controller did not fail invalid opcode correctly");
+
+				return true;
+			}
+
+			bool testNVMeQueueDeletionFailures()
+			{
+				cnvme::driver::Driver driver;
+
+				UINT_32 BUF_SIZE = sizeof(cnvme::driver::DRIVER_COMMAND);
+				BYTE* buffer = new BYTE[BUF_SIZE];
+				memset(buffer, 0, BUF_SIZE);
+
+				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
+				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
+
+				UINT_32 timeout = 5; // arbitrary
+				pDriverCommand->Timeout = timeout;
+				pDriverCommand->TransferDataDirection = cnvme::driver::NO_DATA;
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE;
+				pDriverCommand->Command.DW10_DeleteIoQueue.QID = ADMIN_QUEUE_ID;
+
+				driver.sendCommand(buffer, BUF_SIZE);
+
+				auto status = pDriverCommand->CompletionQueueEntry.SC;
+				ASSERT_IF(status != constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER, "Expected controller to fail IO queue deletion with admin queue ID, but did not receive INVALID_QUEUE_IDENTIFIER status");
+
+				// Create CQ 1
+				pDriverCommand->Command.DW10_CreateIoQueue.QSIZE = 0xF;
+				pDriverCommand->Command.DW10_CreateIoQueue.QID = 1;
+				pDriverCommand->Command.DW11_CreateIoCompletionQueue.IEN = 1;
+				pDriverCommand->Command.DW11_CreateIoCompletionQueue.PC = 1;
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE;
+				driver.sendCommand(buffer, BUF_SIZE);
+
+				status = pDriverCommand->CompletionQueueEntry.SC;
+				ASSERT_IF(status != 0, "Controller failed creating an io completion queue");
+
+				// Create SQ 1
+				pDriverCommand->Command.DW10_CreateIoQueue.QSIZE = 0xF;
+				pDriverCommand->Command.DW10_CreateIoQueue.QID = 1;
+				pDriverCommand->Command.DW11_CreateIoSubmissionQueue.PC = 1;
+				pDriverCommand->Command.DW11_CreateIoSubmissionQueue.CQID = 1; // Link to CQ 1
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE;
+				driver.sendCommand(buffer, BUF_SIZE);
+
+				status = pDriverCommand->CompletionQueueEntry.SC;
+				ASSERT_IF(status != 0, "Controller failed creating an io completion queue");
+
+				// Deleting CQ 1 should fail since we need to delete SQ 1 first
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE;
+				pDriverCommand->Command.DW10_DeleteIoQueue.QID = 1;
+				driver.sendCommand(buffer, BUF_SIZE);
+
+				status = pDriverCommand->CompletionQueueEntry.SC;
+				ASSERT_IF(status != constants::status::codes::specific::INVALID_QUEUE_DELETION, "Controller did not fail deleting a CQ before SQ");
+
+				// Should be ok to delete SQ 1
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE;
+				driver.sendCommand(buffer, BUF_SIZE);
+
+				status = pDriverCommand->CompletionQueueEntry.SC;
+				ASSERT_IF(status != 0, "Controller did not allow deleting a SQ");
+
+				// Now we can delete CQ 1
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE;
+				driver.sendCommand(buffer, BUF_SIZE);
+
+				status = pDriverCommand->CompletionQueueEntry.SC;
+				ASSERT_IF(status != 0, "Controller did not allow deleting a CQ after its SQ was deleted");
+
+				delete[] buffer;
 				return true;
 			}
 		}
