@@ -77,7 +77,7 @@ namespace cnvme
 				delete PCIExpressRegisters;
 				PCIExpressRegisters = nullptr;
 			}
-      
+
 			for (Queue* q : this->ValidSubmissionQueues)
 			{
 				delete q;
