@@ -85,7 +85,7 @@ namespace cnvme
 
 		std::string dataDirectionToString(DataDirection d)
 		{
-			if (d = NO_DATA)
+			if (d == NO_DATA)
 			{
 				return "No Data";
 			}
