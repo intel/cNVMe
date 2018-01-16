@@ -37,8 +37,8 @@ Logger.h - A header file for the Logging
 #define LOG_INFO(txt) cnvme::logging::theLogger.log(std::string(__func__) + "():" \
 + std::to_string(__LINE__) + " - [" + cnvme::logging::Logger::loggingLevelToString(cnvme::logging::INFO) + "] - " + txt, cnvme::logging::INFO);
 #define LOG_SET_LEVEL(level) cnvme::logging::theLogger.setLevel((cnvme::logging::LOGGING_LEVEL)level);
-#define ASSERT(txt) cnvme::logging::theLogger._assert(std::string(__func__), txt);
-#define ASSERT_IF(cond, txt) cnvme::logging::theLogger._assert_if(std::string(__func__), cond, txt);
+#define ASSERT(txt) cnvme::logging::theLogger._assert(std::string(__func__), txt, __LINE__);
+#define ASSERT_IF(cond, txt) cnvme::logging::theLogger._assert_if(std::string(__func__), cond, txt, __LINE__);
 // The following two have braces at the end to make sure they get used together. Use to hide logging on a thread.
 #define _HIDE_LOG_THREAD() cnvme::logging::theLogger.addHiddenThread(std::this_thread::get_id()); {
 #define _UNHIDE_LOG_THREAD() cnvme::logging::theLogger.removeHiddenThread(std::this_thread::get_id()); }
@@ -148,13 +148,13 @@ namespace cnvme
 			/// Cause an assert with the given txt
 			/// Use the ASSERT macro. Do not call directly
 			/// </summary>
-			void _assert(std::string funcName, std::string txt);
+			void _assert(std::string funcName, std::string txt, unsigned long long line);
 
 			/// <summary>
 			/// Asserts if a condition is met
 			/// Use the ASSERT_IF macro. do not call directly
 			/// </summary>
-			void _assert_if(std::string funcName, bool condition, std::string txt);
+			void _assert_if(std::string funcName, bool condition, std::string txt, unsigned long long line);
 
 		private:
 			/// <summary>

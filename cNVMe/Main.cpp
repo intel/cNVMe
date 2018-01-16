@@ -25,6 +25,7 @@ Main.cpp - An implementation file for the Main entry
 
 #include "Driver.h"
 #include "Strings.h"
+#include "System.h"
 #include "Tests.h"
 
 #include <iostream>
@@ -33,7 +34,7 @@ using namespace cnvme;
 using namespace cnvme::command;
 using namespace cnvme::driver;
 
-void sendIdentifyController(Driver &driver, UINT_16 queue=0)
+void sendIdentify(Driver &driver, UINT_8 cns, UINT_16 queue=0)
 {
 	UINT_32 BUF_SIZE = 8192;
 	BYTE* buffer = new BYTE[BUF_SIZE];
@@ -43,7 +44,7 @@ void sendIdentifyController(Driver &driver, UINT_16 queue=0)
 	d->Timeout = 6000;
 	d->QueueId = queue; // for testing
 	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::IDENTIFY;
-	d->Command.DW10_Identify.CNS = constants::commands::identify::cns::CONTROLLER;
+	d->Command.DW10_Identify.CNS = cns;
 	d->TransferDataDirection = READ;
 	d->TransferDataSize = 4096;
 
@@ -116,7 +117,6 @@ void sendDeleteIOSubmissionQueue(Driver &driver, UINT_16 QID)
 	d->Timeout = 6000;
 	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE;
 	d->Command.DW10_DeleteIoQueue.QID = QID;
-
 	d->TransferDataDirection = NO_DATA;
 
 	driver.sendCommand((UINT_8*)d, BUF_SIZE);

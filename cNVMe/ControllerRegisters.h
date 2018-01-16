@@ -249,7 +249,7 @@ namespace cnvme
 				/// <summary>
 				/// Destructor
 				/// </summary>
-				~ControllerRegisters() = default;
+				~ControllerRegisters();
 
 				/// <summary>
 				/// Returns the actual controller registers

@@ -85,7 +85,7 @@ namespace cnvme
 
 		std::string dataDirectionToString(DataDirection d)
 		{
-			if (d = NO_DATA)
+			if (d == NO_DATA)
 			{
 				return "No Data";
 			}
@@ -399,8 +399,8 @@ namespace cnvme
 				auto doorbells = this->TheController.getControllerRegisters()->getQueueDoorbells();
 				doorbells += pDriverCommand->Command.DW10_CreateIoQueue.QID; // find our doorbell
 
-				// Command failed if SC != 0. Free the memory!
-				if (pDriverCommand->CompletionQueueEntry.SC)
+				// Command failed if (SC | SCT) != 0. Free the memory!
+				if (pDriverCommand->CompletionQueueEntry.SC | pDriverCommand->CompletionQueueEntry.SCT)
 				{
 					ASSERT_IF(contiguousBufferAddress == 0, "Somehow we sent a contiguous buffer address of 0. That could have killed the drive!");
 

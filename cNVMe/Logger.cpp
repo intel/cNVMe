@@ -135,9 +135,9 @@ namespace cnvme
 			return buffer;
 		}
 
-		void Logger::_assert(std::string funcName, std::string txt)
+		void Logger::_assert(std::string funcName, std::string txt, unsigned long long line)
 		{
-			std::string finalTxt = "cNVMe ASSERT! " + funcName + "():" + std::to_string(__LINE__) + " - " + std::string(txt);
+			std::string finalTxt = "cNVMe ASSERT! " + funcName + "():" + std::to_string(line) + " - " + std::string(txt);
 			cnvme::logging::theLogger.setStatus(finalTxt);
 			Mutex.lock();
 			if (AssertQuietThreads.find(std::this_thread::get_id()) == AssertQuietThreads.end()) // not a quiet thread
@@ -148,15 +148,15 @@ namespace cnvme
 
 
 #ifdef _DEBUG // only throw on debug builds
-			throw std::exception(finalTxt.c_str());
+			throw std::runtime_error(finalTxt);
 #endif // _DEBUG
 		}
 
-		void Logger::_assert_if(std::string funcName, bool condition, std::string txt)
+		void Logger::_assert_if(std::string funcName, bool condition, std::string txt, unsigned long long line)
 		{
 			if (condition)
 			{
-				_assert(funcName, txt);
+				_assert(funcName, txt, line);
 			}
 		}
 

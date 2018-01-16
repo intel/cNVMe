@@ -872,7 +872,7 @@ namespace cnvme
 
 		PCIExpressRegisters::~PCIExpressRegisters()
 		{
-
+			RegisterWatcher.end(); // Make sure the registers aren't watched at this point.
 		}
 
 		void PCIExpressRegisters::functionLevelReset()

@@ -50,6 +50,7 @@ Types.h - A header file for all needed type includes
 #include <vector>
 
 // C Includes
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -114,6 +115,9 @@ inline errno_t memcpy_s(void *dest, size_t destSize, const void *src, size_t cou
 	}
 
 	return retVal;
+
+	// Add a way to drop to gdb
+	#define DROP_TO_GDB() raise(SIGINT)
 }
 #endif // _WIN32
 #endif //_TYPES_H

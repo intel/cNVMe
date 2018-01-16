@@ -7,16 +7,28 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cNVMe", "cNVMe\cNVMe.vcxpro
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug DLL|x64 = Debug DLL|x64
+		Debug DLL|x86 = Debug DLL|x86
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Release DLL|x64 = Release DLL|x64
+		Release DLL|x86 = Release DLL|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Debug DLL|x64.ActiveCfg = Debug DLL|x64
+		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Debug DLL|x64.Build.0 = Debug DLL|x64
+		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Debug DLL|x86.ActiveCfg = Debug DLL|Win32
+		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Debug DLL|x86.Build.0 = Debug DLL|Win32
 		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Debug|x64.ActiveCfg = Debug|x64
 		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Debug|x64.Build.0 = Debug|x64
 		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Debug|x86.ActiveCfg = Debug|Win32
 		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Debug|x86.Build.0 = Debug|Win32
+		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Release DLL|x64.ActiveCfg = Release DLL|x64
+		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Release DLL|x64.Build.0 = Release DLL|x64
+		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Release DLL|x86.ActiveCfg = Release DLL|Win32
+		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Release DLL|x86.Build.0 = Release DLL|Win32
 		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Release|x64.ActiveCfg = Release|x64
 		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Release|x64.Build.0 = Release|x64
 		{7A4FEB7F-9EA9-4969-8ACD-98BB4964BDF7}.Release|x86.ActiveCfg = Release|Win32
