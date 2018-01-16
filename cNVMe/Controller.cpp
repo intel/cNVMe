@@ -72,15 +72,12 @@ namespace cnvme
 				ControllerRegisters = nullptr;
 			}
 
-<<<<<<< HEAD
-      if (PCIExpressRegisters)
+			if (PCIExpressRegisters)
 			{
 				delete PCIExpressRegisters;
 				PCIExpressRegisters = nullptr;
 			}
       
-=======
->>>>>>> Add bare-bone NVM plumbing.
 			for (Queue* q : this->ValidSubmissionQueues)
 			{
 				delete q;
