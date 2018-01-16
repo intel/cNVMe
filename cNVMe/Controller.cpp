@@ -628,7 +628,7 @@ namespace cnvme
 			// Should format all if IC says format all on namespaces so and this is not a crypto erase
 			shouldFormatAll |= (command.DW10_Format.SES != constants::commands::format::ses::CRYPTOGRAPHIC_ERASE && this->IdentifyController.FormatAppliesToAllNamespaces);
 
-			// If we should format all namespaces, make sure we have all of them
+			// If we should format all namespaces, place all of them into the nameespaceToFormat table
 			if (shouldFormatAll)
 			{
 				LOG_INFO("I should format all namespaces!");
@@ -662,6 +662,7 @@ namespace cnvme
 
 				if (completionQueueEntryToPost.SC != 0)
 				{
+					LOG_ERROR("Failed to format NSID " + std::to_string(nsid));
 					break; // make sure we leave this loop now.
 				}
 			}

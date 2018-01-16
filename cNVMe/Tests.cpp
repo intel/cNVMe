@@ -298,7 +298,7 @@ namespace cnvme
 				driver.sendCommand(buffer, BUF_SIZE);
 
 				auto status = pDriverCommand->CompletionQueueEntry.SC;
-				ASSERT_IF(status != constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER, "Controller did not fail deleting the admin queue correctly");
+				ASSERT_IF(status != constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER, "Expected controller to fail IO queue deletion with admin queue ID, but did not receive INVALID_QUEUE_IDENTIFIER status");
 
 				// Create CQ 1
 				pDriverCommand->Command.DW10_CreateIoQueue.QSIZE = 0xF;
