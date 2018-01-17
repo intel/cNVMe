@@ -48,7 +48,16 @@ namespace cnvme
 			HMODULE mod = NULL; // for exe builds
 #if DLL_BUILD
 			// for DLL builds, get the location of the DLL
-			mod = GetModuleHandleA("cNVMe.dll"); // todo: if i change this to be like Linux and have 32/64 in naming, change this.
+			std::string dllName;
+			if (getApplicationBitness() == 32)
+			{
+				dllName = "cNVMe32.dll";
+			}
+			else
+			{
+				dllName = "cNVMe64.dll";
+			}
+			mod = GetModuleHandleA(dllName.c_str());
 #endif // DLL_BUILD
 			len = (INT_32)GetModuleFileNameA(mod, filename, MAX_FILE_PATH);
 	   // ^ _WIN32
@@ -110,6 +119,11 @@ namespace cnvme
 #endif // _WIN32
 
 			return retBytes;
+		}
+
+		constexpr UINT_8 getApplicationBitness()
+		{
+			return (sizeof(void*) == 4) ? 32 : 64;
 		}
 	}
 }

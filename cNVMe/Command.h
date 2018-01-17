@@ -146,7 +146,7 @@ namespace cnvme
 						{
 							UINT_32 LBAF : 4; // LBA Format
 							UINT_32 MSET : 1; // Metadata Settings
-							UINT_32 PI : 2; // Protection Information
+							UINT_32 PI : 3; // Protection Information
 							UINT_32 PIL : 1; // Protection Information Location
 							UINT_32 SES : 3; // Secure Erase Settings
 							UINT_32 FORMAT_DW10_RSVD : 20;

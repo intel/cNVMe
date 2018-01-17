@@ -75,9 +75,9 @@ namespace cnvme
 			/// Performs an NVM Write command on the given namespace
 			/// </summary>
 			/// <param name="nvmeCommand">Complete NVMe command for the write</param>
-			/// <param name="inputPayload">data for the write</param>
+			/// <param name="memoryPageSize">size of the memory page</param>
 			/// <returns>Completion queue entry for command</returns>
-			command::COMPLETION_QUEUE_ENTRY write(command::NVME_COMMAND nvmeCommand, const Payload& inputPayload);
+			command::COMPLETION_QUEUE_ENTRY write(command::NVME_COMMAND nvmeCommand, UINT_32 memoryPageSize);
 
 		private:
 

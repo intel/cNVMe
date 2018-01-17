@@ -242,7 +242,7 @@ namespace cnvme
 			}
 
 			// If the user gave Create IO Completion Queue, we need to check the command for what the driver supports
-			if (this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
+			if (this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command, pDriverCommand->QueueId == ADMIN_QUEUE_ID))
 			{
 				if (pDriverCommand->Command.DW11_CreateIoCompletionQueue.PC != true)
 				{
@@ -294,23 +294,24 @@ namespace cnvme
 			// If MANUAL_PRPS, let the user deal with the PRP magic.
 			if (pDriverCommand->TransferDataDirection != MANUAL_PRPS)
 			{
-				if (this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
+				if (this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command, pDriverCommand->QueueId == ADMIN_QUEUE_ID))
 				{
 					size_t allocationSize;
 					if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE)
 					{
-						allocationSize = pDriverCommand->Command.DW10_CreateIoQueue.QSIZE * sizeof(command::COMPLETION_QUEUE_ENTRY);
+						allocationSize = ONE_BASED_FROM_ZERO_BASED(pDriverCommand->Command.DW10_CreateIoQueue.QSIZE) * sizeof(command::COMPLETION_QUEUE_ENTRY);
 					}
 					else if (pDriverCommand->Command.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE)
 					{
-						allocationSize = pDriverCommand->Command.DW10_CreateIoQueue.QSIZE * sizeof(command::NVME_COMMAND);
+						allocationSize = ONE_BASED_FROM_ZERO_BASED(pDriverCommand->Command.DW10_CreateIoQueue.QSIZE) * sizeof(command::NVME_COMMAND);
 					}
 					else
 					{
 						ASSERT("Invalid command for contiguous allocation.");
 					}
 
-					ALLOC_BYTE_ARRAY(contig, allocationSize);
+					BYTE* contig = new BYTE[allocationSize];
+					memset(contig, 0xFF, allocationSize); // Set to high CID
 					contiguousBufferAddress = POINTER_TO_MEMORY_ADDRESS(contig);    // DONT FORGET TO FREE ME... later.
 					pDriverCommand->Command.DPTR.DPTR1 = contiguousBufferAddress;   // Give drive new queue location
 				}
@@ -394,7 +395,7 @@ namespace cnvme
 				//   though right now this would leak on IO Queue Creation.
 			}
 			// We did the command and its a contiguous buffer cmd
-			else if (pDriverCommand->TransferDataDirection != MANUAL_PRPS && this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command))
+			else if (pDriverCommand->TransferDataDirection != MANUAL_PRPS && this->commandRequiresContiguousBufferInsteadOfPrp(pDriverCommand->Command, pDriverCommand->QueueId == ADMIN_QUEUE_ID))
 			{
 				auto doorbells = this->TheController.getControllerRegisters()->getQueueDoorbells();
 				doorbells += pDriverCommand->Command.DW10_CreateIoQueue.QID; // find our doorbell
@@ -499,9 +500,13 @@ namespace cnvme
 			return this->SubmissionQueueIdToCurrentCommandIdentifiers[submissionQueueId];
 		}
 
-		bool Driver::commandRequiresContiguousBufferInsteadOfPrp(NVME_COMMAND& nvmeCommand)
+		bool Driver::commandRequiresContiguousBufferInsteadOfPrp(NVME_COMMAND& nvmeCommand, bool admin)
 		{
-			return nvmeCommand.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE || nvmeCommand.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE;
+			if (admin)
+			{
+				return nvmeCommand.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE || nvmeCommand.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE;
+			}
+			return false;
 		}
 	}
 }

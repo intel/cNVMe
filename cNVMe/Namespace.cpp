@@ -25,6 +25,7 @@ Namespace.cpp - An implementation file for a cNVMe Namespace
 
 #include "Constants.h"
 #include "Namespace.h"
+#include "PRP.h"
 
 #define DEFAULT_NUMBER_OF_LBA_FORMAT 2; // 0-based!
 #define LBA_IN_BYTES_TO_LBADS(lbaSizeInBytes) ((UINT_8)(log2(lbaSizeInBytes)))
@@ -115,7 +116,7 @@ namespace cnvme
 			UINT_64 namespaceSizeInSectors = this->getNamespaceSizeInSectors();
 
 			// Make sure the LBA is in range
-			if (nvmeCommand.SLBA > namespaceSizeInSectors && nvmeCommand.SLBA + ONE_BASED_FROM_ZERO_BASED(nvmeCommand.DW12_IO.NLB) < namespaceSizeInSectors)
+			if (nvmeCommand.SLBA > namespaceSizeInSectors || nvmeCommand.SLBA + ONE_BASED_FROM_ZERO_BASED(nvmeCommand.DW12_IO.NLB) > namespaceSizeInSectors)
 			{
 				completionQueueEntry.DNR = true;
 				completionQueueEntry.SCT = constants::status::types::GENERIC_COMMAND;
@@ -132,7 +133,7 @@ namespace cnvme
 			return completionQueueEntry;
 		}
 
-		command::COMPLETION_QUEUE_ENTRY Namespace::write(command::NVME_COMMAND nvmeCommand, const Payload &inputPayload)
+		command::COMPLETION_QUEUE_ENTRY Namespace::write(command::NVME_COMMAND nvmeCommand, UINT_32 memoryPageSize)
 		{
 			command::COMPLETION_QUEUE_ENTRY completionQueueEntry = { 0 };
 
@@ -141,7 +142,7 @@ namespace cnvme
 			UINT_64 namespaceSizeInSectors = this->getNamespaceSizeInSectors();
 
 			// Make sure the LBA is in range
-			if (nvmeCommand.SLBA > namespaceSizeInSectors && nvmeCommand.SLBA + ONE_BASED_FROM_ZERO_BASED(nvmeCommand.DW12_IO.NLB) < namespaceSizeInSectors)
+			if (nvmeCommand.SLBA > namespaceSizeInSectors || nvmeCommand.SLBA + ONE_BASED_FROM_ZERO_BASED(nvmeCommand.DW12_IO.NLB) > namespaceSizeInSectors)
 			{
 				completionQueueEntry.DNR = true;
 				completionQueueEntry.SCT = constants::status::types::GENERIC_COMMAND;
@@ -152,7 +153,9 @@ namespace cnvme
 			UINT_64 transferSize = this->getSectorSize() * ONE_BASED_FROM_ZERO_BASED(nvmeCommand.DW12_IO.NLB);
 			UINT_64 byteOffset = this->getSectorSize() * nvmeCommand.SLBA;
 
-			ASSERT_IF(inputPayload.getSize() >= transferSize, "The input payload is smaller than the size we need to copy.");
+			// Get data from PRPs
+			PRP prps(nvmeCommand.DPTR.DPTR1, nvmeCommand.DPTR.DPTR2, (size_t)transferSize, memoryPageSize);
+			auto inputPayload = prps.getPayloadCopy();
 
 			// Give data back
 			memcpy_s(this->Media.getBuffer() + byteOffset, (size_t)(this->Media.getSize() - byteOffset), inputPayload.getBuffer(), (size_t)transferSize);

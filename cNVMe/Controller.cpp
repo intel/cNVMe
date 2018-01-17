@@ -720,12 +720,56 @@ namespace cnvme
 
 		NVME_CALLER_IMPLEMENTATION(nvmRead)
 		{
-			// todo. Call read on the namespace.
+			// Make sure the namespace exists
+			auto namespacePair = this->NamespaceIdToActiveNamespace.find(command.NSID);
+			if (namespacePair == this->NamespaceIdToActiveNamespace.end())
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::GENERIC_COMMAND;
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+				return;
+			}
+			
+			// Do we have a PRP?
+			if (command.DPTR.DPTR1)
+			{
+				Payload readData;
+				completionQueueEntryToPost = namespacePair->second.read(command, readData);
+				PRP prps(command.DPTR.DPTR1, command.DPTR.DPTR2, readData.getSize(), ControllerRegisters->getMemoryPageSize());
+				prps.placePayloadInExistingPRPs(readData);
+			}
+			else
+			{
+				// No PRP? Huh? Fail.
+				completionQueueEntryToPost.SC = constants::status::codes::generic::PRP_OFFSET_INVALID;
+				completionQueueEntryToPost.DNR = 1;
+			}
 		}
 
 		NVME_CALLER_IMPLEMENTATION(nvmWrite)
 		{
-			// todo. Call write on the namespace.
+			// Make sure the namespace exists
+			auto namespacePair = this->NamespaceIdToActiveNamespace.find(command.NSID);
+			if (namespacePair == this->NamespaceIdToActiveNamespace.end())
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::GENERIC_COMMAND;
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+				return;
+			}
+
+			// Do we have a PRP?
+			if (command.DPTR.DPTR1)
+			{
+				UINT_32 memoryPageSize = ControllerRegisters->getMemoryPageSize();
+				completionQueueEntryToPost = namespacePair->second.write(command, memoryPageSize);
+			}
+			else
+			{
+				// No PRP? Huh? Fail.
+				completionQueueEntryToPost.SC = constants::status::codes::generic::PRP_OFFSET_INVALID;
+				completionQueueEntryToPost.DNR = 1;
+			}
 		}
 
 		void Controller::controllerResetCallback()
