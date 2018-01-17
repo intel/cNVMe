@@ -103,5 +103,10 @@ namespace cnvme
 			return retStr;
 		}
 
+		bool COMPLETION_QUEUE_ENTRY::succeeded()
+		{
+			return ((this->SC | this->SCT) == 0);
+		}
+
 	}
 }

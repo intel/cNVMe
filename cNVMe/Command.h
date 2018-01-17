@@ -248,6 +248,12 @@ namespace cnvme
 			};
 
 			std::string toString() const;
+
+			/// <summary>
+			/// Returns true if it appears as though the completion denotes success
+			/// </summary>
+			/// <returns>true on on pass, false on fail</returns>
+			bool succeeded();
 		}COMPLETION_QUEUE_ENTRY, *PCOMPLETION_QUEUE_ENTRY;
 		static_assert(sizeof(COMPLETION_QUEUE_ENTRY) == 16, "COMPLETION_QUEUE_ENTRY should be 16 byte(s) in size.");
 

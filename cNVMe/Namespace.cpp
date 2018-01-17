@@ -26,6 +26,7 @@ Namespace.cpp - An implementation file for a cNVMe Namespace
 #include "Constants.h"
 #include "Namespace.h"
 #include "PRP.h"
+#include "Tests.h"
 
 #define DEFAULT_NUMBER_OF_LBA_FORMAT 2; // 0-based!
 #define LBA_IN_BYTES_TO_LBADS(lbaSizeInBytes) ((UINT_8)(log2(lbaSizeInBytes)))
@@ -37,6 +38,7 @@ namespace cnvme
 		Namespace::Namespace()
 		{
 			memset(&this->IdentifyNamespace, 0, sizeof(this->IdentifyNamespace));
+			this->getIdentifyNamespaceStructure(); // make sure we are setup.
 		}
 
 		Namespace::Namespace(size_t SizeInBytes) : Namespace()
@@ -95,8 +97,11 @@ namespace cnvme
 			else if (nvmeCommand.DW10_Format.SES == constants::commands::format::ses::USER_DATA_ERASE)
 			{
 				LOG_INFO("Performing a user data erase");
-				// Per NVMe spec the controller can do whatever here as long as the data is gone... so we shall 0x0C fill.
-				memset(this->Media.getBuffer(), 0x0C, this->Media.getSize());
+				// Per NVMe spec the controller can do whatever here as long as the data is gone... so we shall do some randomization.
+				for (size_t i = 0; i < 8; i++) // 8 is a number i picked without much reason.
+				{
+					tests::helpers::randomizePayload(this->Media);
+				}
 			}
 			else
 			{

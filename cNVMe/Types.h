@@ -77,8 +77,9 @@ typedef UINT_8 BYTE;
 // Init macro
 #define ALLOC_BYTE_ARRAY(name, size) BYTE* name = new BYTE[size]; memset(name, 0, size);
 
-// Macro for code clarity
+// Macros for code clarity
 #define ONE_BASED_FROM_ZERO_BASED(number) (number + 1)
+#define ZERO_BASED_FROM_ONE_BASED(number) (number - 1)
 
 #ifndef _WIN32
 typedef int errno_t; // Should already exist on Windows
