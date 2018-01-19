@@ -180,27 +180,13 @@ namespace cnvme
 
 		Driver::~Driver()
 		{
-			// Delete all Submission Queues
-			for (auto &i : this->SubmissionQueues)
-			{
-				if (i.second->getMemoryAddress())
-				{
-					delete[]MEMORY_ADDRESS_TO_8POINTER(i.second->getMemoryAddress());
-					i.second->setMemoryAddress(0);
-				}
-				delete i.second;
-			}
+			this->deleteAllIoQueues();
 
-			// Delete all Completion Queues
-			for (auto &i : this->CompletionQueues)
-			{
-				if (i.second->getMemoryAddress())
-				{
-					delete[]MEMORY_ADDRESS_TO_8POINTER(i.second->getMemoryAddress());
-					i.second->setMemoryAddress(0);
-				}
-				delete i.second;
-			}
+			// Delete admin queue
+			delete[]MEMORY_ADDRESS_TO_64POINTER(this->SubmissionQueues[0]->getMemoryAddress());
+			delete[]MEMORY_ADDRESS_TO_64POINTER(this->CompletionQueues[0]->getMemoryAddress());
+			delete this->SubmissionQueues[0];
+			delete this->CompletionQueues[0];
 		}
 
 		void Driver::sendCommand(UINT_8* driverCommandBuffer, UINT_32 driverCommandBufferSize)
@@ -481,6 +467,43 @@ namespace cnvme
 			}
 		}
 
+		bool Driver::controllerReset()
+		{
+			auto CR = this->TheController.getControllerRegisters()->getControllerRegisters();
+			auto timeoutMs = CR->CAP.TO * 500; // CAP.TO is in 500 millisecond intervals
+
+			CR->CC.EN = 0; // Begin Reset
+			auto deathTime = helpers::getTimeInMilliseconds() + timeoutMs;
+			bool rdyTo0 = false;
+			while (helpers::getTimeInMilliseconds() < deathTime)
+			{
+				if (CR->CSTS.RDY == 0)
+				{
+					rdyTo0 = true;
+					break;
+				}
+			}
+
+			FAIL_IF(rdyTo0 == false, "CSTS.RDY did not transition to 0 after CC.EN was set to 0");
+
+			CR->CC.EN = 1; // Enable controller and wait till ready
+			bool rdyTo1 = false;
+			deathTime = helpers::getTimeInMilliseconds() + timeoutMs;
+			while (helpers::getTimeInMilliseconds() < deathTime)
+			{
+				if (CR->CSTS.RDY == 1)
+				{
+					rdyTo1 = true;
+					break;
+				}
+			}
+			FAIL_IF(rdyTo1 == false, "CSTS.RDY did not transition to 1 after CC.EN was set to 1");
+
+			LOG_INFO("Controller Reset succeeded!");
+
+			return true;
+		}
+
 		UINT_16 Driver::getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(UINT_16 submissionQueueId)
 		{
 			auto entry = this->SubmissionQueueIdToCurrentCommandIdentifiers.find(submissionQueueId);
@@ -507,6 +530,37 @@ namespace cnvme
 				return nvmeCommand.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE || nvmeCommand.DWord0Breakdown.OPC == constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE;
 			}
 			return false;
+		}
+
+		void Driver::deleteAllIoQueues()
+		{
+			// Delete all IO Submission Queues
+			for (auto &i : this->SubmissionQueues)
+			{
+				if (i.first != ADMIN_QUEUE_ID)
+				{
+					if (i.second->getMemoryAddress())
+					{
+						delete[]MEMORY_ADDRESS_TO_8POINTER(i.second->getMemoryAddress());
+						i.second->setMemoryAddress(0);
+					}
+					delete i.second;
+				}
+			}
+
+			// Delete all IO Completion Queues
+			for (auto &i : this->CompletionQueues)
+			{
+				if (i.first != ADMIN_QUEUE_ID)
+				{
+					if (i.second->getMemoryAddress())
+					{
+						delete[]MEMORY_ADDRESS_TO_8POINTER(i.second->getMemoryAddress());
+						i.second->setMemoryAddress(0);
+					}
+					delete i.second;
+				}
+			}
 		}
 	}
 }

@@ -75,6 +75,11 @@ extern "C" {
 	/// </summary>
 	EXPORT long Uninitialze();
 
+	/// <summary>
+	/// Performs a controller reset
+	/// </summary>
+	EXPORT long ControllerReset();
+
 #undef EXPORT
 #ifdef __cplusplus
 }
