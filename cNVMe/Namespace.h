@@ -62,6 +62,23 @@ namespace cnvme
 			/// <param name="nvmeCommand">Complete NVMe command for the format</param>
 			/// <returns>Completion queue entry for command</returns>
 			command::COMPLETION_QUEUE_ENTRY formatNVM(command::NVME_COMMAND nvmeCommand);
+
+			/// <summary>
+			/// Performs an NVM Read command on the given namespace
+			/// </summary>
+			/// <param name="nvmeCommand">Complete NVMe command for the read</param>
+			/// <param name="outputPayload">Data read out</param>
+			/// <returns>Completion queue entry for command</returns>
+			command::COMPLETION_QUEUE_ENTRY read(command::NVME_COMMAND nvmeCommand, Payload& outputPayload);
+
+			/// <summary>
+			/// Performs an NVM Write command on the given namespace
+			/// </summary>
+			/// <param name="nvmeCommand">Complete NVMe command for the write</param>
+			/// <param name="memoryPageSize">size of the memory page</param>
+			/// <returns>Completion queue entry for command</returns>
+			command::COMPLETION_QUEUE_ENTRY write(command::NVME_COMMAND nvmeCommand, UINT_32 memoryPageSize);
+
 		private:
 
 			/// <summary>

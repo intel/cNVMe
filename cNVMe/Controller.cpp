@@ -72,12 +72,12 @@ namespace cnvme
 				ControllerRegisters = nullptr;
 			}
 
-      if (PCIExpressRegisters)
+			if (PCIExpressRegisters)
 			{
 				delete PCIExpressRegisters;
 				PCIExpressRegisters = nullptr;
 			}
-      
+
 			for (Queue* q : this->ValidSubmissionQueues)
 			{
 				delete q;
@@ -220,8 +220,8 @@ namespace cnvme
 
 				// AdminCommandCallers goes from OpCode to Function to call. 
 				//  All functions to call must have the same parameters and return value (no return since they are voids)
-				auto itr = AdminCommandCallers.find(command->DWord0Breakdown.OPC);
-				if (itr != AdminCommandCallers.end())
+				auto itr = this->AdminCommandCallers.find(command->DWord0Breakdown.OPC);
+				if (itr != this->AdminCommandCallers.end())
 				{
 					NVMeCaller caller = itr->second;
 					(this->*caller)(*command, completionQueueEntryToPost);
@@ -229,7 +229,7 @@ namespace cnvme
 				else
 				{
 					// We don't have handling for this command
-					LOG_INFO("Unknown command recv'd by the controller.");
+					LOG_INFO("Unknown Admin command recv'd by the controller.");
 					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
 					completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
 				}
@@ -238,10 +238,21 @@ namespace cnvme
 			{
 				LOG_INFO("That was an NVM command!");
 
-				// lol don't do anything yet
-
-				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
-				completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
+				// AdminCommandCallers goes from OpCode to Function to call. 
+				//  All functions to call must have the same parameters and return value (no return since they are voids)
+				auto itr = this->NVMCommandCallers.find(command->DWord0Breakdown.OPC);
+				if (itr != this->NVMCommandCallers.end())
+				{
+					NVMeCaller caller = itr->second;
+					(this->*caller)(*command, completionQueueEntryToPost);
+				}
+				else
+				{
+					// We don't have handling for this command
+					LOG_INFO("Unknown NVM command recv'd by the controller.");
+					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
+					completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
+				}
 			}
 
 			postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
@@ -667,7 +678,7 @@ namespace cnvme
 			{
 				LOG_INFO("I should format all namespaces!");
 
-				for (auto &i : this->NamespaceIdToNamespace)
+				for (auto &i : this->NamespaceIdToActiveNamespace)
 				{
 					namespacesToFormat.insert(i.first);
 				}
@@ -675,10 +686,10 @@ namespace cnvme
 			else
 			{
 				// Make sure we have the namespace.
-				auto nsid = this->NamespaceIdToNamespace.find(command.NSID);
+				auto nsid = this->NamespaceIdToActiveNamespace.find(command.NSID);
 				
 				// If we don't have this namespace fail.
-				if (nsid == this->NamespaceIdToNamespace.end())
+				if (nsid == this->NamespaceIdToActiveNamespace.end())
 				{
 					completionQueueEntryToPost.DNR = 1; // Do Not Retry
 					completionQueueEntryToPost.SCT = constants::status::types::GENERIC_COMMAND;
@@ -692,7 +703,7 @@ namespace cnvme
 			// Call format on all namespacesToFormat... if any fail... fail the command
 			for (auto &nsid : namespacesToFormat)
 			{
-				completionQueueEntryToPost = this->NamespaceIdToNamespace[nsid].formatNVM(command);
+				completionQueueEntryToPost = this->NamespaceIdToActiveNamespace[nsid].formatNVM(command);
 
 				if (completionQueueEntryToPost.SC != 0)
 				{
@@ -705,6 +716,60 @@ namespace cnvme
 		NVME_CALLER_IMPLEMENTATION(adminKeepAlive)
 		{
 			// nop. We do nothing here.
+		}
+
+		NVME_CALLER_IMPLEMENTATION(nvmRead)
+		{
+			// Make sure the namespace exists
+			auto namespacePair = this->NamespaceIdToActiveNamespace.find(command.NSID);
+			if (namespacePair == this->NamespaceIdToActiveNamespace.end())
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::GENERIC_COMMAND;
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+				return;
+			}
+			
+			// Do we have a PRP?
+			if (command.DPTR.DPTR1)
+			{
+				Payload readData;
+				completionQueueEntryToPost = namespacePair->second.read(command, readData);
+				PRP prps(command.DPTR.DPTR1, command.DPTR.DPTR2, readData.getSize(), ControllerRegisters->getMemoryPageSize());
+				prps.placePayloadInExistingPRPs(readData);
+			}
+			else
+			{
+				// No PRP? Huh? Fail.
+				completionQueueEntryToPost.SC = constants::status::codes::generic::PRP_OFFSET_INVALID;
+				completionQueueEntryToPost.DNR = 1;
+			}
+		}
+
+		NVME_CALLER_IMPLEMENTATION(nvmWrite)
+		{
+			// Make sure the namespace exists
+			auto namespacePair = this->NamespaceIdToActiveNamespace.find(command.NSID);
+			if (namespacePair == this->NamespaceIdToActiveNamespace.end())
+			{
+				completionQueueEntryToPost.DNR = 1; // Do Not Retry
+				completionQueueEntryToPost.SCT = constants::status::types::GENERIC_COMMAND;
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+				return;
+			}
+
+			// Do we have a PRP?
+			if (command.DPTR.DPTR1)
+			{
+				UINT_32 memoryPageSize = ControllerRegisters->getMemoryPageSize();
+				completionQueueEntryToPost = namespacePair->second.write(command, memoryPageSize);
+			}
+			else
+			{
+				// No PRP? Huh? Fail.
+				completionQueueEntryToPost.SC = constants::status::codes::generic::PRP_OFFSET_INVALID;
+				completionQueueEntryToPost.DNR = 1;
+			}
 		}
 
 		void Controller::controllerResetCallback()
@@ -753,6 +818,11 @@ namespace cnvme
 			{ cnvme::constants::opcodes::admin::FORMAT_NVM, &cnvme::controller::Controller::adminFormatNvm},
 			{ cnvme::constants::opcodes::admin::IDENTIFY, &cnvme::controller::Controller::adminIdentify},
 			{ cnvme::constants::opcodes::admin::KEEP_ALIVE, &cnvme::controller::Controller::adminKeepAlive}
+		};
+
+		const std::map<UINT_8, NVMeCaller> Controller::NVMCommandCallers = {
+			{ cnvme::constants::opcodes::nvm::READ, &cnvme::controller::Controller::nvmRead},
+			{ cnvme::constants::opcodes::nvm::WRITE, &cnvme::controller::Controller::nvmWrite}
 		};
 	}
 }

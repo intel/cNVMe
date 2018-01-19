@@ -46,5 +46,10 @@ namespace cnvme
 		/// Returns the total usable/unallocated capacity of the drive the executable is on
 		/// </summary>
 		UINT_64 getUnallocatedLocalCapacityInBytes();
+
+		/// <summary>
+		/// Returns the bitness of the running cNVMe
+		/// </summary>
+		constexpr UINT_8 getApplicationBitness();
 	}
 }

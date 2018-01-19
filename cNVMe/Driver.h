@@ -147,8 +147,9 @@ namespace cnvme
 			/// Returns True if we should use a raw pointer to contiguous memory instead of PRPs
 			/// </summary>
 			/// <param name="nvmeCommand">command to check</param>
+			/// <param name="admin">true if this is an admin command</param>
 			/// <returns>bool</returns>
-			bool commandRequiresContiguousBufferInsteadOfPrp(NVME_COMMAND& nvmeCommand);
+			bool commandRequiresContiguousBufferInsteadOfPrp(NVME_COMMAND& nvmeCommand, bool admin);
 		};
 	}
 }

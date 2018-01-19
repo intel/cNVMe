@@ -198,9 +198,9 @@ namespace cnvme
 			{
 				namespace ses
 				{
-					const UINT_8 NO_SECURE_ERASE = 0b000;
-					const UINT_8 USER_DATA_ERASE = 0b001;
-					const UINT_8 CRYPTOGRAPHIC_ERASE = 0b010;
+					const UINT_32 NO_SECURE_ERASE = 0b000;
+					const UINT_32 USER_DATA_ERASE = 0b001;
+					const UINT_32 CRYPTOGRAPHIC_ERASE = 0b010;
 				}
 			}
 		}

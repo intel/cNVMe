@@ -107,6 +107,11 @@ namespace cnvme
 			/// Tests that if we create an SQ/CQ we have to delete the SQ first
 			/// </summary>
 			bool testNVMeQueueDeletionFailures();
+
+			/// <summary>
+			/// Tests that we can read/write from a given namespace and then we can format it.
+			/// </summary>
+			bool testNVMeIo();
 		}
 
 		namespace driver

@@ -65,6 +65,7 @@ namespace cnvme
 					results.push_back(std::async(controller_registers::testControllerReset));
 					results.push_back(std::async(commands::testNVMeCommandOpcodeInvalid));
 					results.push_back(std::async(commands::testNVMeCommandParsing));
+					results.push_back(std::async(commands::testNVMeIo));
 					results.push_back(std::async(commands::testNVMeQueueDeletionFailures));
 					results.push_back(std::async(driver::testNoDataCommandViaDriver));
 					results.push_back(std::async(driver::testReadCommandViaDriver));
@@ -345,6 +346,123 @@ namespace cnvme
 				ASSERT_IF(status != 0, "Controller did not allow deleting a CQ after its SQ was deleted");
 
 				delete[] buffer;
+				return true;
+			}
+
+			bool testNVMeIo()
+			{
+				cnvme::driver::Driver driver;
+
+				Payload payload(8192); // generic large size
+				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)payload.getBuffer();
+				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
+
+				UINT_32 timeout = 5; // arbitrary
+				pDriverCommand->Timeout = timeout;
+				pDriverCommand->TransferDataDirection = cnvme::driver::NO_DATA;
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE;
+
+				// Create CQ 1
+				pDriverCommand->Command.DW10_CreateIoQueue.QSIZE = 0xF;
+				pDriverCommand->Command.DW10_CreateIoQueue.QID = 1;
+				pDriverCommand->Command.DW11_CreateIoCompletionQueue.IEN = 1;
+				pDriverCommand->Command.DW11_CreateIoCompletionQueue.PC = 1;
+				driver.sendCommand(payload.getBuffer(), payload.getSize());
+
+				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Controller failed creating an io completion queue");
+
+				// Create SQ 1
+				pDriverCommand->Command.DW10_CreateIoQueue.QSIZE = 0xF;
+				pDriverCommand->Command.DW10_CreateIoQueue.QID = 1;
+				pDriverCommand->Command.DW11_CreateIoSubmissionQueue.PC = 1;
+				pDriverCommand->Command.DW11_CreateIoSubmissionQueue.CQID = 1; // Link to CQ 1
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE;
+				driver.sendCommand(payload.getBuffer(), payload.getSize());
+
+				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Controller failed creating an io completion queue");
+
+				// Now we have IO Queue Pair 1
+				pDriverCommand->QueueId = 1;
+				pDriverCommand->TransferDataSize = 512; // default sector size
+
+				// Write all 0xCD to the first sector, 0xDC to the second sector
+				UINT_8 sector1Value = 0xCD;
+				UINT_8 sector2Value = 0xDC;
+				memset(&pDriverCommand->Command, 0, sizeof(pDriverCommand->Command));
+				pDriverCommand->Command.NSID = 1;
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::nvm::WRITE;
+				pDriverCommand->Command.DW12_IO.NLB = ZERO_BASED_FROM_ONE_BASED(1);
+				pDriverCommand->Command.SLBA = 0; // first sector
+				pDriverCommand->TransferDataDirection = cnvme::driver::WRITE;
+				// set the data to 0xCD
+				memset(&pDriverCommand->TransferData, sector1Value, 512);
+				driver.sendCommand(payload.getBuffer(), payload.getSize());
+
+				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to write the first sector");
+
+				// set the data to 0xDC (for the second sector)
+				memset(&pDriverCommand->TransferData, sector2Value, 512);
+				pDriverCommand->Command.SLBA = 1; // 2nd sector
+
+				driver.sendCommand(payload.getBuffer(), payload.getSize());
+
+				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to write the second sector");
+
+				// Read back, and confirm the data was what we expected
+				pDriverCommand->TransferDataDirection = cnvme::driver::READ;
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::nvm::READ;
+				pDriverCommand->Command.DW12_IO.NLB = ZERO_BASED_FROM_ONE_BASED(2);
+				pDriverCommand->Command.SLBA = 0; // start at first sector
+				pDriverCommand->TransferDataSize = 1024; // 2 sectors
+
+				driver.sendCommand(payload.getBuffer(), payload.getSize());
+
+				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to read back the 2 sectors");
+
+				for (size_t i = 0; i < 1024; i++)
+				{
+					UINT_8 cmpVal = 0xFF;
+					if (i < 512)
+					{
+						cmpVal = sector1Value;
+					}
+					else
+					{
+						cmpVal = sector2Value;
+					}
+					ASSERT_IF(pDriverCommand->TransferData[i] != cmpVal, "Comparison failure: the read data didn't match what was written");
+				}
+
+				ASSERT_IF(pDriverCommand->TransferData[1024] != 0, "We specified that we were reading 1024 bytes of data and yet the byte after that is set to something other than 0. Did we read too much?");
+
+				// Call Format NVM, and confirm the data doesn't match anymore
+				memset(&pDriverCommand->Command, 0, sizeof(pDriverCommand->Command));
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::FORMAT_NVM;
+				pDriverCommand->Command.NSID = 1;
+				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
+				pDriverCommand->TransferDataDirection = cnvme::driver::NO_DATA;
+				pDriverCommand->TransferDataSize = 0;
+
+				driver.sendCommand(payload.getBuffer(), payload.getSize());
+				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Format NVM failed");
+
+				// Read back, and confirm the data was not what we original wrote
+				memset(&pDriverCommand->Command, 0, sizeof(pDriverCommand->Command));
+				pDriverCommand->TransferDataDirection = cnvme::driver::READ;
+				pDriverCommand->QueueId = 1;
+				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::nvm::READ;
+				pDriverCommand->Command.NSID = 1;
+				pDriverCommand->Command.DW12_IO.NLB = ZERO_BASED_FROM_ONE_BASED(2);
+				pDriverCommand->TransferDataSize = 1024; // 2 sectors
+
+				driver.sendCommand(payload.getBuffer(), payload.getSize());
+				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to read back data after Format NVM");
+
+				for (size_t i = 0; i < 1024; i++)
+				{
+					ASSERT_IF(pDriverCommand->TransferData[i] != 0, "Format NVM didn't zero out the area we wrote to")
+				}
+
 				return true;
 			}
 		}
