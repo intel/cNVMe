@@ -184,6 +184,15 @@ namespace cnvme
 			std::map<UINT_32, ns::Namespace> NamespaceIdToInactiveNamespace;
 
 			/// <summary>
+			/// Gets a payload in the format of a namespace list (4-bytes per NSID)
+			/// </summary>
+			/// <param name="namespaceMap">map from nsid to namespace object</param>
+			/// <param name="startingNsid">NSID to start with</param>
+			/// <param name="completionQueueEntryToPost">CQE for an identify call to get this data</param>
+			/// <returns>Payload</returns>
+			Payload getNamespaceListFromMap(std::map<UINT_32, ns::Namespace> namespaceMap, UINT_32 startingNsid, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost);
+
+			/// <summary>
 			/// Map from the admin command opcode to the function that processes it
 			/// </summary>
 			static const std::map<UINT_8, NVMeCaller> AdminCommandCallers;

@@ -391,6 +391,41 @@ namespace cnvme
 			// Also I'm not setting the power state to anything. It lets us get away with all 0s for not reported. Wow.
 		}
 
+		Payload Controller::getNamespaceListFromMap(std::map<UINT_32, ns::Namespace> namespaceMap, UINT_32 startingNsid, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost)
+		{
+			Payload transferPayload(constants::commands::identify::sizes::MAX_NSID_IN_NAMESPACE_LIST * sizeof(UINT_32));
+
+			UINT_32 maxNsid = namespaceMap.rbegin()->first;
+
+			if (startingNsid > maxNsid)
+			{
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+				completionQueueEntryToPost.DNR = 1;
+			}
+			else
+			{
+				UINT_32 counter = 0;
+				UINT_32* outputNsids = (UINT_32*)transferPayload.getBuffer();
+
+				for (auto &nsidToNs : namespaceMap)
+				{
+					if (counter == constants::commands::identify::sizes::MAX_NSID_IN_NAMESPACE_LIST)
+					{
+						break; // we've hit the max
+					}
+
+					if (nsidToNs.first >= startingNsid)
+					{
+						*outputNsids = nsidToNs.first;
+						outputNsids++;
+						counter++;
+					}
+				}
+			}
+
+			return transferPayload;
+		}
+
 		NVME_CALLER_IMPLEMENTATION(adminIdentify)
 		{
 			UINT_32 memoryPageSize = ControllerRegisters->getMemoryPageSize();
@@ -423,34 +458,22 @@ namespace cnvme
 				}
 				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACES_ACTIVE) // Idenitfy Namespace Active List
 				{
-					UINT_32 maxNsid = this->NamespaceIdToActiveNamespace.rbegin()->first;
-
-					if (command.NSID > maxNsid)
+					transferPayload = this->getNamespaceListFromMap(this->NamespaceIdToActiveNamespace, command.NSID, completionQueueEntryToPost);
+				}
+				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACES_ALL) // Identify Namespace All List
+				{
+					// make map with active/inactive
+					std::map<UINT_32, ns::Namespace> tmp;
+					for (auto &i : this->NamespaceIdToActiveNamespace)
 					{
-						completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
-						completionQueueEntryToPost.DNR = 1;
+						tmp[i.first] = i.second;
 					}
-					else
+					for (auto &i : this->NamespaceIdToInactiveNamespace)
 					{
-						UINT_32 counter = 0;
-						UINT_32* outputNsids = (UINT_32*)transferPayload.getBuffer();
-
-						for (auto &nsidToNs : this->NamespaceIdToActiveNamespace)
-						{
-							if (counter == constants::commands::identify::sizes::MAX_NSID_IN_NAMESPACE_LIST)
-							{
-								break; // we've hit the max
-							}
-
-							if (nsidToNs.first >= command.NSID)
-							{
-								*outputNsids = nsidToNs.first;
-								outputNsids++;
-								counter++;
-							}
-						}
+						tmp[i.first] = i.second;
 					}
 
+					transferPayload = this->getNamespaceListFromMap(tmp, command.NSID, completionQueueEntryToPost);
 				}
 				else
 				{
@@ -458,7 +481,11 @@ namespace cnvme
 					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_FIELD_IN_COMMAND;
 					completionQueueEntryToPost.DNR = 1;
 				}
-				prp.placePayloadInExistingPRPs(transferPayload);
+
+				if (completionQueueEntryToPost.succeeded())
+				{
+					prp.placePayloadInExistingPRPs(transferPayload);
+				}
 			}
 			else
 			{
