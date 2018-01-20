@@ -244,6 +244,11 @@ namespace cnvme
 			NVME_CALLER_HEADER(adminKeepAlive);
 
 			/// <summary>
+			/// Handling for the NVM Flush command
+			/// </summary>
+			NVME_CALLER_HEADER(nvmFlush);
+
+			/// <summary>
 			/// Handling for the NVM Read command
 			/// </summary>
 			NVME_CALLER_HEADER(nvmRead);

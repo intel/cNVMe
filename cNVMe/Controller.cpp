@@ -783,6 +783,40 @@ namespace cnvme
 			// nop. We do nothing here.
 		}
 
+		NVME_CALLER_IMPLEMENTATION(nvmFlush)
+		{
+			// TODO: See if we can push this code higher up as it applies to all NVM commands.
+
+			/*
+			Section 6.1 of NVMe 1.3
+			Unless otherwise noted, specifying an inactive namespace ID in a command that uses the namespace ID
+			shall cause the controller to abort the command with status Invalid Field in Command. Specifying an invalid
+			NSID in a command that uses the NSID field shall cause the controller to abort the command with status
+			Invalid Namespace or Format.
+			*/
+
+			// We have nothing to flush as everything is always 'safe'.. right?
+
+			auto namespacePair = this->NamespaceIdToActiveNamespace.find(command.NSID);
+			if (namespacePair != this->NamespaceIdToActiveNamespace.end())
+			{
+				return; // We really don't have anything to do. We're done since this is an active NSID.
+			}
+
+			// not an active NSID
+			completionQueueEntryToPost.DNR = 1; // Do Not Retry
+
+			namespacePair = this->NamespaceIdToInactiveNamespace.find(command.NSID);
+			if (namespacePair == this->NamespaceIdToInactiveNamespace.end())
+			{
+				// User specified an inactive NSID.
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_FIELD_IN_COMMAND;
+			}
+
+			// User specified an invalid NSID.
+			completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+		}
+
 		NVME_CALLER_IMPLEMENTATION(nvmRead)
 		{
 			// Make sure the namespace exists
@@ -886,6 +920,7 @@ namespace cnvme
 		};
 
 		const std::map<UINT_8, NVMeCaller> Controller::NVMCommandCallers = {
+			{ cnvme::constants::opcodes::nvm::FLUSH, &cnvme::controller::Controller::nvmFlush},
 			{ cnvme::constants::opcodes::nvm::READ, &cnvme::controller::Controller::nvmRead},
 			{ cnvme::constants::opcodes::nvm::WRITE, &cnvme::controller::Controller::nvmWrite}
 		};
