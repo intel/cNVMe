@@ -225,11 +225,27 @@ namespace cnvme
 			} LBA_FORMAT, *PLBA_FORMAT;
 			static_assert(sizeof(LBA_FORMAT) == 4, "LBA Formats are 4 bytes in size");
 
+			typedef struct NGUID {
+				UINT_8 VSEI[8]; // Vendor Specific Extension Identifier
+				UINT_8 OUI[3]; // IEEE OUI
+				UINT_8 EI[5]; // Extension Identifier
+			} NGUID, *PNGUID;
+			static_assert(sizeof(NGUID) == 16, "NGUIDs are 16 bytes in size");
+
 			typedef struct IDENTIFY_NAMESPACE {
 				UINT_64 NSZE;
 				UINT_64 NCAP;
 				UINT_64 NUSE;
-				UINT_8 NSFEAT;
+				union {
+					struct {
+						UINT_8 NamespaceSupportsThinProvisioning : 1;
+						UINT_8 NamespaceSpecifcUnitsSupported: 1;
+						UINT_8 NamespaceSupportsDeallocatedOrUnwrittenLogicalBlockErros: 1;
+						UINT_8 NamespaceGUIDAndEUI64AreNotRepeated: 1;
+						UINT_8 NSFEAT_RSVD : 4;
+					};
+					UINT_8 NSFEAT;
+				};
 				UINT_8 NLBAF;
 				struct {
 					UINT_8 CurrentLBAFormat : 4;
@@ -257,13 +273,21 @@ namespace cnvme
 					UINT_64 NVMCAP_64[2]; // 128 bits
 				} NVMCAP;
 				UINT_8 RSVD_103_64[40];
-				char NGUID[16];
+				NGUID NGUID;
 				UINT_64 EUI64; // big endian
 				LBA_FORMAT LBAF[16];
 				UINT_8 RSVD_192_383[192];
 				UINT_8 VendorSpecific[3712];
 			} IDENTIFY_NAMESPACE, *PIDENTIFY_NAMESPACE;
 			static_assert(sizeof(IDENTIFY_NAMESPACE) == 4096, "Identify Namespace should be 4096 bytes in size");
+
+			typedef struct NAMESPACE_IDENTIFICATION_DESCRIPTOR_NGUID {
+				UINT_8 NIDT;
+				UINT_8 NIDL;
+				UINT_8 RSVD[2];
+				NGUID NGUID;
+			} NAMESPACE_IDENTIFICATION_DESCRIPTOR_NGUID, *PNAMESPACE_IDENTIFICATION_DESCRIPTOR_NGUID;
+			static_assert(sizeof(NAMESPACE_IDENTIFICATION_DESCRIPTOR_NGUID) == 20, "A namespace identification descriptor for NGUID is 20 bytes in size");
 		}
 	}
 }

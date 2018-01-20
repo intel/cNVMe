@@ -426,6 +426,20 @@ namespace cnvme
 			return transferPayload;
 		}
 
+		std::map<UINT_32, ns::Namespace> Controller::getAllocatedNamespaceMap() const
+		{
+			std::map<UINT_32, ns::Namespace> tmp;
+			for (auto &i : this->NamespaceIdToActiveNamespace)
+			{
+				tmp[i.first] = i.second;
+			}
+			for (auto &i : this->NamespaceIdToInactiveNamespace)
+			{
+				tmp[i.first] = i.second;
+			}
+			return tmp;
+		}
+
 		NVME_CALLER_IMPLEMENTATION(adminIdentify)
 		{
 			UINT_32 memoryPageSize = ControllerRegisters->getMemoryPageSize();
@@ -437,11 +451,11 @@ namespace cnvme
 				auto transferPayload = prp.getPayloadCopy();
 				transferPayload.clear();
 
-				if (command.DW10_Identify.CNS == constants::commands::identify::cns::CONTROLLER) // Identify Controller
+				if (command.DW10_Identify.CNS == constants::commands::identify::cns::CONTROLLER)                // Identify Controller
 				{
 					memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &IdentifyController, sizeof(IdentifyController));
 				}
-				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACE_ACTIVE) // Identify Namespace
+				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACE_ACTIVE)     // Identify Namespace (active)
 				{
 					auto namespaceSelected = this->NamespaceIdToActiveNamespace.find(command.NSID);
 					if (namespaceSelected != this->NamespaceIdToActiveNamespace.end())
@@ -456,24 +470,48 @@ namespace cnvme
 						//   If the specified namespace is not an active NSID, then the controller returns a zero filled data structure.
 					}
 				}
-				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACES_ACTIVE) // Idenitfy Namespace Active List
+				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACES_ALLOCATED) // Identify Namespace (allocated)
+				{
+					auto namespaceMap = this->getAllocatedNamespaceMap();
+					auto namespaceSelected = namespaceMap.find(command.NSID);
+					if (namespaceSelected != namespaceMap.end())
+					{
+						LOG_INFO("Grabbing Identify Namespace for NSID " + std::to_string(namespaceSelected->first));
+						auto identifyNamespaceStructure = namespaceSelected->second.getIdentifyNamespaceStructure();
+						memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &identifyNamespaceStructure, sizeof(identifyNamespaceStructure));
+					}
+					else
+					{
+						// Invalid namespace specified
+						completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+						completionQueueEntryToPost.DNR = 1;
+					}
+				}
+				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACES_ACTIVE)    // Idenitfy Namespace Active List
 				{
 					transferPayload = this->getNamespaceListFromMap(this->NamespaceIdToActiveNamespace, command.NSID, completionQueueEntryToPost);
 				}
-				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACES_ALL) // Identify Namespace All List
+				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACES_ALL)       // Identify Namespace All List
 				{
 					// make map with active/inactive
-					std::map<UINT_32, ns::Namespace> tmp;
-					for (auto &i : this->NamespaceIdToActiveNamespace)
-					{
-						tmp[i.first] = i.second;
-					}
-					for (auto &i : this->NamespaceIdToInactiveNamespace)
-					{
-						tmp[i.first] = i.second;
-					}
+					std::map<UINT_32, ns::Namespace> tmp = this->getAllocatedNamespaceMap();
 
 					transferPayload = this->getNamespaceListFromMap(tmp, command.NSID, completionQueueEntryToPost);
+				}
+				else if (command.DW10_Identify.CNS == constants::commands::identify::cns::NAMESPACE_DESCRIPTOR) // Identify Namespace Descriptor List
+				{
+					auto namespaceSelected = this->NamespaceIdToActiveNamespace.find(command.NSID);
+					if (namespaceSelected != this->NamespaceIdToActiveNamespace.end())
+					{
+						LOG_INFO("Grabbing Namespace Descriptor List for NSID " + std::to_string(namespaceSelected->first));
+						transferPayload = namespaceSelected->second.getIdentifyNamespaceDescriptorList();
+					}
+					else
+					{
+						// Invalid namespace specified
+						completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
+						completionQueueEntryToPost.DNR = 1;
+					}
 				}
 				else
 				{

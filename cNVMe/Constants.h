@@ -179,7 +179,7 @@ namespace cnvme
 					const UINT_8 NAMESPACE_ACTIVE = 0x00;
 					const UINT_8 CONTROLLER = 0x01;
 					const UINT_8 NAMESPACES_ACTIVE = 0x02;
-					const UINT_8 NAMESPACES_DESCRIPTOR = 0x03;
+					const UINT_8 NAMESPACE_DESCRIPTOR = 0x03;
 					const UINT_8 NAMESPACES_ALL = 0x10;
 					const UINT_8 NAMESPACES_ALLOCATED = 0x11;
 					const UINT_8 CONTROLLERS_ATTACHED_TO_NAMESPACE = 0x12;
@@ -191,6 +191,14 @@ namespace cnvme
 				namespace sizes
 				{
 					const UINT_32 MAX_NSID_IN_NAMESPACE_LIST = 1024;
+					const UINT_32 NGUID_SIZE = 16;
+				}
+
+				namespace ns_identifiers
+				{
+					const UINT_32 IEEE_EXTENDED = 0x01;
+					const UINT_32 NGUID = 0x02;
+					const UINT_32 NAMESPACE_UUID = 0x03;
 				}
 			}
 

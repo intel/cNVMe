@@ -193,6 +193,12 @@ namespace cnvme
 			Payload getNamespaceListFromMap(std::map<UINT_32, ns::Namespace> namespaceMap, UINT_32 startingNsid, COMPLETION_QUEUE_ENTRY& completionQueueEntryToPost);
 
 			/// <summary>
+			/// Gets a map of all namespaces (active or inactive)
+			/// </summary>
+			/// <returns></returns>
+			std::map<UINT_32, ns::Namespace> getAllocatedNamespaceMap() const;
+
+			/// <summary>
 			/// Map from the admin command opcode to the function that processes it
 			/// </summary>
 			static const std::map<UINT_8, NVMeCaller> AdminCommandCallers;

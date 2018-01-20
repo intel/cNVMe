@@ -57,6 +57,12 @@ namespace cnvme
 			identify::structures::IDENTIFY_NAMESPACE& getIdentifyNamespaceStructure();
 
 			/// <summary>
+			/// Returns an identify namespace descriptor list for this namespace
+			/// </summary>
+			/// <returns>Payload</returns>
+			Payload getIdentifyNamespaceDescriptorList();
+
+			/// <summary>
 			/// Perform a format NVM command on the given namespace.
 			/// </summary>
 			/// <param name="nvmeCommand">Complete NVMe command for the format</param>

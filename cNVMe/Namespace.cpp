@@ -29,7 +29,9 @@ Namespace.cpp - An implementation file for a cNVMe Namespace
 #include "Tests.h"
 
 #define DEFAULT_NUMBER_OF_LBA_FORMAT 2; // 0-based!
+#define IEEE_OUI 0xCCAACC
 #define LBA_IN_BYTES_TO_LBADS(lbaSizeInBytes) ((UINT_8)(log2(lbaSizeInBytes)))
+#define GET_RANDOM_BYTE() (UINT_8)(rand() % ((UINT_8)-1)) // lol not really random. Make sure to call srand above this somewhere.
 
 namespace cnvme
 {
@@ -53,7 +55,28 @@ namespace cnvme
 
 		identify::structures::IDENTIFY_NAMESPACE& Namespace::getIdentifyNamespaceStructure()
 		{
-			this->IdentifyNamespace.NLBAF = DEFAULT_NUMBER_OF_LBA_FORMAT; // support 512/4096/8192 byte sectors
+			// Assume this is the first call if NLBAF is 0.
+			// That way we generate the NGUID once.
+			if (this->IdentifyNamespace.NLBAF == 0)
+			{
+				srand((unsigned int)time(NULL)); // 'random' seed
+
+				for (size_t i = 0; i < sizeof(this->IdentifyNamespace.NGUID.VSEI); i++)
+				{
+					if (i < sizeof(this->IdentifyNamespace.NGUID.EI))
+					{
+						this->IdentifyNamespace.NGUID.EI[i] = GET_RANDOM_BYTE();
+					}
+					if (i < sizeof(this->IdentifyNamespace.NGUID.OUI))
+					{
+						this->IdentifyNamespace.NGUID.OUI[i] = (IEEE_OUI >> (i * 8)) & 0xFF;
+					}
+					this->IdentifyNamespace.NGUID.VSEI[i] = GET_RANDOM_BYTE();
+				}
+			}
+			this->IdentifyNamespace.NamespaceGUIDAndEUI64AreNotRepeated = 1;     // Will try hard not to repeat NGUID
+
+			this->IdentifyNamespace.NLBAF = DEFAULT_NUMBER_OF_LBA_FORMAT;        // support 512/4096/8192 byte sectors
 			this->IdentifyNamespace.LBAF[0].LBADS = LBA_IN_BYTES_TO_LBADS(512);
 			this->IdentifyNamespace.LBAF[1].LBADS = LBA_IN_BYTES_TO_LBADS(4096);
 			this->IdentifyNamespace.LBAF[2].LBADS = LBA_IN_BYTES_TO_LBADS(8192);
@@ -70,6 +93,21 @@ namespace cnvme
 			this->IdentifyNamespace.NVMCAP.NVMCAP_64[0] = this->Media.getSize(); // When we need more terabytes... let me know.
 
 			return this->IdentifyNamespace;
+		}
+
+		Payload Namespace::getIdentifyNamespaceDescriptorList()
+		{
+			Payload payload(sizeof(identify::structures::NAMESPACE_IDENTIFICATION_DESCRIPTOR_NGUID));
+
+			ASSERT_IF(payload.getSize() > 4096, "Per NVMe spec this cannot ever be larger than 4096 bytes");
+
+			auto pList = (identify::structures::NAMESPACE_IDENTIFICATION_DESCRIPTOR_NGUID*)payload.getBuffer();
+
+			pList->NIDT = constants::commands::identify::ns_identifiers::NGUID;
+			pList->NIDL = constants::commands::identify::sizes::NGUID_SIZE;
+			pList->NGUID = this->getIdentifyNamespaceStructure().NGUID;
+
+			return payload;
 		}
 
 		command::COMPLETION_QUEUE_ENTRY Namespace::formatNVM(command::NVME_COMMAND nvmeCommand)

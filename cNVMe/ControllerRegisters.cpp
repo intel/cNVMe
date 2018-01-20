@@ -320,10 +320,10 @@ namespace cnvme
 					ControllerRegistersPointer->CAP.MQES = 0xFFFF; // At most 0xFFFF + 1 (zero based) queue entries 
 					ControllerRegistersPointer->CAP.CQR = 1;    // Must use contiguous queues
 
-					// NVMe 1.2.1
+					// NVMe 1.3
 					ControllerRegistersPointer->VS.MJR = 1;
-					ControllerRegistersPointer->VS.MNR = 2;
-					ControllerRegistersPointer->VS.TER = 1; 
+					ControllerRegistersPointer->VS.MNR = 3;
+					ControllerRegistersPointer->VS.TER = 0; 
 
 					// Todo: Interrupts
 
