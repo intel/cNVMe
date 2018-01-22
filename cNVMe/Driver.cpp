@@ -499,6 +499,8 @@ namespace cnvme
 			}
 			FAIL_IF(rdyTo1 == false, "CSTS.RDY did not transition to 1 after CC.EN was set to 1");
 
+			LOG_INFO("Deleting all IO Queues");
+			this->deleteAllIoQueues();
 			LOG_INFO("Controller Reset succeeded!");
 
 			return true;
