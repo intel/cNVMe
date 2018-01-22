@@ -203,7 +203,7 @@ namespace cnvme
 			}
 		}
 
-		void Driver::sendCommand(UINT_8* driverCommandBuffer, UINT_32 driverCommandBufferSize)
+		void Driver::sendCommand(UINT_8* driverCommandBuffer, size_t driverCommandBufferSize)
 		{
 			// Make sure the buffer is large enough
 			ASSERT_IF(driverCommandBufferSize < sizeof(Status), "The passed in buffer size wasn't even large enough to return a status");

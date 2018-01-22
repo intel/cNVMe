@@ -115,7 +115,7 @@ namespace cnvme
 			/// </summary>
 			/// <param name="driverCommandBuffer">Pointer to the filled out DRIVER_COMMAND structure</param>
 			/// <param name="driverCommandBufferSize">Size of the data pointed to in driverCommandBuffer</param>
-			void sendCommand(UINT_8* driverCommandBuffer, UINT_32 driverCommandBufferSize);
+			void sendCommand(UINT_8* driverCommandBuffer, size_t driverCommandBufferSize);
 
 		private:
 			/// <summary>
