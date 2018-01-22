@@ -61,7 +61,7 @@ long SendCommand(UINT_8* driverCommandData, size_t driverCommandDataLength)
 {
 	if (staticDriver)
 	{
-		staticDriver->sendCommand(driverCommandData, (UINT_32)driverCommandDataLength);
+		staticDriver->sendCommand(driverCommandData, driverCommandDataLength);
 		return NO_ERRORS;
 	}
 
@@ -98,7 +98,7 @@ char* GetDriverStatusString(long statusCode)
 	return getCharStarOfStringToSendOut(retStr);
 }
 
-long Uninitialze()
+long Uninitialize()
 {
 	if (staticDriver)
 	{
