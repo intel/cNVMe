@@ -32,7 +32,8 @@ static driver::Driver* staticDriver;
 typedef enum StatusCodes {
 	NO_ERRORS,
 	ALREADY_INITIALIZED,
-	ALREADY_UNINITIALIZED
+	ALREADY_UNINITIALIZED,
+	CONTROLLER_RESET_FAILED,
 } StatusCodes;
 
 char* getCharStarOfStringToSendOut(std::string retStr)
@@ -60,7 +61,7 @@ long SendCommand(UINT_8* driverCommandData, size_t driverCommandDataLength)
 {
 	if (staticDriver)
 	{
-		staticDriver->sendCommand(driverCommandData, (UINT_32)driverCommandDataLength);
+		staticDriver->sendCommand(driverCommandData, driverCommandDataLength);
 		return NO_ERRORS;
 	}
 
@@ -82,6 +83,10 @@ char* GetStatusString(long statusCode)
 	{
 		retStr = "The DLL was already uninitialized";
 	}
+	else if (statusCode == CONTROLLER_RESET_FAILED)
+	{
+		retStr = "The controller reset failed";
+	}
 
 	return getCharStarOfStringToSendOut(retStr);
 }
@@ -93,13 +98,30 @@ char* GetDriverStatusString(long statusCode)
 	return getCharStarOfStringToSendOut(retStr);
 }
 
-long Uninitialze()
+long Uninitialize()
 {
 	if (staticDriver)
 	{
 		delete staticDriver;
 		staticDriver = nullptr;
 		return NO_ERRORS;
+	}
+
+	return ALREADY_UNINITIALIZED;
+}
+
+long ControllerReset()
+{
+	if (staticDriver)
+	{
+		if (staticDriver->controllerReset())
+		{
+			return NO_ERRORS;
+		}
+		else
+		{
+			return CONTROLLER_RESET_FAILED;
+		}
 	}
 
 	return ALREADY_UNINITIALIZED;

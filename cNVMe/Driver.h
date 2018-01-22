@@ -117,6 +117,12 @@ namespace cnvme
 			/// <param name="driverCommandBufferSize">Size of the data pointed to in driverCommandBuffer</param>
 			void sendCommand(UINT_8* driverCommandBuffer, size_t driverCommandBufferSize);
 
+			/// <summary>
+			/// Issues a controller reset (CC.EN->0) and will wait for CC.EN->1.
+			/// </summary>
+			/// <returns>true on success, False on failure</returns>
+			bool controllerReset();
+
 		private:
 			/// <summary>
 			/// The controller that this driver is connected to
@@ -150,6 +156,11 @@ namespace cnvme
 			/// <param name="admin">true if this is an admin command</param>
 			/// <returns>bool</returns>
 			bool commandRequiresContiguousBufferInsteadOfPrp(NVME_COMMAND& nvmeCommand, bool admin);
+
+			/// <summary>
+			/// Deallocates all IO queues
+			/// </summary>
+			void deleteAllIoQueues();
 		};
 	}
 }

@@ -73,7 +73,12 @@ extern "C" {
 	/// <summary>
 	/// Should be the last method called. Uninitializes the DLL
 	/// </summary>
-	EXPORT long Uninitialze();
+	EXPORT long Uninitialize();
+
+	/// <summary>
+	/// Performs a controller reset
+	/// </summary>
+	EXPORT long ControllerReset();
 
 #undef EXPORT
 #ifdef __cplusplus

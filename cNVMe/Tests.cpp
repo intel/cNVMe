@@ -29,8 +29,6 @@ Tests.cpp - An implementation file for all unit testing
 #include <future>
 
 // Macros to fail a test
-#define FAIL(s) LOG_ERROR(s); return false;
-#define FAIL_IF(b, s); if (b) {FAIL(s);}
 #define FAIL_IF_AND_HIDE_LOG(b, s) _HIDE_LOG_THREAD(); FAIL_IF(b, s); _UNHIDE_LOG_THREAD(); // FAIL_IF except don't show the log output. Hide the LOG_ERROR we think would happen.
 
 namespace cnvme

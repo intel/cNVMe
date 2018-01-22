@@ -81,6 +81,10 @@ typedef UINT_8 BYTE;
 #define ONE_BASED_FROM_ZERO_BASED(number) (number + 1)
 #define ZERO_BASED_FROM_ONE_BASED(number) (number - 1)
 
+// Macros for getting False faster
+#define FAIL(s) LOG_ERROR(s); return false;
+#define FAIL_IF(b, s); if (b) {FAIL(s);}
+
 #ifndef _WIN32
 typedef int errno_t; // Should already exist on Windows
 // Lets see how spec compliant we can be!
