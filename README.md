@@ -36,7 +36,7 @@ The format for using the API is actually pretty simple. Provide the Controller a
 Before calling the VU Command Processing File, cNVMe will place some files in the local directory for the VUCPF:
 - data.bin - Will be a binary file of the transfer data for the command. This data will be re-read by cNVMe before being passed back via the completion queue.
 - command.bin - Will be the 64-Byte NVMe command.
-- completion.bin - Will be the 64-Byte completion for the NVMe command (Note that CNVMe will fill in the proper CID/SQID).
+- completion.bin - Will be the 64-Byte completion for the NVMe command (Note that cNVMe will fill in the proper CID/SQID).
 
 ## Supported Return Codes
 The VU Command Processing File is expected to return one of the following status codes to denote 'what happened' and cNVMe should proceed.
