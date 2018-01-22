@@ -43,5 +43,5 @@ The VU Command Processing File is expected to return one of the following status
 All codes that are not supported will lead to a specific assert bia raised.
 - 0 - Handled by VUCPF - cNVMe will use data.bin/completion.bin/command.bin and not process the command via its own logic
 - 1 - Handled by cNVMe - cNVMe will process the command entirely (nop from the VUCPF's POV)
-- 2 - Handled by cNVMe, though data.bin/completion.bin/command.bin will all come from the local files
+- 2 - Handled by cNVMe - Though data.bin/completion.bin/command.bin will all come from the local files. As an example if Format NVM is sent, the namespace will still be formatted (or not depending on the command format). Though the completion would come from completion.bin
 - 9 - Handled by VUCPF - cNVMe shall raise an assert with a message specified in data.bin as ASCII. Be sure to use a trailing NULL character for the message.
