@@ -127,4 +127,10 @@ long ControllerReset()
 	return ALREADY_UNINITIALIZED;
 }
 
+long SetDebugLogLevel(UINT_8 logLevel)
+{
+	LOG_SET_LEVEL(logLevel);
+	return NO_ERRORS;
+}
+
 #endif // DLL_BUILD

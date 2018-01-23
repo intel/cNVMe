@@ -80,6 +80,11 @@ extern "C" {
 	/// </summary>
 	EXPORT long ControllerReset();
 
+	/// <summary>
+	/// Sets the log level for debug output
+	/// </summary>
+	EXPORT long SetDebugLogLevel(UINT_8 logLevel);
+
 #undef EXPORT
 #ifdef __cplusplus
 }
