@@ -30,18 +30,17 @@ The original (and now legacy) repository for this project can be found here, for
 Users may be interested to see what happens in a surrounding ecosystem if a certain command fails, passes, or returns data in a Vendor-Unique format. To provide for this need, cNVMe has the VU Command Processing API... (If I could come up with a better name/acronym I would.) 
 
 ## Format
-The format for using the API is actually pretty simple. Provide the Controller a file path via the public method setVuCommandProcessingFilePath(). Then, this file will be invoked via a system call whenever cNVMe gets an NVMe command. Wherever the VU Command Processing File (VUCPF) is, is an important location, because cNVMe will place binary files there, that will be useful to the VUCPF. 
+The format for using the API is actually pretty simple. Provide the Controller a file path via the public method setVuCommandProcessingFilePath(). Then, this file will be invoked via a system call whenever cNVMe gets an NVMe command, before cNVMe would normally process it. Wherever the VU Command Processing File (VUCPF) is, is an important location, because cNVMe will place binary files there, that will be useful to the VUCPF. 
 
 ### Local Files
 Before calling the VU Command Processing File, cNVMe will place some files in the local directory for the VUCPF:
-- data.bin - Will be a binary file of the transfer data for the command. This data will be re-read by cNVMe before being passed back via the completion queue.
+- data_payload.bin - Will be a binary file of the transfer data for the command. This may (pending a will be re-read by cNVMe before being passed back via the completion queue.
 - command.bin - Will be the 64-Byte NVMe command.
-- completion.bin - Will be the 64-Byte completion for the NVMe command (Note that cNVMe will fill in the proper CID/SQID).
+- completion.bin - Will be the 16-Byte completion for the NVMe command (Note that cNVMe will fill in the proper CID/SQID).
 
 ## Supported Return Codes
 The VU Command Processing File is expected to return one of the following status codes to denote 'what happened' and cNVMe should proceed.
 All codes that are not supported will lead to a specific assert bia raised.
 - 0 - Handled by VUCPF - cNVMe will use data.bin/completion.bin/command.bin and not process the command via its own logic
 - 1 - Handled by cNVMe - cNVMe will process the command entirely (nop from the VUCPF's POV)
-- 2 - Handled by cNVMe - Though data.bin/completion.bin/command.bin will all come from the local files. As an example if Format NVM is sent, the namespace will still be formatted (or not depending on the command format). Though the completion would come from completion.bin
 - 9 - Handled by VUCPF - cNVMe shall raise an assert with a message specified in data.bin as ASCII. Be sure to use a trailing NULL character for the message.
