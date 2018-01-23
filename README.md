@@ -41,6 +41,6 @@ Before calling the VU Command Processing File, cNVMe will place some files in th
 ## Supported Return Codes
 The VU Command Processing File is expected to return one of the following status codes to denote 'what happened' and cNVMe should proceed.
 All codes that are not supported will lead to a specific assert bia raised.
-- 0 - Handled by VUCPF - cNVMe will use data.bin/completion.bin/command.bin and not process the command via its own logic
+- 0 - Handled by VUCPF - cNVMe will use data_payload.bin/completion.bin/command.bin and not process the command via its own logic
 - 1 - Handled by cNVMe - cNVMe will process the command entirely (nop from the VUCPF's POV)
-- 9 - Handled by VUCPF - cNVMe shall raise an assert with a message specified in data.bin as ASCII. Be sure to use a trailing NULL character for the message.
+- 9 - Handled by VUCPF - cNVMe shall raise an assert with a message specified in data_payload.bin as ASCII. Be sure to use a trailing NULL character for the message.
