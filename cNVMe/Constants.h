@@ -48,11 +48,19 @@ namespace cnvme
 				const UINT_8 NAMESPACE_MANAGEMENT = 0x0D;
 				const UINT_8 FIRMWARE_COMMIT = 0x10;
 				const UINT_8 FIRMWARE_IMAGE_DOWNLOAD = 0x11;
+				const UINT_8 DEVICE_SELF_TEST = 0x14;
 				const UINT_8 NAMESPACE_ATTACHMENT = 0x15;
 				const UINT_8 KEEP_ALIVE = 0x18;
+				const UINT_8 DIRECTIVE_SEND = 0x19;
+				const UINT_8 DIRECTIVE_RECEIVE = 0x1A;
+				const UINT_8 VIRTUALIZATION_MANAGEMENT = 0x1C;
+				const UINT_8 NVME_MI_SEND = 0x1D;
+				const UINT_8 NVME_MI_RECEIVE = 0x1E;
 				const UINT_8 FORMAT_NVM = 0x80;
 				const UINT_8 SECURITY_SEND = 0x81;
 				const UINT_8 SECURITY_RECEIVE = 0x82;
+				const UINT_8 SANITIZE = 0x84;
+				const UINT_8 DOORBELL_BUFFER_CONFIG = 0x7C;
 			}
 
 			namespace nvm
@@ -190,6 +198,7 @@ namespace cnvme
 
 				namespace sizes
 				{
+					const UINT_32 IDENTIFY_SIZE = 1024;
 					const UINT_32 MAX_NSID_IN_NAMESPACE_LIST = 1024;
 					const UINT_32 NGUID_SIZE = 16;
 				}
@@ -209,6 +218,14 @@ namespace cnvme
 					const UINT_32 NO_SECURE_ERASE = 0b000;
 					const UINT_32 USER_DATA_ERASE = 0b001;
 					const UINT_32 CRYPTOGRAPHIC_ERASE = 0b010;
+				}
+			}
+
+			namespace ns_attachment
+			{
+				namespace sizes
+				{
+					const UINT_32 CONTROLLER_LIST_SIZE = 1024;
 				}
 			}
 		}

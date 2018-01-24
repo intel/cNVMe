@@ -384,6 +384,7 @@ namespace cnvme
 			this->IdentifyController.RequiredCompletionQueueEntrySize = DEFAULT_COMPLETION_QUEUE_ENTRY_SIZE;
 
 			this->IdentifyController.NN = DEFAULT_MAX_NAMESPACES;
+			this->IdentifyController.AVSCC = 1; // All VU commands must have DW10 be the NUMD
 
 			// Optional Commands Supported
 			this->IdentifyController.FormatNVMSupported = true;

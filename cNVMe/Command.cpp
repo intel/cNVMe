@@ -24,7 +24,11 @@ Command.cpp - An implementation file for the NVMe Command
 */
 
 #include "Command.h"
+#include "Constants.h"
 #include "Strings.h"
+
+using namespace cnvme::constants::opcodes;
+using namespace cnvme::constants::commands;
 
 namespace cnvme
 {
@@ -84,6 +88,136 @@ namespace cnvme
 			return retStr;
 		}
 
+		UINT_64 NVME_COMMAND::getTransferSizeBytes(bool admin, UINT_32 sectorSizeInBytes) const
+		{
+			UINT_64 transferSize = 0;
+			if (admin)
+			{
+				switch (this->DWord0Breakdown.OPC)
+				{
+				case admin::ABORT:
+					break;
+				case admin::ASYNCHRONOUS_EVENT_REQUEST:
+					break;
+				case admin::CREATE_IO_COMPLETION_QUEUE:
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DW10_CreateIoQueue.QSIZE) * sizeof(COMPLETION_QUEUE_ENTRY);
+					break;
+				case admin::CREATE_IO_SUBMISSION_QUEUE:
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DW10_CreateIoQueue.QSIZE) * sizeof(NVME_COMMAND);
+					break;
+				case admin::DELETE_IO_COMPLETION_QUEUE:
+					break;
+				case admin::DELETE_IO_SUBMISSION_QUEUE:
+					break;
+				case admin::DOORBELL_BUFFER_CONFIG:
+					break;
+				case admin::DEVICE_SELF_TEST:
+					break;
+				case admin::DIRECTIVE_RECEIVE:
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord10) * sizeof(UINT_32);
+					break; 
+				case admin::DIRECTIVE_SEND:
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord10) * sizeof(UINT_32);
+					break; 
+				case admin::FIRMWARE_COMMIT:
+					break;
+				case admin::FIRMWARE_IMAGE_DOWNLOAD:
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord10);
+					break;
+				case admin::GET_FEATURES:
+					break; // technically this isn't always true with some optional pages
+				case admin::GET_LOG_PAGE:
+					transferSize = ((UINT_64)(this->DW11_GetLogPage.NUMDU) << 32) + this->DW10_GetLogPage.NUMDL;
+					if (transferSize == (UINT_64)-1)
+					{
+						LOG_INFO("Detected 64-bit overflow on NUMD!");
+						transferSize = 0;
+					}
+					else
+					{
+						transferSize = ONE_BASED_FROM_ZERO_BASED(transferSize);
+					}
+					break;
+				case admin::IDENTIFY:
+					transferSize = identify::sizes::IDENTIFY_SIZE;
+					break;
+				case admin::KEEP_ALIVE:
+					break;
+				case admin::NVME_MI_RECEIVE:
+					break;
+				case admin::NVME_MI_SEND:
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord11) * sizeof(UINT_32);
+					break;
+				case admin::NAMESPACE_ATTACHMENT:
+					transferSize = ns_attachment::sizes::CONTROLLER_LIST_SIZE;
+					break;
+				case admin::NAMESPACE_MANAGEMENT:
+					transferSize = identify::sizes::IDENTIFY_SIZE; // Uses an identify namespace structure;
+					break;
+				case admin::SET_FEATURES:
+					break; // technically this isn't always true with some optional pages
+				case admin::VIRTUALIZATION_MANAGEMENT:
+					break;
+				case admin::FORMAT_NVM:
+					break;
+				case admin::SANITIZE:
+					break;
+				case admin::SECURITY_SEND:
+					transferSize = this->DWord11;
+					break;
+				case admin::SECURITY_RECEIVE:
+					transferSize = this->DWord11;
+					break;
+				default:
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord10) * sizeof(UINT_32);
+					LOG_INFO("Default case for Admin: transferSize = (DW10 + 1) * 4 = " + std::to_string(transferSize));
+				}
+			}
+			else
+			{
+				switch (this->DWord0Breakdown.OPC)
+				{
+				case nvm::FLUSH:
+					break;
+				case nvm::WRITE:
+					ASSERT_IF(sectorSizeInBytes < 512, "Invalid sector size to determine transfer size");
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DW12_IO.NLB) * sectorSizeInBytes;
+					break; // 
+				case nvm::READ:
+					ASSERT_IF(sectorSizeInBytes < 512, "Invalid sector size to determine transfer size");
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DW12_IO.NLB) * sectorSizeInBytes;
+					break; //
+				case nvm::WRITE_UNCORRECTABLE:
+					break;
+				case nvm::COMPARE:
+					ASSERT_IF(sectorSizeInBytes < 512, "Invalid sector size to determine transfer size");
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DW12_IO.NLB) * sectorSizeInBytes;
+					break;
+				case nvm::WRITE_ZEROES:
+					break;
+				case nvm::DATASET_MANAGEMENT:
+					LOG_ERROR("Not supported cmd: DSM");
+					break; //
+				case nvm::RESERVATION_REGISTER:
+					LOG_ERROR("Not supported cmd: RReg");
+					break; //
+				case nvm::RESERVATION_REPORT:
+					LOG_ERROR("Not supported cmd: RRPT");
+					break; //
+				case nvm::RESERVATION_ACQUIRE:
+					LOG_ERROR("Not supported cmd: RACQ");
+					break; //
+				case nvm::RESERVATION_RELEASE:
+					LOG_ERROR("Not supported cmd: RRel");
+					break; // 
+				default:
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord10) * sizeof(UINT_32);
+					LOG_INFO("Default case for NVM: transferSize = (DW10 + 1) * 4 = " + std::to_string(transferSize));
+				}
+			}
+			return transferSize;
+		}
+
 		std::string COMPLETION_QUEUE_ENTRY::toString() const
 		{
 			std::string retStr;
@@ -107,6 +241,5 @@ namespace cnvme
 		{
 			return ((this->SC | this->SCT) == 0);
 		}
-
 	}
 }
