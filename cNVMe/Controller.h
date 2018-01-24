@@ -86,6 +86,12 @@ namespace cnvme
 			/// </summary>
 			void waitForChangeLoop();
 
+			/// <summary>
+			/// Sets the CRAPI-F
+			/// </summary>
+			/// <param name="filePath">path to file</param>
+			void setCommandResponseFilePath(const std::string filePath);
+
 		private:
 
 			/// <summary>
@@ -199,6 +205,16 @@ namespace cnvme
 			std::map<UINT_32, ns::Namespace> getAllocatedNamespaceMap() const;
 
 			/// <summary>
+			/// Will attempt to call the command response api file (CRAPI-F)
+			/// </summary>
+			/// <param name="nvmeCommand">command sent</param>
+			/// <param name="transferData">payload of read/write data</param>
+			/// <param name="completionQueueEntry">completion entry to post back</param>
+			/// <param name="SQID">Submission queue id that sent the command</param>
+			/// <returns>true if CRAPI handled the command</returns>
+			bool handledByCommandResponseApiFile(NVME_COMMAND& nvmeCommand, Payload& transferData, COMPLETION_QUEUE_ENTRY& completionQueueEntry, UINT_16 SQID);
+
+			/// <summary>
 			/// Map from the admin command opcode to the function that processes it
 			/// </summary>
 			static const std::map<UINT_8, NVMeCaller> AdminCommandCallers;
@@ -207,6 +223,11 @@ namespace cnvme
 			/// Map from the NVM command opcode to the function that processes it
 			/// </summary>
 			static const std::map<UINT_8, NVMeCaller> NVMCommandCallers;
+
+			/// <summary>
+			/// File to call for CRAPI (Command Response API)
+			/// </summary>
+			std::string CommandResponseApiFilePath;
 
 			/// <summary>
 			/// Handling for the NVMe Identify Command

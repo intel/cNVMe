@@ -44,6 +44,7 @@ Types.h - A header file for all needed type includes
 #include <list>
 #include <map>
 #include <mutex>
+#include <fstream>
 #include <set>
 #include <string>
 #include <thread>

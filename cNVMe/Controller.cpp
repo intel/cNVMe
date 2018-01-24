@@ -40,6 +40,8 @@ namespace cnvme
 	{
 		Controller::Controller()
 		{
+			this->CommandResponseApiFilePath = "";
+
 			PCIExpressRegisters = new pci::PCIExpressRegisters();
 			PCIExpressRegisters->waitForChangeLoop();
 
@@ -441,6 +443,62 @@ namespace cnvme
 			return tmp;
 		}
 
+		bool Controller::handledByCommandResponseApiFile(NVME_COMMAND& nvmeCommand, Payload& transferData, COMPLETION_QUEUE_ENTRY& completionQueueEntry, UINT_16 SQID)
+		{
+			if (this->CommandResponseApiFilePath.size() != 0)
+			{
+				// get the folder from the file:
+				std::string folderPath = this->CommandResponseApiFilePath.substr(0, this->CommandResponseApiFilePath.find_last_of("\\/"));
+				std::string commandBinPath = folderPath + "/command.bin";
+				std::string dataPayloadBinPath = folderPath + "/data_payload.bin";
+				std::string completionBinPath = folderPath + "/completion.bin";
+
+				// Write command binary
+				// These brackets force the ofstreams to go out of scope and get closed.
+				{
+					std::ofstream commandOfstream(commandBinPath, std::ios::out | std::ios::binary);
+					commandOfstream.write((char*)&nvmeCommand, sizeof(nvmeCommand));
+
+					// Write data binary
+					std::ofstream dataPayloadOfstream(dataPayloadBinPath, std::ios::out | std::ios::binary);
+					dataPayloadOfstream.write((char*)transferData.getBuffer(), transferData.getSize());
+
+					// Write completion binary
+					std::ofstream completionOfstream(completionBinPath, std::ios::out | std::ios::binary);
+					commandOfstream.write((char*)&completionQueueEntry, sizeof(completionQueueEntry));
+				}
+
+				int retCode = system((this->CommandResponseApiFilePath + " " + std::to_string(SQID)).c_str());
+
+				switch (retCode)
+				{
+				case constants::crapi::CRAPI_HANDLED:
+					break;
+				case constants::crapi::CNVME_HANDLED:
+					return false;
+				default:
+					ASSERT("Unknown CRAPI return code: " + std::to_string(retCode));
+				}
+
+				// If we get here then the CRAPI-F handled the command, and returned the correct return code to denote that.
+
+				std::ifstream commandIstream(commandBinPath, std::ios::in | std::ios::binary);
+				commandIstream.read((char*)&nvmeCommand, sizeof(nvmeCommand));
+
+				// Read data binary
+				std::ifstream dataPayloadIstream(dataPayloadBinPath, std::ios::in | std::ios::binary);
+				dataPayloadIstream.read((char*)transferData.getBuffer(), transferData.getSize());
+
+				// Read completion binary
+				std::ifstream completionIstream(completionBinPath, std::ios::in | std::ios::binary);
+				completionIstream.read((char*)&completionQueueEntry, sizeof(completionQueueEntry));
+
+				return true;
+			}
+
+			return false;
+		}
+
 		NVME_CALLER_IMPLEMENTATION(adminIdentify)
 		{
 			UINT_32 memoryPageSize = ControllerRegisters->getMemoryPageSize();
@@ -753,7 +811,7 @@ namespace cnvme
 			{
 				// Make sure we have the namespace.
 				auto nsid = this->NamespaceIdToActiveNamespace.find(command.NSID);
-				
+
 				// If we don't have this namespace fail.
 				if (nsid == this->NamespaceIdToActiveNamespace.end())
 				{
@@ -829,7 +887,7 @@ namespace cnvme
 				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_NAMESPACE_OR_FORMAT;
 				return;
 			}
-			
+
 			// Do we have a PRP?
 			if (command.DPTR.DPTR1)
 			{
@@ -908,6 +966,12 @@ namespace cnvme
 #else
 			checkForChanges();
 #endif
+		}
+
+		void Controller::setCommandResponseFilePath(const std::string filePath)
+		{
+			LOG_INFO("Set CRAPI-F to " + filePath);
+			this->CommandResponseApiFilePath = filePath;
 		}
 
 		const std::map<UINT_8, NVMeCaller> Controller::AdminCommandCallers = {

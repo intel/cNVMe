@@ -229,5 +229,12 @@ namespace cnvme
 				}
 			}
 		}
+	
+		namespace crapi
+		{
+			const UINT_8 CRAPI_HANDLED = 0;
+			const UINT_8 CNVME_HANDLED = 1;
+			const UINT_8 ASSERT_FROM_CRAPI = 9;
+		}
 	}
 }
