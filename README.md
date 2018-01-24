@@ -45,5 +45,5 @@ Note that none of the given files may be resized by the CRAPI-F. The data_payloa
 The Command Response API File is expected to return one of the following status codes to denote 'what happened' and furthermore how cNVMe should proceed.
 All codes that are not supported will lead to a specific assert being raised.
 - 0 - Command Handled by CRAPI-F - cNVMe will use data_payload.bin/completion.bin/command.bin and not process the command via its own logic
-- 1 - Command Handled by cNVMe - cNVMe will process the command entirely (nop from the VUCPF's POV)
+- 1 - Command Handled by cNVMe - cNVMe will process the command entirely (nop from the CRAPI-F's POV)
 - 9 - Command Handled by CRAPI-F - cNVMe shall raise an assert with a message specified in data_payload.bin as ASCII. Be sure to use a trailing NULL character for the message.
