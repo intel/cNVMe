@@ -459,7 +459,7 @@ namespace cnvme
 				// Technically we are limiting the user here if they try to fake IO to fake namespaces... 
 				//  I don't really see a way around that since the driver would have had difficulty calculating a transfer size as well.
 				//   If we can't figure it out, assume its 512 since that is a normal (and small) value.
-				auto &namespaceIdToNamespaceObject = this->NamespaceIdToActiveNamespace.find(nvmeCommand.NSID);
+				auto namespaceIdToNamespaceObject = this->NamespaceIdToActiveNamespace.find(nvmeCommand.NSID);
 				if (namespaceIdToNamespaceObject != this->NamespaceIdToActiveNamespace.end())
 				{
 					auto identifyNamespace = namespaceIdToNamespaceObject->second.getIdentifyNamespaceStructure();
