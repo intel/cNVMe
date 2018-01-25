@@ -115,10 +115,10 @@ namespace cnvme
 					break;
 				case admin::DIRECTIVE_RECEIVE:
 					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord10) * sizeof(UINT_32);
-					break; 
+					break;
 				case admin::DIRECTIVE_SEND:
 					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord10) * sizeof(UINT_32);
-					break; 
+					break;
 				case admin::FIRMWARE_COMMIT:
 					break;
 				case admin::FIRMWARE_IMAGE_DOWNLOAD:
@@ -128,14 +128,14 @@ namespace cnvme
 					break; // technically this isn't always true with some optional pages
 				case admin::GET_LOG_PAGE:
 					transferSize = ((UINT_64)(this->DW11_GetLogPage.NUMDU) << 32) + this->DW10_GetLogPage.NUMDL;
-					if (transferSize == (UINT_64)-1)
+					if (transferSize == ((UINT_64)-1) / sizeof(UINT_32))
 					{
 						LOG_INFO("Detected 64-bit overflow on NUMD!");
 						transferSize = 0;
 					}
 					else
 					{
-						transferSize = ONE_BASED_FROM_ZERO_BASED(transferSize);
+						transferSize = ONE_BASED_FROM_ZERO_BASED(transferSize * sizeof(UINT_32));
 					}
 					break;
 				case admin::IDENTIFY:

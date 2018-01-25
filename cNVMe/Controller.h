@@ -208,11 +208,10 @@ namespace cnvme
 			/// Will attempt to call the command response api file (CRAPI-F)
 			/// </summary>
 			/// <param name="nvmeCommand">command sent</param>
-			/// <param name="transferData">payload of read/write data</param>
 			/// <param name="completionQueueEntry">completion entry to post back</param>
 			/// <param name="SQID">Submission queue id that sent the command</param>
 			/// <returns>true if CRAPI handled the command</returns>
-			bool handledByCommandResponseApiFile(NVME_COMMAND& nvmeCommand, Payload& transferData, COMPLETION_QUEUE_ENTRY& completionQueueEntry, UINT_16 SQID);
+			bool handledByCommandResponseApiFile(NVME_COMMAND& nvmeCommand, COMPLETION_QUEUE_ENTRY& completionQueueEntry, UINT_16 SQID);
 
 			/// <summary>
 			/// Map from the admin command opcode to the function that processes it

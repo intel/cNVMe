@@ -202,61 +202,62 @@ namespace cnvme
 			NVME_COMMAND* command = (NVME_COMMAND*)submissionQueue.getMemoryAddress();  // This is the address of the 64 byte command
 			command += submissionQueue.getHeadPointer();                                // Make sure we get the correct command
 
-			Payload transferPayload;
-			PRP prp;
 			bool shouldWeProcessThisCommand = true;
 			COMPLETION_QUEUE_ENTRY completionQueueEntryToPost = { 0 };
 
-			if (!isValidCommandIdentifier(command->DWord0Breakdown.CID, submissionQueue.getQueueId()))
+			// Allow passing to CRAPI
+			if (!this->handledByCommandResponseApiFile(*command, completionQueueEntryToPost, submissionQueue.getQueueId()))
 			{
-				completionQueueEntryToPost.SC = constants::status::codes::generic::COMMAND_ID_CONFLICT; // Command ID Conflict 
-				completionQueueEntryToPost.DNR = 1;                                                     // Do not retry
-				shouldWeProcessThisCommand = false;                                                     // Do not process this command later on
+				if (!isValidCommandIdentifier(command->DWord0Breakdown.CID, submissionQueue.getQueueId()))
+				{
+					completionQueueEntryToPost.SC = constants::status::codes::generic::COMMAND_ID_CONFLICT; // Command ID Conflict 
+					completionQueueEntryToPost.DNR = 1;                                                     // Do not retry
+					shouldWeProcessThisCommand = false;                                                     // Do not process this command later on
+				}
+
+				LOG_INFO("Controller got a command:\n" + command->toString());
+
+				if (submissionQueue.getQueueId() == ADMIN_QUEUE_ID && shouldWeProcessThisCommand)
+				{
+					LOG_INFO("That was an Admin command!");
+
+					// AdminCommandCallers goes from OpCode to Function to call. 
+					//  All functions to call must have the same parameters and return value (no return since they are voids)
+					auto itr = this->AdminCommandCallers.find(command->DWord0Breakdown.OPC);
+					if (itr != this->AdminCommandCallers.end())
+					{
+						NVMeCaller caller = itr->second;
+						(this->*caller)(*command, completionQueueEntryToPost);
+					}
+					else
+					{
+						// We don't have handling for this command
+						LOG_INFO("Unknown Admin command recv'd by the controller.");
+						completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
+						completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
+					}
+				}
+				else if (shouldWeProcessThisCommand) // NVM Command
+				{
+					LOG_INFO("That was an NVM command!");
+
+					// AdminCommandCallers goes from OpCode to Function to call. 
+					//  All functions to call must have the same parameters and return value (no return since they are voids)
+					auto itr = this->NVMCommandCallers.find(command->DWord0Breakdown.OPC);
+					if (itr != this->NVMCommandCallers.end())
+					{
+						NVMeCaller caller = itr->second;
+						(this->*caller)(*command, completionQueueEntryToPost);
+					}
+					else
+					{
+						// We don't have handling for this command
+						LOG_INFO("Unknown NVM command recv'd by the controller.");
+						completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
+						completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
+					}
+				}
 			}
-
-			LOG_INFO("Controller got a command:\n" + command->toString());
-
-			if (submissionQueue.getQueueId() == ADMIN_QUEUE_ID && shouldWeProcessThisCommand)
-			{
-				LOG_INFO("That was an Admin command!");
-
-				// AdminCommandCallers goes from OpCode to Function to call. 
-				//  All functions to call must have the same parameters and return value (no return since they are voids)
-				auto itr = this->AdminCommandCallers.find(command->DWord0Breakdown.OPC);
-				if (itr != this->AdminCommandCallers.end())
-				{
-					NVMeCaller caller = itr->second;
-					(this->*caller)(*command, completionQueueEntryToPost);
-				}
-				else
-				{
-					// We don't have handling for this command
-					LOG_INFO("Unknown Admin command recv'd by the controller.");
-					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
-					completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
-				}
-			}
-			else if (shouldWeProcessThisCommand) // NVM Command
-			{
-				LOG_INFO("That was an NVM command!");
-
-				// AdminCommandCallers goes from OpCode to Function to call. 
-				//  All functions to call must have the same parameters and return value (no return since they are voids)
-				auto itr = this->NVMCommandCallers.find(command->DWord0Breakdown.OPC);
-				if (itr != this->NVMCommandCallers.end())
-				{
-					NVMeCaller caller = itr->second;
-					(this->*caller)(*command, completionQueueEntryToPost);
-				}
-				else
-				{
-					// We don't have handling for this command
-					LOG_INFO("Unknown NVM command recv'd by the controller.");
-					completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE; // Unsupported Opcode
-					completionQueueEntryToPost.DNR = 1;                                                        // Do not retry
-				}
-			}
-
 			postCompletion(*theCompletionQueue, completionQueueEntryToPost, command);
 		}
 
@@ -443,7 +444,7 @@ namespace cnvme
 			return tmp;
 		}
 
-		bool Controller::handledByCommandResponseApiFile(NVME_COMMAND& nvmeCommand, Payload& transferData, COMPLETION_QUEUE_ENTRY& completionQueueEntry, UINT_16 SQID)
+		bool Controller::handledByCommandResponseApiFile(NVME_COMMAND& nvmeCommand, COMPLETION_QUEUE_ENTRY& completionQueueEntry, UINT_16 SQID)
 		{
 			if (this->CommandResponseApiFilePath.size() != 0)
 			{
@@ -452,6 +453,26 @@ namespace cnvme
 				std::string commandBinPath = folderPath + "/command.bin";
 				std::string dataPayloadBinPath = folderPath + "/data_payload.bin";
 				std::string completionBinPath = folderPath + "/completion.bin";
+
+				UINT_32 assumedSectorSize = DEFAULT_SECTOR_SIZE; // default
+
+				// Technically we are limiting the user here if they try to fake IO to fake namespaces... 
+				//  I don't really see a way around that since the driver would have had difficulty calculating a transfer size as well.
+				//   If we can't figure it out, assume its 512 since that is a normal (and small) value.
+				auto &namespaceIdToNamespaceObject = this->NamespaceIdToActiveNamespace.find(nvmeCommand.NSID);
+				if (namespaceIdToNamespaceObject != this->NamespaceIdToActiveNamespace.end())
+				{
+					auto identifyNamespace = namespaceIdToNamespaceObject->second.getIdentifyNamespaceStructure();
+
+					// calculate sector size per spec
+					assumedSectorSize = (UINT_32)std::pow(2, identifyNamespace.LBAF[identifyNamespace.FLBAS.CurrentLBAFormat].LBADS);
+				}
+
+				UINT_64 transferSizeInBytes = nvmeCommand.getTransferSizeBytes(SQID == ADMIN_QUEUE_ID, assumedSectorSize);
+
+				// grab data from PRPs
+				PRP prps(nvmeCommand.DPTR.DPTR1, nvmeCommand.DPTR.DPTR2, (size_t)transferSizeInBytes, this->getControllerRegisters()->getMemoryPageSize());
+				auto transferData = prps.getPayloadCopy();
 
 				// Write command binary
 				// These brackets force the ofstreams to go out of scope and get closed.
@@ -465,10 +486,13 @@ namespace cnvme
 
 					// Write completion binary
 					std::ofstream completionOfstream(completionBinPath, std::ios::out | std::ios::binary);
-					commandOfstream.write((char*)&completionQueueEntry, sizeof(completionQueueEntry));
+					completionOfstream.write((char*)&completionQueueEntry, sizeof(completionQueueEntry));
 				}
 
 				int retCode = system((this->CommandResponseApiFilePath + " " + std::to_string(SQID)).c_str());
+
+				// Initialize this here to read of we get ASSERT_FROM_CRAPI
+				std::ifstream dataPayloadIstream(dataPayloadBinPath, std::ios::in | std::ios::binary);
 
 				switch (retCode)
 				{
@@ -476,6 +500,9 @@ namespace cnvme
 					break;
 				case constants::crapi::CNVME_HANDLED:
 					return false;
+				case constants::crapi::ASSERT_FROM_CRAPI:
+					dataPayloadIstream.read((char*)transferData.getBuffer(), transferData.getSize());
+					ASSERT("CRAPI ASSERT: " + std::string((char*)transferData.getBuffer(), strnlen((char*)transferData.getBuffer(), transferData.getSize())));
 				default:
 					ASSERT("Unknown CRAPI return code: " + std::to_string(retCode));
 				}
@@ -486,12 +513,14 @@ namespace cnvme
 				commandIstream.read((char*)&nvmeCommand, sizeof(nvmeCommand));
 
 				// Read data binary
-				std::ifstream dataPayloadIstream(dataPayloadBinPath, std::ios::in | std::ios::binary);
 				dataPayloadIstream.read((char*)transferData.getBuffer(), transferData.getSize());
 
 				// Read completion binary
 				std::ifstream completionIstream(completionBinPath, std::ios::in | std::ios::binary);
 				completionIstream.read((char*)&completionQueueEntry, sizeof(completionQueueEntry));
+
+				// Put read-in data into PRPs
+				prps.placePayloadInExistingPRPs(transferData);
 
 				return true;
 			}

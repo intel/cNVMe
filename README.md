@@ -37,8 +37,7 @@ The format for using the API is actually pretty simple. Provide the Controller a
 
 ### Local Files
 Before calling the CRAPI-F, cNVMe will place some files in the local directory for the CRAPI-F's usage:
-- data_payload.bin - A binary file of the transfer data for the command. This file only includes the first memory page worth of data (by default thats 4096 Bytes). If more data is desired for the transfer, the DPTR field of the command can be used. If the DPTR fields are not set for the command, data_payload.bin will be empty. This file may be read back into the PRPs specified by the Submission Queue Entry. In other words, this is the transfer data for the command.
-<Informative data_payload.bin Context> : It's difficult to calculate the size of the data without actually processing the command within the current cNVMe architecture. We know if the DPTR is set, there must at least be one memory page worth of available data.
+- data_payload.bin - A binary file of the transfer data for the command. This file includes the assumed data length for the command based on parameters within the DWords. Sending a command that relies on a namespace size, when the namespace is not attached will result in an assumption of a 512-byte sector size.
 - command.bin - A 64-Byte binary of the raw NVMe command. Note that modifying DPTR incorrectly will lead to inconsistent behavior.
 - completion.bin - A 16-Byte binary of the raw NVMe completion for the command (Note that cNVMe will fill in the proper CID/SQID in the posted Completion Queue Entry).
 

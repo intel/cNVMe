@@ -133,4 +133,15 @@ long SetDebugLogLevel(UINT_8 logLevel)
 	return NO_ERRORS;
 }
 
+long SetCommandResponseProcessingFile(char* filePath, UINT_32 filePathLength)
+{
+	if (staticDriver)
+	{
+		staticDriver->setControllerCommandResponseProcessingFile(std::string(filePath, filePathLength));
+		return NO_ERRORS;
+	}
+
+	return ALREADY_UNINITIALIZED;
+}
+
 #endif // DLL_BUILD
