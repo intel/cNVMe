@@ -13,8 +13,5 @@ build:
   project: cNVMe.sln
   verbosity: minimal
 
-install:
-  - pip install pytest
-
 test_script:
-  - cmd: python -m pytest -s "cNVMe/Helper Scripts/test_cnvme.py"
+  - cmd: test_runner.bat

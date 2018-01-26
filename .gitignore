@@ -248,3 +248,5 @@ ModelManifest.xml
 /Release DLL
 
 **/*.so
+**/*.pyc
+.cache/

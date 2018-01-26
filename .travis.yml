@@ -8,12 +8,13 @@ notifications:
     
 env:
   matrix:
-    - BITNESS=64
-    - BITNESS=32
-    - OUTPUT_TYPE=DLL
-    - OUTPUT_TYPE=EXE
-    - CONFIG_TYPE=Release
-    - CONFIG_TYPE=Debug
+    - BITNESS='64' OUTPUT_TYPE='DLL' CONFIG_TYPE='Release'
+    - BITNESS='64' OUTPUT_TYPE='DLL' CONFIG_TYPE='Debug'
+    - BITNESS='64' OUTPUT_TYPE='EXE' CONFIG_TYPE='Release'
+    - BITNESS='64' OUTPUT_TYPE='EXE' CONFIG_TYPE='Debug'    
+    # No 32 bit DLLs since we can't easily get 32-bit Python to test them on Travis
+    - BITNESS='32' OUTPUT_TYPE='EXE' CONFIG_TYPE='Release'
+    - BITNESS='32' OUTPUT_TYPE='EXE' CONFIG_TYPE='Debug'
 
 before_install:
   - export PATH=$HOME/.local/bin:$PATH
