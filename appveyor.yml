@@ -14,4 +14,4 @@ build:
   verbosity: minimal
 
 test_script:
-  - cmd: "cNVMe/Helper Scripts/test_runner.bat"
+  - cmd: call "cNVMe/Helper Scripts/test_runner.bat"
