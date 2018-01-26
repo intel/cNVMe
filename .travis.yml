@@ -27,7 +27,7 @@ before_script:
   - python build.py -b $BITNESS -c $CONFIG_TYPE -o $OUTPUT_TYPE
   
 script:
-  - python -m pytest -s "Helper Scripts/test_cnvme.py"
+  - python -m pytest -v -s "Helper Scripts/test_cnvme.py"
   
 addons:
   apt:
