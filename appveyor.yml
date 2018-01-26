@@ -1,14 +1,17 @@
 version: 1.0.{build}
 image: Visual Studio 2017
 configuration:
-- Debug
-- Release
+  - Debug
+  - Release
+  - Debug DLL
+  - Release DLL
 platform:
-- x86
-- x64
+  - x86
+  - x64
 clone_depth: 10
 build:
   project: cNVMe.sln
   verbosity: minimal
+
 test_script:
-- cmd: python "cNVMe/Helper Scripts/find_and_run_cnvme.py"
+  - cmd: call "cNVMe/Helper Scripts/test_runner.bat"

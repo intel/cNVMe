@@ -15,16 +15,31 @@ def getExeExtension():
         return 'exe'
     else:
         return 'out'
-        
-if __name__ == '__main__':
+
+def getDllExtension():
+    if os.name == 'nt':
+        return 'dll'
+    else:
+        return 'so'
+
+def getCnvmePath(ext):
     cnvmeTopDir = os.path.abspath(os.path.join(os.path.abspath(__file__), os.pardir, os.pardir, os.pardir)) # up 3 dirs brings us to cNVMe\
     for root, dirs, files in os.walk(cnvmeTopDir):
         for file in files:
             filePath = os.path.join(root, file)
-            if file.startswith('cNVMe') and file.endswith(getExeExtension()):
-                print 'Found cNVMe: %s' % filePath
-                sys.exit(subprocess.call(filePath, shell=True))
-                
-    print 'Couldn\'t find cNVMe'
-    sys.exit(-1) # faillure to find exe
-                
+            if file.startswith('cNVMe') and file.endswith(ext):
+                return filePath
+
+    return False
+
+def findAndRunCnvme():
+    cnvme = getCnvmePath(getExeExtension())
+    if cnvme:
+        print ('Found cNVMe: %s' % cnvme)
+        return subprocess.call(cnvme, shell=True)
+            
+    print ('Couldn\'t find cNVMe executable')
+    return -1 # failure to find exe
+
+if __name__ == '__main__':
+    sys.exit(findAndRunCnvme())
