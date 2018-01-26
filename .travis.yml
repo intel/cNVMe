@@ -13,8 +13,7 @@ env:
     - BITNESS='64' OUTPUT_TYPE='EXE' CONFIG_TYPE='Release'
     - BITNESS='64' OUTPUT_TYPE='EXE' CONFIG_TYPE='Debug'    
     # No 32 bit DLLs since we can't easily get 32-bit Python to test them on Travis
-    - BITNESS='32' OUTPUT_TYPE='EXE' CONFIG_TYPE='Release'
-    - BITNESS='32' OUTPUT_TYPE='EXE' CONFIG_TYPE='Debug'
+    # No 32-bit exes since we would need sudo to install 32-bit libs.
 
 before_install:
   - export PATH=$HOME/.local/bin:$PATH
