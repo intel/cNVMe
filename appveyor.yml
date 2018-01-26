@@ -2,28 +2,12 @@ version: 1.0.{build}
 image: Visual Studio 2017
 configuration:
   - Debug
-  environment:
-    - CONFIG_TYPE: Debug
-    - OUTPUT_TYPE: EXE
   - Release
-  environment:
-    - CONFIG_TYPE: Release
-    - OUTPUT_TYPE: EXE
   - Debug DLL
-  environment:
-    - CONFIG_TYPE: Debug
-    - OUTPUT_TYPE: DLL
   - Release DLL
-  environment:
-    - CONFIG_TYPE: Release
-    - OUTPUT_TYPE: DLL
 platform:
   - x86
-  environment:
-    - BITNESS: 32
   - x64
-  environment:
-    - BITNESS: 64
 clone_depth: 10
 build:
   project: cNVMe.sln
