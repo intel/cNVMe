@@ -489,7 +489,7 @@ namespace cnvme
 					completionOfstream.write((char*)&completionQueueEntry, sizeof(completionQueueEntry));
 				}
 
-				int retCode = system((this->CommandResponseApiFilePath + " " + std::to_string(SQID)).c_str());
+				int retCode = system(("\"" + this->CommandResponseApiFilePath + "\" " + std::to_string(SQID)).c_str());
 
 				// Initialize this here to read of we get ASSERT_FROM_CRAPI
 				std::ifstream dataPayloadIstream(dataPayloadBinPath, std::ios::in | std::ios::binary);
