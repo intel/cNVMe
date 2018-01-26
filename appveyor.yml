@@ -14,4 +14,4 @@ build:
   verbosity: minimal
 
 test_script:
-  - cmd: %comspec% /k "cNVMe/Helper Scripts/test_runner.bat"
+  - cmd: cmd /k "cNVMe/Helper Scripts/test_runner.bat"
