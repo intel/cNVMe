@@ -6,13 +6,14 @@ notifications:
     on_success: never
     on_failure: always
     
-matrix:
-  - BITNESS=64
-  - BITNESS=32
-  - OUTPUT_TYPE=DLL
-  - OUTPUT_TYPE=EXE
-  - CONFIG_TYPE=Release
-  - CONFIG_TYPE=Debug
+env:
+  matrix:
+    - BITNESS=64
+    - BITNESS=32
+    - OUTPUT_TYPE=DLL
+    - OUTPUT_TYPE=EXE
+    - CONFIG_TYPE=Release
+    - CONFIG_TYPE=Debug
 
 before_install:
   - export PATH=$HOME/.local/bin:$PATH
