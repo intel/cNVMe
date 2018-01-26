@@ -164,6 +164,15 @@ namespace cnvme
 							UINT_16 DELETE_QUEUE_RSVD;
 						} DW10_DeleteIoQueue; // Both submission/completion
 
+						struct
+						{
+							UINT_32 LID : 8; // Log Page Identifier
+							UINT_32 LSP : 4; // Log Specific Field
+							UINT_32 GET_LOG_PAGE_DW10_RSVD : 3;
+							UINT_32 RAE : 1; // Retain Async Event
+							UINT_32 NUMDL : 16; // Number of DW Lower
+						} DW10_GetLogPage;
+
 						UINT_32 DWord10; // Command Specific DW10
 					};
 
@@ -184,6 +193,12 @@ namespace cnvme
 							UINT_32 CREATE_IO_SUBMISSION_QUEUE_DW11_RSVD : 13;
 							UINT_32 CQID : 16; // Completion Queue Identifier
 						} DW11_CreateIoSubmissionQueue;
+
+						struct
+						{
+							UINT_32 NUMDU : 16; // Number of DW Upper
+							UINT_32 GET_LOG_PAGE_DW11_RSVD : 16;
+						} DW11_GetLogPage;
 
 						UINT_32 DWord11; // Command Specific DW11
 					};
@@ -207,6 +222,13 @@ namespace cnvme
 			UINT_32 DWord15; // Command Specific DW15
 
 			std::string toString() const;
+
+			/// <summary>
+			/// Returns the assumed transfer size based off the given command's DWs
+			/// </summary>
+			/// <returns>UINT_64 of the transfer size in bytes</returns>
+			UINT_64 getTransferSizeBytes(bool admin, UINT_32 sectorSizeInBytes) const;
+
 		}NVME_COMMAND, *PNVME_COMMAND;
 		static_assert(sizeof(NVME_COMMAND) == 64, "NVME_COMMAND should be 64 byte(s) in size.");
 

@@ -506,6 +506,11 @@ namespace cnvme
 			return true;
 		}
 
+		void Driver::setControllerCommandResponseProcessingFile(std::string filePath)
+		{
+			this->TheController.setCommandResponseFilePath(filePath);
+		}
+
 		UINT_16 Driver::getCommandIdForSubmissionQueueIdViaIncrementIfNeeded(UINT_16 submissionQueueId)
 		{
 			auto entry = this->SubmissionQueueIdToCurrentCommandIdentifiers.find(submissionQueueId);

@@ -28,6 +28,8 @@ Namespace.h - A header file for a cNVMe Namespace
 #include "Command.h"
 #include "Identify.h"
 
+#define DEFAULT_SECTOR_SIZE 512
+
 namespace cnvme
 {
 	namespace ns

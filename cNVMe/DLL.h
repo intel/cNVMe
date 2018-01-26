@@ -85,6 +85,11 @@ extern "C" {
 	/// </summary>
 	EXPORT long SetDebugLogLevel(UINT_8 logLevel);
 
+	/// <summary>
+	/// Sets the CRAPI-F for CRAPI. Note that the passed in char*
+	/// </summary>
+	EXPORT long SetCommandResponseProcessingFile(char* filePath, UINT_32 filePathLength);
+
 #undef EXPORT
 #ifdef __cplusplus
 }

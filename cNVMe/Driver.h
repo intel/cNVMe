@@ -123,6 +123,12 @@ namespace cnvme
 			/// <returns>true on success, False on failure</returns>
 			bool controllerReset();
 
+			/// <summary>
+			/// Used to set the CRAPI-F file for CRAPI
+			/// </summary>
+			/// <param name="filePath">path to the file</param>
+			void setControllerCommandResponseProcessingFile(std::string filePath);
+
 		private:
 			/// <summary>
 			/// The controller that this driver is connected to
