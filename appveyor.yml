@@ -17,4 +17,4 @@ install:
   - pip install pytest
 
 test_script:
-  - cmd: python -m pytest "cNVMe/Helper Scripts/test_cnvme.py"
+  - cmd: python -m pytest -s "cNVMe/Helper Scripts/test_cnvme.py"
