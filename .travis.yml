@@ -6,13 +6,24 @@ notifications:
     on_success: never
     on_failure: always
     
+matrix:
+  - BITNESS=64
+  - BITNESS=32
+  - OUTPUT_TYPE=DLL
+  - OUTPUT_TYPE=EXE
+  - CONFIG_TYPE=Release
+  - CONFIG_TYPE=Debug
+
+before_install:
+  - pip install pytest
+
 before_script:
   - sudo unlink /usr/bin/g++ && sudo ln -s /usr/bin/g++-5 /usr/bin/g++
   - cd cNVMe
-  - python build.py
+  - python build.py -b $BITNESS -c $CONFIG_TYPE -o OUTPUT_TYPE
   
 script:
-  - python "Helper Scripts/find_and_run_cnvme.py"
+  - python -m pytest "Helper Scripts/test_cnvme.py"
   
 addons:
   apt:
