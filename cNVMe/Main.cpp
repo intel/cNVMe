@@ -150,6 +150,28 @@ void sendDeleteIOCompletionQueue(Driver &driver, UINT_16 QID)
 	ASSERT_IF(statusCode != 0, "Delete IO Completion Queue Failed!");
 }
 
+void sendFirmwareImageDownload(Driver &driver, UINT_32 DWOffset, Payload& data)
+{
+	Payload buffer(8192);
+
+	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer.getBuffer();
+	d->Timeout = 6000;
+	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::FIRMWARE_IMAGE_DOWNLOAD;
+
+	ASSERT_IF(data.getSize() >= 4, "The given payload must be at least 4 bytes in size to send down");
+
+	d->Command.DWord10 = (UINT_32)ceill(((float)data.getSize()) / sizeof(UINT_32)) - 1;
+	d->Command.DWord11 = DWOffset;
+	d->TransferDataSize = data.getSize();
+	memcpy_s(&d->TransferData, buffer.getSize() - sizeof(DRIVER_COMMAND), data.getBuffer(), data.getSize());
+	d->TransferDataDirection = WRITE;
+
+	driver.sendCommand((UINT_8*)d, buffer.getSize());
+
+	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
+
+	ASSERT_IF(statusCode != 0, "Firmware Image Download Failed!");
+}
 
 int main()
 {

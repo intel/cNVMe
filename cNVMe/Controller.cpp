@@ -391,6 +391,10 @@ namespace cnvme
 
 			// Optional Commands Supported
 			this->IdentifyController.FormatNVMSupported = true;
+			this->IdentifyController.FirmwareDownloadAndCommitSupported = true;
+
+			// Optional Features Supported
+			this->IdentifyController.FirmwareActivationWithoutResetSupported = true;
 
 			// Also I'm not setting the power state to anything. It lets us get away with all 0s for not reported. Wow.
 		}
@@ -806,6 +810,51 @@ namespace cnvme
 			this->SubmissionQueueIdToCommandIdentifiers[command.DW10_DeleteIoQueue.QID].clear();
 		}
 
+		NVME_CALLER_IMPLEMENTATION(adminFirmwareImageDownload)
+		{
+			if (!this->IdentifyController.FirmwareDownloadAndCommitSupported)
+			{
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE;
+				completionQueueEntryToPost.DNR = 1;
+				return;
+			}
+
+			UINT_32 minOffsetInDwords = command.DWord11;
+			UINT_64 transferBytes = command.getTransferSizeBytes(true, 0);
+
+			ASSERT_IF(transferBytes % sizeof(UINT_32) != 0, "transferBytes must be divisible by 4 for FW Image Download");
+
+			UINT_64 maxOffsetInDwords = minOffsetInDwords + (transferBytes / sizeof(UINT_32));
+
+			// Clear all cached data on an offset of 0.
+			if (minOffsetInDwords == 0)
+			{
+				this->FirmwareImageDWordOffsetToData.clear();
+			}
+
+			// Check for overlapping range. 
+			for (auto &fwDwOffsetToPayload : this->FirmwareImageDWordOffsetToData)
+			{
+				auto &dWordOffset = fwDwOffsetToPayload.first;
+				auto &payload = fwDwOffsetToPayload.second;
+
+				UINT_64 minCachedOffset = dWordOffset;
+				UINT_64 maxCachedOffset = dWordOffset + (payload.getSize() / sizeof(UINT_32));
+
+				// If the range overlaps, fail the command now.
+				if ((minOffsetInDwords > minCachedOffset && minOffsetInDwords < maxCachedOffset) || (maxOffsetInDwords < maxCachedOffset && maxOffsetInDwords > minCachedOffset))
+				{
+					completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+					completionQueueEntryToPost.SC = constants::status::codes::specific::OVERLAPPING_RANGE;
+					completionQueueEntryToPost.DNR = 1;
+					return;
+				}
+			}
+
+			PRP prps(command.DPTR.DPTR1, command.DPTR.DPTR2, (UINT_32)transferBytes, this->getControllerRegisters()->getMemoryPageSize());
+			this->FirmwareImageDWordOffsetToData[minOffsetInDwords] = prps.getPayloadCopy();
+		}
+
 		NVME_CALLER_IMPLEMENTATION(adminFormatNvm)
 		{
 			// Make sure this optional command is supported
@@ -986,6 +1035,9 @@ namespace cnvme
 
 			// Clear phase tags.
 			this->QueueToPhaseTag.clear();
+
+			// Clear FW Image Download Cache
+			this->FirmwareImageDWordOffsetToData.clear();
 		}
 
 		void Controller::waitForChangeLoop()
@@ -1008,6 +1060,7 @@ namespace cnvme
 			{ cnvme::constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminCreateIoSubmissionQueue},
 			{ cnvme::constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE, &cnvme::controller::Controller::adminDeleteIoCompletionQueue},
 			{ cnvme::constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminDeleteIoSubmissionQueue},
+			{ cnvme::constants::opcodes::admin::FIRMWARE_IMAGE_DOWNLOAD, &cnvme::controller::Controller::adminFirmwareImageDownload},
 			{ cnvme::constants::opcodes::admin::FORMAT_NVM, &cnvme::controller::Controller::adminFormatNvm},
 			{ cnvme::constants::opcodes::admin::IDENTIFY, &cnvme::controller::Controller::adminIdentify},
 			{ cnvme::constants::opcodes::admin::KEEP_ALIVE, &cnvme::controller::Controller::adminKeepAlive}

@@ -214,6 +214,11 @@ namespace cnvme
 			bool handledByCommandResponseApiFile(NVME_COMMAND& nvmeCommand, COMPLETION_QUEUE_ENTRY& completionQueueEntry, UINT_16 SQID);
 
 			/// <summary>
+			/// Used to store the data downloaded by Firmware Image Download
+			/// </summary>
+			std::map<UINT_32, Payload> FirmwareImageDWordOffsetToData;
+
+			/// <summary>
 			/// Map from the admin command opcode to the function that processes it
 			/// </summary>
 			static const std::map<UINT_8, NVMeCaller> AdminCommandCallers;
@@ -252,6 +257,11 @@ namespace cnvme
 			/// Handling for the NVMe Delete IO Submission Queue Command
 			/// </summary>
 			NVME_CALLER_HEADER(adminDeleteIoSubmissionQueue);
+
+			/// <summary>
+			/// Handling for the NVMe Firmware Image Download Command
+			/// </summary>
+			NVME_CALLER_HEADER(adminFirmwareImageDownload);
 
 			/// <summary>
 			/// Handling for the NVM Format command
