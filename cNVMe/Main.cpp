@@ -196,7 +196,10 @@ int main()
 	// This is testing code.
 	LOG_SET_LEVEL(2);
 
-//	Driver driver;
+	//Driver driver;
+	//sendFirmwareImageDownload(driver, 0, tests::helpers::getFirmwareImage("TESTFW02", 4096));
+	//sendFirmwareCommit(driver, 0b001, 7);
+	//driver.controllerReset();
 
 	LOG_SET_LEVEL(1);
 

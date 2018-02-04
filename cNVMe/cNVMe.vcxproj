@@ -246,6 +246,7 @@
     <ClInclude Include="ControllerRegisters.h" />
     <ClInclude Include="DLL.h" />
     <ClInclude Include="Driver.h" />
+    <ClInclude Include="LogPages.h" />
     <ClInclude Include="Identify.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="LoopingThread.h" />

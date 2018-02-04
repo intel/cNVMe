@@ -62,15 +62,11 @@ namespace cnvme
 			// Create default namespace
 			this->NamespaceIdToActiveNamespace[1] = ns::Namespace(DEFAULT_NAMESPACE_SIZE);
 
-			// Don't change running FW on reset
-			this->ActiveFirmwareSlot = 1;
-			this->FirmwareSlotToActivateOnReset = 0;
-
-			// Create a 'Firmware Image' to save for the default firmware slot.
-			Payload fwPayload;
-			fwPayload.append(Payload((UINT_8*)FIRMWARE_EYE_CATCHER, sizeof(FIRMWARE_EYE_CATCHER)));
-			fwPayload.append(Payload((UINT_8*)DEFAULT_FIRMWARE, sizeof(DEFAULT_FIRMWARE)));
-			this->FirmwareSlotToFirmwareImagePayload[this->ActiveFirmwareSlot] = fwPayload;
+			// Setup firmware slot info
+			this->FirmwareSlotInfo = { 0 };
+			this->FirmwareSlotInfo.AFI.ActiveFirmwareSlot = 1;
+			memcpy_s(&this->FirmwareSlotInfo.FRS[ZERO_BASED_FROM_ONE_BASED(this->FirmwareSlotInfo.AFI.ActiveFirmwareSlot)],
+				sizeof(this->FirmwareSlotInfo.FRS[ZERO_BASED_FROM_ONE_BASED(this->FirmwareSlotInfo.AFI.ActiveFirmwareSlot)]), DEFAULT_FIRMWARE, strlen(DEFAULT_FIRMWARE));
 		}
 
 		Controller::~Controller()
@@ -545,22 +541,13 @@ namespace cnvme
 
 		void Controller::replaceRunningFirmwareWithOneInSlot(UINT_8 firmwareSlot)
 		{
-			auto fwSlotToPayload = this->FirmwareSlotToFirmwareImagePayload.find(firmwareSlot);
-			ASSERT_IF(fwSlotToPayload == this->FirmwareSlotToFirmwareImagePayload.end(), "Attempting to replace running FW with invalid FW Slot");
-
-			auto &fwPayload = fwSlotToPayload->second;
-
-			ASSERT_IF(memcmp(fwPayload.getBuffer(), FIRMWARE_EYE_CATCHER, sizeof(FIRMWARE_EYE_CATCHER)) != 0, "Attempting to activate an invalid FW image (missing eye catcher). We commited the image without verifying the eye catcher.");
-			
-			UINT_8 firmwareNameSize = sizeof(identify::structures::IDENTIFY_CONTROLLER::FR);
-			ASSERT_IF(fwPayload.getSize() < firmwareNameSize + sizeof(FIRMWARE_EYE_CATCHER), "FW Payload is too small for it to fit the firmware name and eye catcher");
+			this->FirmwareSlotInfo.AFI.ActiveFirmwareSlot = firmwareSlot;
+			this->FirmwareSlotInfo.AFI.FirmwareSlotForNextControllerReset = 0;
 
 			// Copy the firmware name/revision to IC.FR since we are activating this one.
 			// The firmware revision/name is the last 8 bytes of the binary data.
-			std::string firmwareName((char*)fwPayload.getBuffer() + (fwPayload.getSize() - firmwareNameSize), firmwareNameSize);
-			memcpy_s(&this->IdentifyController.FR, sizeof(this->IdentifyController.FR), firmwareName.c_str(), firmwareName.size());
-
-			this->ActiveFirmwareSlot = firmwareSlot;
+			std::string firmwareRevision(this->FirmwareSlotInfo.FRS[ZERO_BASED_FROM_ONE_BASED(firmwareSlot)], sizeof(this->FirmwareSlotInfo.FRS[ZERO_BASED_FROM_ONE_BASED(firmwareSlot)]));
+			memcpy_s(&this->IdentifyController.FR, sizeof(this->IdentifyController.FR), firmwareRevision.c_str(), firmwareRevision.size());
 		}
 
 		NVME_CALLER_IMPLEMENTATION(adminIdentify)
@@ -864,7 +851,7 @@ namespace cnvme
 
 			if (command.DW10_FirmwareCommit.CA == REPLACE_IN_SLOT_NO_ACTIVATE || command.DW10_FirmwareCommit.CA == REPLACE_IN_SLOT_AND_ACTIVATE_ON_RESET)
 			{
-				UINT_32 currentDwOffset = 0;
+				UINT_64 currentDwOffset = 0;
 				Payload completeFirmwareBinary;
 
 				// Check if this->FirmwareImageDWordOffsetToData is valid and contiguous.
@@ -890,19 +877,21 @@ namespace cnvme
 					return;
 				}
 
-				this->FirmwareSlotToFirmwareImagePayload[firmwareSlot] = completeFirmwareBinary;
+				// Copy firmware name to FirmwareSlotInfo
+				memcpy_s(this->FirmwareSlotInfo.FRS[ZERO_BASED_FROM_ONE_BASED(firmwareSlot)], sizeof(this->FirmwareSlotInfo.FRS[ZERO_BASED_FROM_ONE_BASED(firmwareSlot)]),
+					completeFirmwareBinary.getBuffer() + completeFirmwareBinary.getSize() - sizeof(identify::structures::IDENTIFY_CONTROLLER::FR), sizeof(identify::structures::IDENTIFY_CONTROLLER::FR));
 
 				if (command.DW10_FirmwareCommit.CA == REPLACE_IN_SLOT_AND_ACTIVATE_ON_RESET)
 				{
 					LOG_INFO("Updating to (new data in) slot " + std::to_string(firmwareSlot) + " after next reset");
-					this->FirmwareSlotToActivateOnReset = firmwareSlot;
+					this->FirmwareSlotInfo.AFI.FirmwareSlotForNextControllerReset = firmwareSlot;
 
 					// Note: Is this supposed to return fw activation requires reset? I don't think so since the intent is to setup to activate on reset.
 				}
 			}
 			else if (command.DW10_FirmwareCommit.CA == ACTIVATE_GIVEN_SLOT_NOW)
 			{
-				if (this->FirmwareSlotToFirmwareImagePayload.find(firmwareSlot) == this->FirmwareSlotToFirmwareImagePayload.end())
+				if (*(UINT_64*)&this->FirmwareSlotInfo.FRS[ZERO_BASED_FROM_ONE_BASED(firmwareSlot)] == 0)
 				{
 					LOG_INFO("Attempted to activate a FW slot without a downloaded FW");
 					completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
@@ -918,7 +907,7 @@ namespace cnvme
 				else
 				{
 					LOG_INFO("Updating to slot " + std::to_string(firmwareSlot) + " after next reset");
-					this->FirmwareSlotToActivateOnReset = firmwareSlot;
+					this->FirmwareSlotInfo.AFI.FirmwareSlotForNextControllerReset = firmwareSlot;
 					completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
 					completionQueueEntryToPost.SC = constants::status::codes::specific::FIRMWARE_ACTIVATION_REQUIRES_RESET;
 					return;
@@ -926,7 +915,7 @@ namespace cnvme
 			}
 			else if (command.DW10_FirmwareCommit.CA == ACTIVATE_GIVEN_SLOT_ON_RESET)
 			{
-				if (this->FirmwareSlotToFirmwareImagePayload.find(firmwareSlot) == this->FirmwareSlotToFirmwareImagePayload.end())
+				if (*(UINT_64*)&this->FirmwareSlotInfo.FRS[ZERO_BASED_FROM_ONE_BASED(firmwareSlot)] == 0)
 				{
 					LOG_INFO("Attempted to activate a FW slot without a downloaded FW");
 					completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
@@ -935,7 +924,7 @@ namespace cnvme
 				}
 
 				LOG_INFO("Updating to slot " + std::to_string(firmwareSlot) + " after next reset");
-				this->FirmwareSlotToActivateOnReset = firmwareSlot;
+				this->FirmwareSlotInfo.AFI.FirmwareSlotForNextControllerReset = firmwareSlot;
 
 				// Note: Is this supposed to return fw activation requires reset? I don't think so since the intent is to setup to activate on reset.
 			}
@@ -1196,10 +1185,9 @@ namespace cnvme
 			this->FirmwareImageDWordOffsetToData.clear();
 
 			// If a FW slot is given to update to on reset, do it now.
-			if (this->FirmwareSlotToActivateOnReset)
+			if (this->FirmwareSlotInfo.AFI.FirmwareSlotForNextControllerReset)
 			{
-				this->replaceRunningFirmwareWithOneInSlot(this->FirmwareSlotToActivateOnReset);
-				this->FirmwareSlotToActivateOnReset = 0;
+				this->replaceRunningFirmwareWithOneInSlot(this->FirmwareSlotInfo.AFI.FirmwareSlotForNextControllerReset);
 			}
 		}
 

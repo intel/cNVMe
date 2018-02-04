@@ -28,6 +28,7 @@ Controller.h - A header file for the NVMe Controller
 #include "Command.h"
 #include "ControllerRegisters.h"
 #include "Identify.h"
+#include "LogPages.h"
 #include "Namespace.h"
 #include "PCIe.h"
 #include "Types.h"
@@ -226,11 +227,6 @@ namespace cnvme
 			std::map<UINT_32, Payload> FirmwareImageDWordOffsetToData;
 
 			/// <summary>
-			/// Used to store FW images in multiple slots
-			/// </summary>
-			std::map<UINT_8, Payload> FirmwareSlotToFirmwareImagePayload;
-
-			/// <summary>
 			/// Map from the admin command opcode to the function that processes it
 			/// </summary>
 			static const std::map<UINT_8, NVMeCaller> AdminCommandCallers;
@@ -246,14 +242,9 @@ namespace cnvme
 			std::string CommandResponseApiFilePath;
 
 			/// <summary>
-			/// The FW slot to activate on reset (if 0, don't change FW)
+			/// Holds info for LID=3 / Firmware Slot Info
 			/// </summary>
-			UINT_8 FirmwareSlotToActivateOnReset;
-
-			/// <summary>
-			/// The currently active Firmware Slot
-			/// </summary>
-			UINT_8 ActiveFirmwareSlot;
+			log_pages::FIRMWARE_SLOT_INFO FirmwareSlotInfo;
 
 			/// <summary>
 			/// Handling for the NVMe Identify Command
