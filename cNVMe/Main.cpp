@@ -162,7 +162,7 @@ void sendFirmwareImageDownload(Driver &driver, UINT_32 DWOffset, Payload& data)
 
 	d->Command.DWord10 = (UINT_32)ceill(((float)data.getSize()) / sizeof(UINT_32)) - 1;
 	d->Command.DWord11 = DWOffset;
-	d->TransferDataSize = data.getSize();
+	d->TransferDataSize = (UINT_32)data.getSize();
 	memcpy_s(&d->TransferData, buffer.getSize() - sizeof(DRIVER_COMMAND), data.getBuffer(), data.getSize());
 	d->TransferDataDirection = WRITE;
 
