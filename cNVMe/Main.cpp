@@ -158,7 +158,7 @@ void sendFirmwareImageDownload(Driver &driver, UINT_32 DWOffset, Payload& data)
 	d->Timeout = 6000;
 	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::FIRMWARE_IMAGE_DOWNLOAD;
 
-	ASSERT_IF(data.getSize() >= 4, "The given payload must be at least 4 bytes in size to send down");
+	ASSERT_IF(data.getSize() < 4, "The given payload must be at least 4 bytes in size to send down");
 
 	d->Command.DWord10 = (UINT_32)ceill(((float)data.getSize()) / sizeof(UINT_32)) - 1;
 	d->Command.DWord11 = DWOffset;

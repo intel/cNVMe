@@ -211,6 +211,16 @@ namespace cnvme
 				}
 			}
 
+			namespace fw_download
+			{
+				namespace fwug
+				{
+					const UINT_8 NO_INFO = 0x00;
+					const UINT_8 NO_RESTRICTION = 0xFF;
+					const UINT_32 FW_UPDATE_GRANULARITY_UNIT = 4096; // bytes
+				}
+			}
+
 			namespace format
 			{
 				namespace ses

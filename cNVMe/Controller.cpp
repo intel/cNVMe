@@ -826,6 +826,25 @@ namespace cnvme
 
 			UINT_64 maxOffsetInDwords = minOffsetInDwords + (transferBytes / sizeof(UINT_32));
 
+			// Check to see if we should check for a granularity in the data transfer size
+			using namespace constants::commands::fw_download::fwug;
+			if (this->IdentifyController.FWUG != NO_INFO && this->IdentifyController.FWUG != NO_RESTRICTION)
+			{
+				UINT_64 fwUpdateGranularityBytes = FW_UPDATE_GRANULARITY_UNIT * this->IdentifyController.FWUG;
+
+				ASSERT_IF(fwUpdateGranularityBytes == 0, "The calculated firmware update granularity cannot be 0!");
+
+				if (transferBytes % fwUpdateGranularityBytes != 0)
+				{
+					LOG_INFO("Detected a FW update granularity violation!");
+					// It seems weird to me that a FWUG violation leads to an overlapping range error. Though that's what Figure 81 of NVMe 1.3 says.
+					completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+					completionQueueEntryToPost.SC = constants::status::codes::specific::OVERLAPPING_RANGE;
+					completionQueueEntryToPost.DNR = 1;
+					return;
+				}
+			}
+
 			// Clear all cached data on an offset of 0.
 			if (minOffsetInDwords == 0)
 			{
