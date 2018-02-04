@@ -63,6 +63,11 @@ namespace cnvme
 			/// Fills a payload with random data
 			/// </summary>
 			void randomizePayload(Payload &payload);
+
+			/// <summary>
+			/// Gets a firmware image binary with proper eye catcher and a given firmware revision. The file matches the give size.
+			/// </summary>
+			Payload getFirmwareImage(std::string firmwareRevision, size_t fileSizeInBytes);
 		}
 
 		namespace general

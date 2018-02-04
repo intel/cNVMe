@@ -59,8 +59,18 @@ namespace cnvme
 			memset(&this->IdentifyController, 0, sizeof(this->IdentifyController));
 			resetIdentifyController();
 
-			// create default namespace
+			// Create default namespace
 			this->NamespaceIdToActiveNamespace[1] = ns::Namespace(DEFAULT_NAMESPACE_SIZE);
+
+			// Don't change running FW on reset
+			this->ActiveFirmwareSlot = 1;
+			this->FirmwareSlotToActivateOnReset = 0;
+
+			// Create a 'Firmware Image' to save for the default firmware slot.
+			Payload fwPayload;
+			fwPayload.append(Payload((UINT_8*)FIRMWARE_EYE_CATCHER, sizeof(FIRMWARE_EYE_CATCHER)));
+			fwPayload.append(Payload((UINT_8*)DEFAULT_FIRMWARE, sizeof(DEFAULT_FIRMWARE)));
+			this->FirmwareSlotToFirmwareImagePayload[this->ActiveFirmwareSlot] = fwPayload;
 		}
 
 		Controller::~Controller()
@@ -395,6 +405,7 @@ namespace cnvme
 
 			// Optional Features Supported
 			this->IdentifyController.FirmwareActivationWithoutResetSupported = true;
+			this->IdentifyController.NumberOfFirmwareSlots = constants::commands::identify::sizes::MAX_FW_SLOTS; // Support 7 FW slots
 
 			// Also I'm not setting the power state to anything. It lets us get away with all 0s for not reported. Wow.
 		}
@@ -530,6 +541,26 @@ namespace cnvme
 			}
 
 			return false;
+		}
+
+		void Controller::replaceRunningFirmwareWithOneInSlot(UINT_8 firmwareSlot)
+		{
+			auto fwSlotToPayload = this->FirmwareSlotToFirmwareImagePayload.find(firmwareSlot);
+			ASSERT_IF(fwSlotToPayload == this->FirmwareSlotToFirmwareImagePayload.end(), "Attempting to replace running FW with invalid FW Slot");
+
+			auto &fwPayload = fwSlotToPayload->second;
+
+			ASSERT_IF(memcmp(fwPayload.getBuffer(), FIRMWARE_EYE_CATCHER, sizeof(FIRMWARE_EYE_CATCHER)) != 0, "Attempting to activate an invalid FW image (missing eye catcher). We commited the image without verifying the eye catcher.");
+			
+			UINT_8 firmwareNameSize = sizeof(identify::structures::IDENTIFY_CONTROLLER::FR);
+			ASSERT_IF(fwPayload.getSize() < firmwareNameSize + sizeof(FIRMWARE_EYE_CATCHER), "FW Payload is too small for it to fit the firmware name and eye catcher");
+
+			// Copy the firmware name/revision to IC.FR since we are activating this one.
+			// The firmware revision/name is the last 8 bytes of the binary data.
+			std::string firmwareName((char*)fwPayload.getBuffer() + (fwPayload.getSize() - firmwareNameSize), firmwareNameSize);
+			memcpy_s(&this->IdentifyController.FR, sizeof(this->IdentifyController.FR), firmwareName.c_str(), firmwareName.size());
+
+			this->ActiveFirmwareSlot = firmwareSlot;
 		}
 
 		NVME_CALLER_IMPLEMENTATION(adminIdentify)
@@ -810,6 +841,112 @@ namespace cnvme
 			this->SubmissionQueueIdToCommandIdentifiers[command.DW10_DeleteIoQueue.QID].clear();
 		}
 
+		NVME_CALLER_IMPLEMENTATION(adminFirmwareCommit)
+		{
+			if (!this->IdentifyController.FirmwareDownloadAndCommitSupported)
+			{
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_COMMAND_OPCODE;
+				completionQueueEntryToPost.DNR = 1;
+				return;
+			}
+
+			using namespace constants::commands::fw_commit::commit_action;
+
+			if (command.DW10_FirmwareCommit.FS > this->IdentifyController.NumberOfFirmwareSlots)
+			{
+				completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+				completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_FIRMWARE_SLOT;
+				completionQueueEntryToPost.DNR = 1;
+				return;
+			}
+			
+			UINT_8 firmwareSlot = std::max((UINT_32)1, command.DW10_FirmwareCommit.FS); // If we get a slot of 0, we chose a slot... so we pick 1.
+
+			if (command.DW10_FirmwareCommit.CA == REPLACE_IN_SLOT_NO_ACTIVATE || command.DW10_FirmwareCommit.CA == REPLACE_IN_SLOT_AND_ACTIVATE_ON_RESET)
+			{
+				UINT_32 currentDwOffset = 0;
+				Payload completeFirmwareBinary;
+
+				// Check if this->FirmwareImageDWordOffsetToData is valid and contiguous.
+				for (auto &fwDwOffsetToData : this->FirmwareImageDWordOffsetToData)
+				{
+					if (fwDwOffsetToData.first != currentDwOffset)
+					{
+						LOG_INFO("Attempted to commit a FW to a FW slot without a contiguous FW binary");
+						completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+						completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_FIRMWARE_IMAGE;
+						return;
+					}
+					currentDwOffset += fwDwOffsetToData.second.getSize() * sizeof(UINT_32);
+					completeFirmwareBinary.append(fwDwOffsetToData.second);
+				}
+
+				if (completeFirmwareBinary.getSize() <  (sizeof(identify::structures::IDENTIFY_CONTROLLER::FR) + sizeof(FIRMWARE_EYE_CATCHER)) ||
+					memcmp(completeFirmwareBinary.getBuffer(), FIRMWARE_EYE_CATCHER, sizeof(FIRMWARE_EYE_CATCHER) != 0))
+				{
+					LOG_INFO("Attempt to commit a FW to a slot with an invalid FW buffer");
+					completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+					completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_FIRMWARE_IMAGE;
+					return;
+				}
+
+				this->FirmwareSlotToFirmwareImagePayload[firmwareSlot] = completeFirmwareBinary;
+
+				if (command.DW10_FirmwareCommit.CA == REPLACE_IN_SLOT_AND_ACTIVATE_ON_RESET)
+				{
+					LOG_INFO("Updating to (new data in) slot " + std::to_string(firmwareSlot) + " after next reset");
+					this->FirmwareSlotToActivateOnReset = firmwareSlot;
+
+					// Note: Is this supposed to return fw activation requires reset? I don't think so since the intent is to setup to activate on reset.
+				}
+			}
+			else if (command.DW10_FirmwareCommit.CA == ACTIVATE_GIVEN_SLOT_NOW)
+			{
+				if (this->FirmwareSlotToFirmwareImagePayload.find(firmwareSlot) == this->FirmwareSlotToFirmwareImagePayload.end())
+				{
+					LOG_INFO("Attempted to activate a FW slot without a downloaded FW");
+					completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+					completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_FIRMWARE_IMAGE;
+					return;
+				}
+
+				if (this->IdentifyController.FirmwareActivationWithoutResetSupported)
+				{
+					LOG_INFO("Updating to slot " + std::to_string(firmwareSlot) + " now!");
+					this->replaceRunningFirmwareWithOneInSlot(firmwareSlot);
+				}
+				else
+				{
+					LOG_INFO("Updating to slot " + std::to_string(firmwareSlot) + " after next reset");
+					this->FirmwareSlotToActivateOnReset = firmwareSlot;
+					completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+					completionQueueEntryToPost.SC = constants::status::codes::specific::FIRMWARE_ACTIVATION_REQUIRES_RESET;
+					return;
+				}
+			}
+			else if (command.DW10_FirmwareCommit.CA == ACTIVATE_GIVEN_SLOT_ON_RESET)
+			{
+				if (this->FirmwareSlotToFirmwareImagePayload.find(firmwareSlot) == this->FirmwareSlotToFirmwareImagePayload.end())
+				{
+					LOG_INFO("Attempted to activate a FW slot without a downloaded FW");
+					completionQueueEntryToPost.SCT = constants::status::types::COMMAND_SPECIFIC;
+					completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_FIRMWARE_IMAGE;
+					return;
+				}
+
+				LOG_INFO("Updating to slot " + std::to_string(firmwareSlot) + " after next reset");
+				this->FirmwareSlotToActivateOnReset = firmwareSlot;
+
+				// Note: Is this supposed to return fw activation requires reset? I don't think so since the intent is to setup to activate on reset.
+			}
+			else
+			{
+				// Invalid or unsupported commit action
+				completionQueueEntryToPost.SC = constants::status::codes::generic::INVALID_FIELD_IN_COMMAND;
+				completionQueueEntryToPost.DNR = 1;
+			}
+		}
+
 		NVME_CALLER_IMPLEMENTATION(adminFirmwareImageDownload)
 		{
 			if (!this->IdentifyController.FirmwareDownloadAndCommitSupported)
@@ -1057,6 +1194,13 @@ namespace cnvme
 
 			// Clear FW Image Download Cache
 			this->FirmwareImageDWordOffsetToData.clear();
+
+			// If a FW slot is given to update to on reset, do it now.
+			if (this->FirmwareSlotToActivateOnReset)
+			{
+				this->replaceRunningFirmwareWithOneInSlot(this->FirmwareSlotToActivateOnReset);
+				this->FirmwareSlotToActivateOnReset = 0;
+			}
 		}
 
 		void Controller::waitForChangeLoop()
@@ -1079,6 +1223,7 @@ namespace cnvme
 			{ cnvme::constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminCreateIoSubmissionQueue},
 			{ cnvme::constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE, &cnvme::controller::Controller::adminDeleteIoCompletionQueue},
 			{ cnvme::constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE, &cnvme::controller::Controller::adminDeleteIoSubmissionQueue},
+			{ cnvme::constants::opcodes::admin::FIRMWARE_COMMIT, &cnvme::controller::Controller::adminFirmwareCommit},
 			{ cnvme::constants::opcodes::admin::FIRMWARE_IMAGE_DOWNLOAD, &cnvme::controller::Controller::adminFirmwareImageDownload},
 			{ cnvme::constants::opcodes::admin::FORMAT_NVM, &cnvme::controller::Controller::adminFormatNvm},
 			{ cnvme::constants::opcodes::admin::IDENTIFY, &cnvme::controller::Controller::adminIdentify},

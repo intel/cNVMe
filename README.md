@@ -10,6 +10,8 @@ This is a WIP simulation of the protocol-layer of an NVMe Memory Device. The goa
 * Delete IO Completion Queue
 * Delete IO Submission Queue
 * Delete IO Submission Queue
+* Firmware Commit
+* Firmware Image Download
 * Format NVM
 * Identify (Namespace, Controller, Namespace Attached List, Namespace Active List)
 * Keep Alive
@@ -24,6 +26,11 @@ Linux Build Status: [![Build Status](https://travis-ci.org/intel/cNVMe.svg?branc
 Windows Build Status: [![Build status](https://ci.appveyor.com/api/projects/status/svfanibbsfm94d4f/branch/master?svg=true)](https://ci.appveyor.com/project/csm10495/cnvme-v65dl/branch/master)
 
 The original (and now legacy) repository for this project can be found here, for historical purposes: [csm10495/cNVMe](https://github.com/csm10495/cNVMe)
+
+# Firmware Images
+cNVMe supports Firmware Image Download and Firmware Commit. Certain characteristics make up valid cNVMe firmware images:
+* The first 5 bytes of the firmware image must be "cNVMe" in ASCII text. The controller will return a status code of Invalid Firmware Image if this eye-catcher is not found at the start of the firmware image.
+* The last 8 bytes of the firmware image will be the newly reported Firmware Revision within Identify Controller.
 
 # Command Response API (CRAPI)
 ### Rationale (Informative)

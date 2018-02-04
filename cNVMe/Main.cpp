@@ -173,12 +173,30 @@ void sendFirmwareImageDownload(Driver &driver, UINT_32 DWOffset, Payload& data)
 	ASSERT_IF(statusCode != 0, "Firmware Image Download Failed!");
 }
 
+void sendFirmwareCommit(Driver &driver, UINT_8 commitAction, UINT_8 firmwareSlot)
+{
+	Payload buffer(8192);
+
+	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer.getBuffer();
+	d->Timeout = 6000;
+	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::FIRMWARE_COMMIT;
+	d->Command.DW10_FirmwareCommit.CA = commitAction;
+	d->Command.DW10_FirmwareCommit.FS = firmwareSlot;
+	d->TransferDataDirection = NO_DATA;
+
+	driver.sendCommand((UINT_8*)d, buffer.getSize());
+
+	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
+
+	ASSERT_IF(statusCode != 0, "Firmware Commit Failed!");
+}
+
 int main()
 {
 	// This is testing code.
 	LOG_SET_LEVEL(2);
 
-	//Driver driver;
+//	Driver driver;
 
 	LOG_SET_LEVEL(1);
 

@@ -201,6 +201,7 @@ namespace cnvme
 					const UINT_32 IDENTIFY_SIZE = 1024;
 					const UINT_32 MAX_NSID_IN_NAMESPACE_LIST = 1024;
 					const UINT_32 NGUID_SIZE = 16;
+					const UINT_8 MAX_FW_SLOTS = 7;
 				}
 
 				namespace ns_identifiers
@@ -208,6 +209,19 @@ namespace cnvme
 					const UINT_32 IEEE_EXTENDED = 0x01;
 					const UINT_32 NGUID = 0x02;
 					const UINT_32 NAMESPACE_UUID = 0x03;
+				}
+			}
+
+			namespace fw_commit
+			{
+				namespace commit_action
+				{
+					const UINT_8 REPLACE_IN_SLOT_NO_ACTIVATE = 0b000;
+					const UINT_8 REPLACE_IN_SLOT_AND_ACTIVATE_ON_RESET = 0b001;
+					const UINT_8 ACTIVATE_GIVEN_SLOT_ON_RESET = 0b010;
+					const UINT_8 ACTIVATE_GIVEN_SLOT_NOW = 0b011;
+					const UINT_8 REPLACE_BOOT_PARTITION = 0b110;
+					const UINT_8 ACTIVATE_BOOT_PARTITION = 0b111;
 				}
 			}
 

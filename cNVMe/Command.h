@@ -173,6 +173,14 @@ namespace cnvme
 							UINT_32 NUMDL : 16; // Number of DW Lower
 						} DW10_GetLogPage;
 
+						struct
+						{
+							UINT_32 FS : 3; // Firmware Slot
+							UINT_32 CA : 3; // Commit Action
+							UINT_32 FIRMWARE_COMMIT_DW10_RSVD : 25;
+							UINT_32 BPID : 1; // Boot Partition ID
+						} DW10_FirmwareCommit;
+
 						UINT_32 DWord10; // Command Specific DW10
 					};
 
