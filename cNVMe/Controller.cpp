@@ -864,7 +864,7 @@ namespace cnvme
 						completionQueueEntryToPost.SC = constants::status::codes::specific::INVALID_FIRMWARE_IMAGE;
 						return;
 					}
-					currentDwOffset += fwDwOffsetToData.second.getSize() * sizeof(UINT_32);
+					currentDwOffset += fwDwOffsetToData.second.getSize() / sizeof(UINT_32);
 					completeFirmwareBinary.append(fwDwOffsetToData.second);
 				}
 
