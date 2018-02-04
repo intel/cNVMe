@@ -34,172 +34,29 @@ using namespace cnvme;
 using namespace cnvme::command;
 using namespace cnvme::driver;
 
-void sendIdentify(Driver &driver, UINT_8 cns, UINT_16 queue=0)
-{
-	UINT_32 BUF_SIZE = 8192;
-	BYTE* buffer = new BYTE[BUF_SIZE];
-	memset(buffer, 0, BUF_SIZE);
-
-	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
-	d->Timeout = 6000;
-	d->QueueId = queue; // for testing
-	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::IDENTIFY;
-	d->Command.DW10_Identify.CNS = cns;
-	d->TransferDataDirection = READ;
-	d->TransferDataSize = 4096;
-
-	driver.sendCommand((UINT_8*)d, BUF_SIZE);
-
-	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
-	
-	delete[]buffer;
-
-	ASSERT_IF(statusCode != 0, "Identify Controller Failed!");
-}
-
-void sendCreateIOCompletionQueue(Driver &driver, UINT_16 QID)
-{
-	UINT_32 BUF_SIZE = 8192;
-	BYTE* buffer = new BYTE[BUF_SIZE];
-	memset(buffer, 0, BUF_SIZE);
-
-	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
-	d->Timeout = 6000;
-	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::CREATE_IO_COMPLETION_QUEUE;
-	d->Command.DW10_CreateIoQueue.QID = QID;
-	d->Command.DW10_CreateIoQueue.QSIZE = 15; // 0-based 16
-	d->Command.DW11_CreateIoCompletionQueue.IEN = 1;
-	d->Command.DW11_CreateIoCompletionQueue.PC = 1;
-
-	d->TransferDataDirection = NO_DATA;
-
-	driver.sendCommand((UINT_8*)d, BUF_SIZE);
-
-	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
-
-	delete[]buffer;
-
-	ASSERT_IF(statusCode != 0, "Create IO Completion Queue Failed!");
-}
-
-void sendCreateIOSubmissionQueue(Driver &driver, UINT_16 QID, UINT_16 CQID)
-{
-	UINT_32 BUF_SIZE = 8192;
-	BYTE* buffer = new BYTE[BUF_SIZE];
-	memset(buffer, 0, BUF_SIZE);
-
-	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
-	d->Timeout = 6000;
-	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE;
-	d->Command.DW10_CreateIoQueue.QID = QID;
-	d->Command.DW10_CreateIoQueue.QSIZE = 15; // 0-based 16
-	d->Command.DW11_CreateIoSubmissionQueue.CQID = CQID;
-	d->Command.DW11_CreateIoSubmissionQueue.PC = 1;
-
-	d->TransferDataDirection = NO_DATA;
-
-	driver.sendCommand((UINT_8*)d, BUF_SIZE);
-
-	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
-	
-	delete[]buffer;
-
-	ASSERT_IF(statusCode != 0, "Create IO Submission Queue Failed!");
-}
-
-void sendDeleteIOSubmissionQueue(Driver &driver, UINT_16 QID)
-{
-	UINT_32 BUF_SIZE = 8192;
-	BYTE* buffer = new BYTE[BUF_SIZE];
-	memset(buffer, 0, BUF_SIZE);
-
-	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
-	d->Timeout = 6000;
-	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE;
-	d->Command.DW10_DeleteIoQueue.QID = QID;
-	d->TransferDataDirection = NO_DATA;
-
-	driver.sendCommand((UINT_8*)d, BUF_SIZE);
-
-	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
-
-	delete[]buffer;
-
-	ASSERT_IF(statusCode != 0, "Delete IO Submission Queue Failed!");
-}
-
-void sendDeleteIOCompletionQueue(Driver &driver, UINT_16 QID)
-{
-	UINT_32 BUF_SIZE = 8192;
-	BYTE* buffer = new BYTE[BUF_SIZE];
-	memset(buffer, 0, BUF_SIZE);
-
-	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer;
-	d->Timeout = 6000;
-	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE;
-	d->Command.DW10_DeleteIoQueue.QID = QID;
-
-	d->TransferDataDirection = NO_DATA;
-
-	driver.sendCommand((UINT_8*)d, BUF_SIZE);
-
-	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
-
-	delete[]buffer;
-
-	ASSERT_IF(statusCode != 0, "Delete IO Completion Queue Failed!");
-}
-
-void sendFirmwareImageDownload(Driver &driver, UINT_32 DWOffset, Payload& data)
-{
-	Payload buffer(8192);
-
-	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer.getBuffer();
-	d->Timeout = 6000;
-	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::FIRMWARE_IMAGE_DOWNLOAD;
-
-	ASSERT_IF(data.getSize() < 4, "The given payload must be at least 4 bytes in size to send down");
-
-	d->Command.DWord10 = (UINT_32)ceill(((float)data.getSize()) / sizeof(UINT_32)) - 1;
-	d->Command.DWord11 = DWOffset;
-	d->TransferDataSize = (UINT_32)data.getSize();
-	memcpy_s(&d->TransferData, buffer.getSize() - sizeof(DRIVER_COMMAND), data.getBuffer(), data.getSize());
-	d->TransferDataDirection = WRITE;
-
-	driver.sendCommand((UINT_8*)d, buffer.getSize());
-
-	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
-
-	ASSERT_IF(statusCode != 0, "Firmware Image Download Failed!");
-}
-
-void sendFirmwareCommit(Driver &driver, UINT_8 commitAction, UINT_8 firmwareSlot)
-{
-	Payload buffer(8192);
-
-	DRIVER_COMMAND* d = (PDRIVER_COMMAND)buffer.getBuffer();
-	d->Timeout = 6000;
-	d->Command.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::FIRMWARE_COMMIT;
-	d->Command.DW10_FirmwareCommit.CA = commitAction;
-	d->Command.DW10_FirmwareCommit.FS = firmwareSlot;
-	d->TransferDataDirection = NO_DATA;
-
-	driver.sendCommand((UINT_8*)d, buffer.getSize());
-
-	auto statusCode = d->CompletionQueueEntry.SC || d->DriverStatus;
-
-	ASSERT_IF(statusCode != 0, "Firmware Commit Failed!");
-}
-
 int main()
 {
 	// This is testing code.
 	LOG_SET_LEVEL(2);
 
-	//Driver driver;
-	//sendFirmwareImageDownload(driver, 0, tests::helpers::getFirmwareImage("TESTFW02", 4096));
-	//sendFirmwareCommit(driver, 0b001, 7);
-	//driver.controllerReset();
+	/* Test code for later.
+	TestDriver driver;
+	ASSERT_IF(!driver.firmwareImageDownload(0, tests::helpers::getFirmwareImage("TESTFW02", 4096)).CompletionQueueEntry.succeeded(),
+		"FW Download failed");
+
+	ASSERT_IF(!driver.firmwareCommit(constants::commands::fw_commit::commit_action::REPLACE_IN_SLOT_AND_ACTIVATE_ON_RESET, 2).CompletionQueueEntry.succeeded(),
+		"FW Commit failed!");
+
+#define GET_FW_STRING() std::string(((identify::structures::IDENTIFY_CONTROLLER*)(driver.identify(constants::commands::identify::cns::CONTROLLER, 0).OutputData.getBuffer()))->FR)
+
+	ASSERT_IF(GET_FW_STRING() == "TESTFW02", "FR updated incorrectly");
+
+	ASSERT_IF(!driver.controllerReset(), "Failed to controller reset");
+
+	ASSERT_IF(GET_FW_STRING() != "TESTFW02", "FR did not update after reset");
+
+	driver.controllerReset();
+	*/
 
 	LOG_SET_LEVEL(1);
 

@@ -399,7 +399,7 @@ namespace cnvme
 					LOG_INFO("Succeeded in creating IO Completion Queue " + std::to_string(pDriverCommand->Command.DW10_CreateIoQueue.QID) + " will hold onto memory.");
 
 					this->CompletionQueues[pDriverCommand->Command.DW10_CreateIoQueue.QID] = new Queue(ONE_BASED_FROM_ZERO_BASED(pDriverCommand->Command.DW10_CreateIoQueue.QSIZE),
-						pDriverCommand->Command.DW10_CreateIoQueue.QID, 
+						pDriverCommand->Command.DW10_CreateIoQueue.QID,
 						(UINT_16*)&(doorbells->CQHDBL), // doorbell
 						contiguousBufferAddress
 					);
@@ -417,7 +417,7 @@ namespace cnvme
 					LOG_INFO("Succeeded in creating IO Submission Queue " + std::to_string(pDriverCommand->Command.DW10_CreateIoQueue.QID) + " will hold onto memory.");
 
 					Queue* subQ = new Queue(ONE_BASED_FROM_ZERO_BASED(pDriverCommand->Command.DW10_CreateIoQueue.QSIZE),
-						pDriverCommand->Command.DW10_CreateIoQueue.QID, 
+						pDriverCommand->Command.DW10_CreateIoQueue.QID,
 						(UINT_16*)&(doorbells->SQTDBL), // doorbell
 						contiguousBufferAddress
 					);
@@ -568,6 +568,101 @@ namespace cnvme
 					delete i.second;
 				}
 			}
+		}
+
+		TEST_DRIVER_OUTPUT TestDriver::writeCommand(NVME_COMMAND nvmeCommand, UINT_16 queueId, Payload &data)
+		{
+			TEST_DRIVER_OUTPUT retVal = { 0 };
+
+			Payload buffer(sizeof(DRIVER_COMMAND) + data.getSize());
+			DRIVER_COMMAND* pDriverCommand = (PDRIVER_COMMAND)buffer.getBuffer();
+			pDriverCommand->Command = nvmeCommand;
+			pDriverCommand->Timeout = 6000; // plenty of time for debug, etc.
+			pDriverCommand->QueueId = queueId;
+			pDriverCommand->TransferDataDirection = WRITE;
+			pDriverCommand->TransferDataSize = data.getSize();
+			memcpy_s(&pDriverCommand->TransferData, buffer.getSize() - sizeof(DRIVER_COMMAND), data.getBuffer(), data.getSize());
+
+			this->sendCommand(buffer.getBuffer(), buffer.getSize());
+
+			ASSERT_IF(pDriverCommand->DriverStatus != Status::SENT_SUCCESSFULLY, "Command failed to send");
+
+			retVal.CompletionQueueEntry = pDriverCommand->CompletionQueueEntry;
+
+			return retVal;
+		}
+
+		TEST_DRIVER_OUTPUT TestDriver::readCommand(NVME_COMMAND nvmeCommand, UINT_16 queueId, size_t dataSize)
+		{
+			TEST_DRIVER_OUTPUT retVal = { 0 };
+
+			Payload buffer(sizeof(DRIVER_COMMAND) + dataSize);
+			DRIVER_COMMAND* pDriverCommand = (PDRIVER_COMMAND)buffer.getBuffer();
+			pDriverCommand->Command = nvmeCommand;
+			pDriverCommand->Timeout = 6000; // plenty of time for debug, etc.
+			pDriverCommand->QueueId = queueId;
+			pDriverCommand->TransferDataDirection = READ;
+			pDriverCommand->TransferDataSize = dataSize;
+
+			this->sendCommand(buffer.getBuffer(), buffer.getSize());
+
+			ASSERT_IF(pDriverCommand->DriverStatus != Status::SENT_SUCCESSFULLY, "Command failed to send");
+
+			retVal.CompletionQueueEntry = pDriverCommand->CompletionQueueEntry;
+			retVal.OutputData = Payload((UINT_8*)&pDriverCommand->TransferData, dataSize);
+
+			return retVal;
+		}
+
+		TEST_DRIVER_OUTPUT TestDriver::nonDataCommand(NVME_COMMAND nvmeCommand, UINT_16 queueId)
+		{
+			TEST_DRIVER_OUTPUT retVal = { 0 };
+
+			Payload buffer(sizeof(DRIVER_COMMAND));
+			DRIVER_COMMAND* pDriverCommand = (PDRIVER_COMMAND)buffer.getBuffer();
+			pDriverCommand->Command = nvmeCommand;
+			pDriverCommand->Timeout = 6000; // plenty of time for debug, etc.
+			pDriverCommand->QueueId = queueId;
+			pDriverCommand->TransferDataDirection = NO_DATA;
+			pDriverCommand->TransferDataSize = 0;
+
+			this->sendCommand(buffer.getBuffer(), buffer.getSize());
+
+			ASSERT_IF(pDriverCommand->DriverStatus != Status::SENT_SUCCESSFULLY, "Command failed to send");
+
+			retVal.CompletionQueueEntry = pDriverCommand->CompletionQueueEntry;
+
+			return retVal;
+		}
+
+		TEST_DRIVER_OUTPUT TestDriver::firmwareImageDownload(UINT_32 DWOffset, Payload &data)
+		{
+			NVME_COMMAND nvmeCommand = { 0 };
+			nvmeCommand.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::FIRMWARE_IMAGE_DOWNLOAD;
+			nvmeCommand.DWord10 = ZERO_BASED_FROM_ONE_BASED(DWORDS_FROM_BYTES(data.getSize()));
+			nvmeCommand.DWord11 = DWOffset;
+
+			return this->writeCommand(nvmeCommand, ADMIN_QUEUE_ID, data);
+		}
+
+		TEST_DRIVER_OUTPUT TestDriver::firmwareCommit(UINT_8 commitAction, UINT_8 firmwareSlot)
+		{
+			NVME_COMMAND nvmeCommand = { 0 };
+			nvmeCommand.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::FIRMWARE_COMMIT;
+			nvmeCommand.DW10_FirmwareCommit.CA = commitAction;
+			nvmeCommand.DW10_FirmwareCommit.FS = firmwareSlot;
+
+			return this->nonDataCommand(nvmeCommand, ADMIN_QUEUE_ID);
+		}
+
+		TEST_DRIVER_OUTPUT TestDriver::identify(UINT_8 CNS, UINT_32 NSID)
+		{
+			NVME_COMMAND nvmeCommand = { 0 };
+			nvmeCommand.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::IDENTIFY;
+			nvmeCommand.DW10_Identify.CNS = CNS;
+			nvmeCommand.NSID = NSID;
+
+			return this->readCommand(nvmeCommand, ADMIN_QUEUE_ID, constants::commands::identify::sizes::IDENTIFY_SIZE);
 		}
 	}
 }

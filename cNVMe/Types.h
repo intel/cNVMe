@@ -83,6 +83,8 @@ typedef UINT_8 BYTE;
 // Macros for code clarity
 #define ONE_BASED_FROM_ZERO_BASED(number) (number + 1)
 #define ZERO_BASED_FROM_ONE_BASED(number) (number - 1)
+#define DWORDS_FROM_BYTES(number) ((number + sizeof(UINT_32) - 1) / sizeof(UINT_32))
+#define BYTES_FROM_DWORDS(number) (number * sizeof(UINT_32))
 
 // Macros for getting False faster
 #define FAIL(s) LOG_ERROR(s); return false;
