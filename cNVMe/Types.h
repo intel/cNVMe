@@ -40,11 +40,13 @@ Types.h - A header file for all needed type includes
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <fstream>
 #include <functional>
+#include <future>
 #include <list>
 #include <map>
 #include <mutex>
-#include <fstream>
+#include <random>
 #include <set>
 #include <string>
 #include <thread>
@@ -121,9 +123,15 @@ inline errno_t memcpy_s(void *dest, size_t destSize, const void *src, size_t cou
 	}
 
 	return retVal;
-
-	// Add a way to drop to gdb
-	#define DROP_TO_GDB() raise(SIGINT)
 }
-#endif // _WIN32
+
+#ifdef _DEBUG
+// Add a way to drop to gdb
+#define DROP_TO_GDB() raise(SIGINT)
+#else
+#define DROP_TO_GDB() error... DROP_TO_GDB() should not be in release code
+#endif // _DEBUG
+
+#endif // !_WIN32
+
 #endif //_TYPES_H

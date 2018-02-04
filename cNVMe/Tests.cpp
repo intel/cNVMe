@@ -25,9 +25,6 @@ Tests.cpp - An implementation file for all unit testing
 
 #include "Tests.h"
 
-#include <random>
-#include <future>
-
 // Macros to fail a test
 #define FAIL_IF_AND_HIDE_LOG(b, s) _HIDE_LOG_THREAD(); FAIL_IF(b, s); _UNHIDE_LOG_THREAD(); // FAIL_IF except don't show the log output. Hide the LOG_ERROR we think would happen.
 
