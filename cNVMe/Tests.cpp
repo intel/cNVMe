@@ -469,7 +469,7 @@ namespace cnvme
 
 				for (size_t i = 0; i < 1024; i++)
 				{
-					ASSERT_IF(pDriverCommand->TransferData[i] != 0, "Format NVM didn't zero out the area we wrote to")
+					ASSERT_IF(pDriverCommand->TransferData[i] != 0, "Format NVM didn't zero out the area we wrote to");
 				}
 
 				return true;

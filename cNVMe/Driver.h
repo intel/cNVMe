@@ -203,7 +203,7 @@ namespace cnvme
 			/// <param name="queueId">Queue Id</param>
 			/// <param name="dataSize">Read data size in bytes</param>
 			/// <returns>TEST_DRIVER_OUTPUT</returns>
-			TEST_DRIVER_OUTPUT readCommand(NVME_COMMAND nvmeCommand, UINT_16 queueId, size_t dataSize);
+			TEST_DRIVER_OUTPUT readCommand(NVME_COMMAND nvmeCommand, UINT_16 queueId, UINT_32 dataSize);
 
 			/// <summary>
 			/// Perform a generic NVMe non-data command

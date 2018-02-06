@@ -580,7 +580,7 @@ namespace cnvme
 			pDriverCommand->Timeout = 6000; // plenty of time for debug, etc.
 			pDriverCommand->QueueId = queueId;
 			pDriverCommand->TransferDataDirection = WRITE;
-			pDriverCommand->TransferDataSize = data.getSize();
+			pDriverCommand->TransferDataSize = (UINT_32)data.getSize();
 			memcpy_s(&pDriverCommand->TransferData, buffer.getSize() - sizeof(DRIVER_COMMAND), data.getBuffer(), data.getSize());
 
 			this->sendCommand(buffer.getBuffer(), buffer.getSize());
@@ -592,7 +592,7 @@ namespace cnvme
 			return retVal;
 		}
 
-		TEST_DRIVER_OUTPUT TestDriver::readCommand(NVME_COMMAND nvmeCommand, UINT_16 queueId, size_t dataSize)
+		TEST_DRIVER_OUTPUT TestDriver::readCommand(NVME_COMMAND nvmeCommand, UINT_16 queueId, UINT_32 dataSize)
 		{
 			TEST_DRIVER_OUTPUT retVal = { 0 };
 
@@ -639,7 +639,7 @@ namespace cnvme
 		{
 			NVME_COMMAND nvmeCommand = { 0 };
 			nvmeCommand.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::FIRMWARE_IMAGE_DOWNLOAD;
-			nvmeCommand.DWord10 = ZERO_BASED_FROM_ONE_BASED(DWORDS_FROM_BYTES(data.getSize()));
+			nvmeCommand.DWord10 = (UINT_32)ZERO_BASED_FROM_ONE_BASED(DWORDS_FROM_BYTES(data.getSize()));
 			nvmeCommand.DWord11 = DWOffset;
 
 			return this->writeCommand(nvmeCommand, ADMIN_QUEUE_ID, data);
