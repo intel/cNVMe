@@ -169,7 +169,7 @@ namespace cnvme
 					transferSize = this->DWord11;
 					break;
 				default:
-					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord10) * sizeof(UINT_32);
+					transferSize = (this->DWord10) * sizeof(UINT_32);
 					LOG_INFO("Default case for Admin: transferSize = (DW10 + 1) * 4 = " + std::to_string(transferSize));
 				}
 			}

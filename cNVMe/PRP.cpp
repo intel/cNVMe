@@ -236,6 +236,7 @@ namespace cnvme
 					}
 
 					BYTE* thisPrp = (BYTE*)*singlePrp;
+					ASSERT_IF(!thisPrp, "The current PRP appears to be NULL");
 					size_t dataSize = std::min(MemoryPageSize, bytesRemaining);
 					prpListPointers.emplace_back(thisPrp, dataSize);
 					bytesRemaining -= dataSize;
