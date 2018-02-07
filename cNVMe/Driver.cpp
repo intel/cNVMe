@@ -635,7 +635,7 @@ namespace cnvme
 			return retVal;
 		}
 
-		TEST_DRIVER_OUTPUT TestDriver::firmwareImageDownload(UINT_32 DWOffset, Payload &data)
+		TEST_DRIVER_OUTPUT TestDriver::firmwareImageDownload(UINT_32 DWOffset, Payload data)
 		{
 			NVME_COMMAND nvmeCommand = { 0 };
 			nvmeCommand.DWord0Breakdown.OPC = cnvme::constants::opcodes::admin::FIRMWARE_IMAGE_DOWNLOAD;

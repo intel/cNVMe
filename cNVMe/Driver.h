@@ -219,7 +219,7 @@ namespace cnvme
 			/// <param name="DWOffset">Offset for data in DWs</param>
 			/// <param name="data">FW Image Download piece to send</param>
 			/// <returns>TEST_DRIVER_OUTPUT</returns>
-			TEST_DRIVER_OUTPUT firmwareImageDownload(UINT_32 DWOffset, Payload& data);
+			TEST_DRIVER_OUTPUT firmwareImageDownload(UINT_32 DWOffset, Payload data);
 
 			/// <summary>
 			/// Used to test FW Commit
