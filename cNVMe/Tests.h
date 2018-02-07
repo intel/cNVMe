@@ -117,6 +117,11 @@ namespace cnvme
 			/// Tests that we can read/write from a given namespace and then we can format it.
 			/// </summary>
 			bool testNVMeIo();
+
+			/// <summary>
+			/// Tests that updating FW works correctly
+			/// </summary>
+			bool testNVMeFirmwareDownloadAndCommit();
 		}
 
 		namespace driver

@@ -28,8 +28,6 @@ Main.cpp - An implementation file for the Main entry
 #include "System.h"
 #include "Tests.h"
 
-#include <iostream>
-
 using namespace cnvme;
 using namespace cnvme::command;
 using namespace cnvme::driver;
@@ -38,25 +36,6 @@ int main()
 {
 	// This is testing code.
 	LOG_SET_LEVEL(2);
-
-	/* Test code for later.
-	TestDriver driver;
-	ASSERT_IF(!driver.firmwareImageDownload(0, tests::helpers::getFirmwareImage("TESTFW02", 4096)).CompletionQueueEntry.succeeded(),
-		"FW Download failed");
-
-	ASSERT_IF(!driver.firmwareCommit(constants::commands::fw_commit::commit_action::REPLACE_IN_SLOT_AND_ACTIVATE_ON_RESET, 2).CompletionQueueEntry.succeeded(),
-		"FW Commit failed!");
-
-#define GET_FW_STRING() std::string(((identify::structures::IDENTIFY_CONTROLLER*)(driver.identify(constants::commands::identify::cns::CONTROLLER, 0).OutputData.getBuffer()))->FR)
-
-	ASSERT_IF(GET_FW_STRING() == "TESTFW02", "FR updated incorrectly");
-
-	ASSERT_IF(!driver.controllerReset(), "Failed to controller reset");
-
-	ASSERT_IF(GET_FW_STRING() != "TESTFW02", "FR did not update after reset");
-
-	driver.controllerReset();
-	*/
 
 	LOG_SET_LEVEL(1);
 

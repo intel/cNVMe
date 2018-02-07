@@ -43,6 +43,7 @@ Types.h - A header file for all needed type includes
 #include <fstream>
 #include <functional>
 #include <future>
+#include <iostream>
 #include <list>
 #include <map>
 #include <mutex>

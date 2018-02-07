@@ -236,6 +236,12 @@ namespace cnvme
 			/// <param name="NSID">Namespace id for command</param>
 			/// <returns>TEST_DRIVER_OUTPUT</returns>
 			TEST_DRIVER_OUTPUT identify(UINT_8 CNS, UINT_32 NSID);
+
+			/// <summary>
+			/// Returns the FW string obtained by identify controller
+			/// </summary>
+			/// <returns></returns>
+			std::string getFirmwareString();
 		};
 	}
 }

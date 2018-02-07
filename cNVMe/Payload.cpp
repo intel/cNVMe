@@ -157,4 +157,20 @@ namespace cnvme
 	{
 		memset(this->getBuffer(), 0, this->getSize());
 	}
+
+	std::vector<Payload> Payload::split(size_t splitSize) const
+	{
+		ASSERT_IF(this->getSize() % splitSize != 0, "Payload is not evenly splitable by the given splitSize (" + std::to_string(splitSize) + ")");
+
+		std::vector<Payload> retVec;
+		size_t retVecSize = this->getSize() / splitSize;
+		size_t individualPayloadSize = this->getSize() / retVecSize;
+
+		for (size_t i = 0; i < retVecSize; i++)
+		{
+			retVec.emplace_back(this->getBuffer() + (i * individualPayloadSize), individualPayloadSize);
+		}
+
+		return retVec;
+	}
 }

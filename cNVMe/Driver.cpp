@@ -664,5 +664,15 @@ namespace cnvme
 
 			return this->readCommand(nvmeCommand, ADMIN_QUEUE_ID, constants::commands::identify::sizes::IDENTIFY_SIZE);
 		}
+
+		std::string TestDriver::getFirmwareString()
+		{
+			auto result = this->identify(constants::commands::identify::cns::CONTROLLER, 0);
+			ASSERT_IF(result.OutputData.getSize() < constants::commands::identify::sizes::IDENTIFY_SIZE, "Not enough data was returned");
+			auto pIdentify = (identify::structures::IDENTIFY_CONTROLLER*)result.OutputData.getBuffer();
+			std::string fw(pIdentify->FR, sizeof(pIdentify->FR));
+			LOG_INFO("Obtained Firmware String: " + fw);
+			return fw;
+		}
 	}
 }
