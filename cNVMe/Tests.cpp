@@ -521,8 +521,8 @@ namespace cnvme
 			{
 				cnvme::driver::Driver driver;
 				UINT_32 BUF_SIZE = sizeof(cnvme::driver::DRIVER_COMMAND);
-				BYTE* buffer = new BYTE[BUF_SIZE];
-				memset(buffer, 0, BUF_SIZE);
+				Payload p(BUF_SIZE);
+				BYTE* buffer = p.getBuffer();
 
 				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
 				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
@@ -555,8 +555,8 @@ namespace cnvme
 				cnvme::driver::Driver driver;
 
 				UINT_32 BUF_SIZE = sizeof(cnvme::identify::structures::IDENTIFY_CONTROLLER) + sizeof(cnvme::driver::DRIVER_COMMAND);
-				BYTE* buffer = new BYTE[BUF_SIZE];
-				memset(buffer, 0, BUF_SIZE);
+				Payload p(BUF_SIZE);
+				BYTE* buffer = p.getBuffer();
 
 				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
 				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
