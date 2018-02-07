@@ -97,6 +97,9 @@ namespace cnvme
 #pragma warning(pop) // Disable 0-sized array warning.
 #endif
 
+		/// <summary>
+		/// Production Driver class used by the DLL (and everything other than internal testing)
+		/// </summary>
 		class Driver
 		{
 		public:
@@ -167,6 +170,72 @@ namespace cnvme
 			/// Deallocates all IO queues
 			/// </summary>
 			void deleteAllIoQueues();
+		};
+
+		/// <summary>
+		/// struct returned by TestDriver public commands
+		/// </summary>
+		typedef struct _TEST_DRIVER_OUTPUT
+		{
+			COMPLETION_QUEUE_ENTRY CompletionQueueEntry;
+			Payload OutputData;
+		} TEST_DRIVER_OUTPUT, *PTEST_DRIVER_OUTPUT;
+
+		/// <summary>
+		/// Special version of Driver used by testing
+		/// </summary>
+		class TestDriver : public Driver
+		{
+		public:
+			/// <summary>
+			/// Perform a generic NVMe write command
+			/// </summary>
+			/// <param name="nvmeCommand">NVMe command</param>
+			/// <param name="queueId">Queue Id</param>
+			/// <param name="data">Data to write</param>
+			/// <returns>TEST_DRIVER_OUTPUT</returns>
+			TEST_DRIVER_OUTPUT writeCommand(NVME_COMMAND nvmeCommand, UINT_16 queueId, Payload& data);
+
+			/// <summary>
+			/// Perform a generic NVMe read command
+			/// </summary>
+			/// <param name="nvmeCommand">NVMe command</param>
+			/// <param name="queueId">Queue Id</param>
+			/// <param name="dataSize">Read data size in bytes</param>
+			/// <returns>TEST_DRIVER_OUTPUT</returns>
+			TEST_DRIVER_OUTPUT readCommand(NVME_COMMAND nvmeCommand, UINT_16 queueId, UINT_32 dataSize);
+
+			/// <summary>
+			/// Perform a generic NVMe non-data command
+			/// </summary>
+			/// <param name="nvmeCommand">NVMe command</param>
+			/// <param name="queueId">Queue Id</param>
+			/// <returns>TEST_DRIVER_OUTPUT</returns>
+			TEST_DRIVER_OUTPUT nonDataCommand(NVME_COMMAND nvmeCommand, UINT_16 queueId);
+
+			/// <summary>
+			/// Used to test FW Image Download
+			/// </summary>
+			/// <param name="DWOffset">Offset for data in DWs</param>
+			/// <param name="data">FW Image Download piece to send</param>
+			/// <returns>TEST_DRIVER_OUTPUT</returns>
+			TEST_DRIVER_OUTPUT firmwareImageDownload(UINT_32 DWOffset, Payload& data);
+
+			/// <summary>
+			/// Used to test FW Commit
+			/// </summary>
+			/// <param name="commitAction">commit action</param>
+			/// <param name="firmwareSlot">targeted slot</param>
+			/// <returns>TEST_DRIVER_OUTPUT</returns>
+			TEST_DRIVER_OUTPUT firmwareCommit(UINT_8 commitAction, UINT_8 firmwareSlot);
+
+			/// <summary>
+			/// Used to test Identify
+			/// </summary>
+			/// <param name="CNS">Controller/Namespace structure field</param>
+			/// <param name="NSID">Namespace id for command</param>
+			/// <returns>TEST_DRIVER_OUTPUT</returns>
+			TEST_DRIVER_OUTPUT identify(UINT_8 CNS, UINT_32 NSID);
 		};
 	}
 }

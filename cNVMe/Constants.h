@@ -198,7 +198,7 @@ namespace cnvme
 
 				namespace sizes
 				{
-					const UINT_32 IDENTIFY_SIZE = 1024;
+					const UINT_32 IDENTIFY_SIZE = 4096;
 					const UINT_32 MAX_NSID_IN_NAMESPACE_LIST = 1024;
 					const UINT_32 NGUID_SIZE = 16;
 					const UINT_8 MAX_FW_SLOTS = 7;

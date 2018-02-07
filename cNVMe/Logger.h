@@ -31,14 +31,14 @@ Logger.h - A header file for the Logging
 #include <string>
 #include <thread>
 
+
 // Macros to make this easier to work with
-#define LOG_ERROR(txt) cnvme::logging::theLogger.log(std::string(__func__) + "():" \
-+ std::to_string(__LINE__) + " - [" + cnvme::logging::Logger::loggingLevelToString(cnvme::logging::ERROR) + "] - " + txt, cnvme::logging::ERROR);
-#define LOG_INFO(txt) cnvme::logging::theLogger.log(std::string(__func__) + "():" \
-+ std::to_string(__LINE__) + " - [" + cnvme::logging::Logger::loggingLevelToString(cnvme::logging::INFO) + "] - " + txt, cnvme::logging::INFO);
-#define LOG_SET_LEVEL(level) cnvme::logging::theLogger.setLevel((cnvme::logging::LOGGING_LEVEL)level);
-#define ASSERT(txt) cnvme::logging::theLogger._assert(std::string(__func__), txt, __LINE__);
-#define ASSERT_IF(cond, txt) cnvme::logging::theLogger._assert_if(std::string(__func__), cond, txt, __LINE__);
+#define _LOGGING_INFO() std::string(std::string(__FILE__) + ":" + std::string(__func__) + ":" + std::to_string(__LINE__))
+#define LOG_ERROR(txt) cnvme::logging::theLogger.log(_LOGGING_INFO() + " - [Error] - " + txt, cnvme::logging::ERROR)
+#define LOG_INFO(txt) cnvme::logging::theLogger.log(_LOGGING_INFO() + " - [Info] - " + txt, cnvme::logging::INFO)
+#define LOG_SET_LEVEL(level) cnvme::logging::theLogger.setLevel((cnvme::logging::LOGGING_LEVEL)level)
+#define ASSERT(txt) cnvme::logging::theLogger._assert(std::string(__func__), txt, __LINE__)
+#define ASSERT_IF(cond, txt) cnvme::logging::theLogger._assert_if(std::string(__func__), cond, txt, __LINE__)
 // The following two have braces at the end to make sure they get used together. Use to hide logging on a thread.
 #define _HIDE_LOG_THREAD() cnvme::logging::theLogger.addHiddenThread(std::this_thread::get_id()); {
 #define _UNHIDE_LOG_THREAD() cnvme::logging::theLogger.removeHiddenThread(std::this_thread::get_id()); }
