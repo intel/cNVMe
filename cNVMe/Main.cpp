@@ -37,9 +37,6 @@ int main()
 	// This is testing code.
 	LOG_SET_LEVEL(2);
 
-	int a = 1;
-	ASSERT_IF_EQ(a, 1, "Shouldn't be equal");
-
 	LOG_SET_LEVEL(1);
 
 	bool testsPassing = cnvme::tests::helpers::runTests();

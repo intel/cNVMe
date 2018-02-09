@@ -47,12 +47,12 @@ Logger.h - A header file for the Logging
 #define _END_ASSERT_QUIET() cnvme::logging::theLogger.setAssertQuiet(false, std::this_thread::get_id()); };
 
 // More verbose ASSERT_IFs
-#define ASSERT_IF_EQ(left, right, txt) if (left == right) {std::stringstream s; s << "(" << #left << " == " << #right << " <+> " << left << " == " << right << ")";cnvme::logging::theLogger._assert_if(__func__, left == right, txt, __LINE__, s.str());} 
-#define ASSERT_IF_NQ(left, right, txt) if (left != right) {std::stringstream s; s << "(" << #left << " != " << #right << " <+> " << left << " != " << right << ")";cnvme::logging::theLogger._assert_if(__func__, left != right, txt, __LINE__, s.str());} 
-#define ASSERT_IF_LT(left, right, txt) if (left < right) {std::stringstream s; s << "(" << #left << " < " << #right << " <+> " << left << " < " << right << ")";cnvme::logging::theLogger._assert_if(__func__, left < right, txt, __LINE__, s.str());}
-#define ASSERT_IF_GT(left, right, txt) if (left > right) {std::stringstream s; s << "(" << #left << " > " << #right << " <+> " << left << " > " << right << ")";cnvme::logging::theLogger._assert_if(__func__, left > right, txt, __LINE__, s.str());}
-#define ASSERT_IF_LTE(left, right, txt) if (left <= right) {std::stringstream s; s << "(" << #left << " <= " << #right << " <+> " << left << " <= " << right << ")";cnvme::logging::theLogger._assert_if(__func__, left <= right, txt, __LINE__, s.str());} 
-#define ASSERT_IF_GTE(left, right, txt) if (left >= right) {std::stringstream s; s << "(" << #left << " => " << #right << " <+> " << left << " => " << right << ")";cnvme::logging::theLogger._assert_if(__func__, left >= right, txt, __LINE__, s.str());}
+#define ASSERT_IF_EQ(left, right, txt) if (left == right) {std::stringstream s; s << "(" << #left << " == " << #right << " <+> " << left << " == " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());} 
+#define ASSERT_IF_NE(left, right, txt) if (left != right) {std::stringstream s; s << "(" << #left << " != " << #right << " <+> " << left << " != " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());} 
+#define ASSERT_IF_LT(left, right, txt) if (left < right) {std::stringstream s; s << "(" << #left << " < " << #right << " <+> " << left << " < " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());}
+#define ASSERT_IF_GT(left, right, txt) if (left > right) {std::stringstream s; s << "(" << #left << " > " << #right << " <+> " << left << " > " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());}
+#define ASSERT_IF_LTE(left, right, txt) if (left <= right) {std::stringstream s; s << "(" << #left << " <= " << #right << " <+> " << left << " <= " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());} 
+#define ASSERT_IF_GTE(left, right, txt) if (left >= right) {std::stringstream s; s << "(" << #left << " => " << #right << " <+> " << left << " => " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());}
 
 #define CLEARED_STATUS "Healthy"
 
