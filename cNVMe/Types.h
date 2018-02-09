@@ -49,6 +49,7 @@ Types.h - A header file for all needed type includes
 #include <mutex>
 #include <random>
 #include <set>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
