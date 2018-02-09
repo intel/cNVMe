@@ -1,7 +1,7 @@
 /*
 ###########################################################################################
 // cNVMe - An Open Source NVMe Device Simulation - MIT License
-// Copyright 2017 - Intel Corporation
+// Copyright 2018 - Intel Corporation
 
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -20,28 +20,35 @@
 // OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 ############################################################################################
-Main.cpp - An implementation file for the Main entry
+LogPages.h - A header file for the the NVMe Get Log Page Command
 */
 
-#include "Driver.h"
-#include "Strings.h"
-#include "System.h"
-#include "Tests.h"
+#pragma once
 
-using namespace cnvme;
-using namespace cnvme::command;
-using namespace cnvme::driver;
+#include "Types.h"
 
-int main()
+namespace cnvme
 {
-	// This is testing code.
-	LOG_SET_LEVEL(2);
+	namespace log_pages
+	{
+		/// <summary>
+		/// Firmware Slot Information Log for LID=0x03
+		/// </summary>
+		typedef struct _FIRMWARE_SLOT_INFO
+		{
+			struct
+			{
+				UINT_8 ActiveFirmwareSlot : 3;
+				UINT_8 RSVD_3 : 1;
+				UINT_8 FirmwareSlotForNextControllerReset : 3;
+				UINT_8 RSVD_7 : 1;
+			} AFI;
 
-	LOG_SET_LEVEL(1);
+			UINT_8 RSVD_01_07[7];
+			char FRS[7][8]; // 8 characters per FW revision, 7 total slots
+			UINT_8 RSVD_64_511[448];
+		} FIRMWARE_SLOT_INFO, *PFIRMWARE_SLOT_INFO;
 
-	bool testsPassing = cnvme::tests::helpers::runTests();
-	std::cout << "Tests passing: " << strings::toString(testsPassing) << std::endl;
-	return(!testsPassing); // 0 is pass
-
-	// End testing code.
+		static_assert(sizeof(FIRMWARE_SLOT_INFO) == 512, "Firmware Slot Info is 512 bytes");
+	}
 }

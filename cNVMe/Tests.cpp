@@ -25,9 +25,6 @@ Tests.cpp - An implementation file for all unit testing
 
 #include "Tests.h"
 
-#include <random>
-#include <future>
-
 // Macros to fail a test
 #define FAIL_IF_AND_HIDE_LOG(b, s) _HIDE_LOG_THREAD(); FAIL_IF(b, s); _UNHIDE_LOG_THREAD(); // FAIL_IF except don't show the log output. Hide the LOG_ERROR we think would happen.
 
@@ -63,6 +60,7 @@ namespace cnvme
 					results.push_back(std::async(controller_registers::testControllerReset));
 					results.push_back(std::async(commands::testNVMeCommandOpcodeInvalid));
 					results.push_back(std::async(commands::testNVMeCommandParsing));
+					results.push_back(std::async(commands::testNVMeFirmwareDownloadAndCommit));
 					results.push_back(std::async(commands::testNVMeIo));
 					results.push_back(std::async(commands::testNVMeQueueDeletionFailures));
 					results.push_back(std::async(driver::testNoDataCommandViaDriver));
@@ -89,6 +87,20 @@ namespace cnvme
 				{
 					payload.getBuffer()[i] = (BYTE)randInt(0, 0xFF);
 				}
+			}
+
+			Payload getFirmwareImage(std::string firmwareRevision, size_t fileSizeInBytes)
+			{
+				ASSERT_IF(fileSizeInBytes < sizeof(identify::structures::IDENTIFY_CONTROLLER::FR) + sizeof(FIRMWARE_EYE_CATCHER), "Cannot make firmware image with the given small size");
+				ASSERT_IF(firmwareRevision.size() > sizeof(identify::structures::IDENTIFY_CONTROLLER::FR), "Given firmware revision is sized too large to fit in the FR field");
+
+				Payload retPayload((UINT_8*)FIRMWARE_EYE_CATCHER, sizeof(FIRMWARE_EYE_CATCHER));
+				retPayload.append(Payload(fileSizeInBytes - sizeof(FIRMWARE_EYE_CATCHER) - sizeof(identify::structures::IDENTIFY_CONTROLLER::FR)));
+				retPayload.append(Payload((UINT_8*)firmwareRevision.c_str(), firmwareRevision.size()));
+
+				ASSERT_IF(retPayload.getSize() != fileSizeInBytes, "FW image payload was incorrectly sized");
+
+				return retPayload;
 			}
 		}
 
@@ -256,8 +268,8 @@ namespace cnvme
 				cnvme::driver::Driver driver;
 
 				UINT_32 BUF_SIZE = sizeof(cnvme::driver::DRIVER_COMMAND);
-				BYTE* buffer = new BYTE[BUF_SIZE];
-				memset(buffer, 0, BUF_SIZE);
+				Payload p(BUF_SIZE);
+				BYTE* buffer = p.getBuffer();
 
 				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
 				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
@@ -270,9 +282,8 @@ namespace cnvme
 				driver.sendCommand(buffer, BUF_SIZE);
 
 				auto status = pDriverCommand->CompletionQueueEntry.SC;
-				delete[] buffer;
-				
-				ASSERT_IF(status != constants::status::codes::generic::INVALID_COMMAND_OPCODE, "Controller did not fail invalid opcode correctly");
+
+				FAIL_IF(status != constants::status::codes::generic::INVALID_COMMAND_OPCODE, "Controller did not fail invalid opcode correctly");
 
 				return true;
 			}
@@ -282,8 +293,8 @@ namespace cnvme
 				cnvme::driver::Driver driver;
 
 				UINT_32 BUF_SIZE = sizeof(cnvme::driver::DRIVER_COMMAND);
-				BYTE* buffer = new BYTE[BUF_SIZE];
-				memset(buffer, 0, BUF_SIZE);
+				Payload p(BUF_SIZE);
+				BYTE* buffer = p.getBuffer();
 
 				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
 				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
@@ -297,7 +308,7 @@ namespace cnvme
 				driver.sendCommand(buffer, BUF_SIZE);
 
 				auto status = pDriverCommand->CompletionQueueEntry.SC;
-				ASSERT_IF(status != constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER, "Expected controller to fail IO queue deletion with admin queue ID, but did not receive INVALID_QUEUE_IDENTIFIER status");
+				FAIL_IF(status != constants::status::codes::specific::INVALID_QUEUE_IDENTIFIER, "Expected controller to fail IO queue deletion with admin queue ID, but did not receive INVALID_QUEUE_IDENTIFIER status");
 
 				// Create CQ 1
 				pDriverCommand->Command.DW10_CreateIoQueue.QSIZE = 0xF;
@@ -308,7 +319,7 @@ namespace cnvme
 				driver.sendCommand(buffer, BUF_SIZE);
 
 				status = pDriverCommand->CompletionQueueEntry.SC;
-				ASSERT_IF(status != 0, "Controller failed creating an io completion queue");
+				FAIL_IF(status != 0, "Controller failed creating an io completion queue");
 
 				// Create SQ 1
 				pDriverCommand->Command.DW10_CreateIoQueue.QSIZE = 0xF;
@@ -319,7 +330,7 @@ namespace cnvme
 				driver.sendCommand(buffer, BUF_SIZE);
 
 				status = pDriverCommand->CompletionQueueEntry.SC;
-				ASSERT_IF(status != 0, "Controller failed creating an io completion queue");
+				FAIL_IF(status != 0, "Controller failed creating an io completion queue");
 
 				// Deleting CQ 1 should fail since we need to delete SQ 1 first
 				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE;
@@ -327,23 +338,22 @@ namespace cnvme
 				driver.sendCommand(buffer, BUF_SIZE);
 
 				status = pDriverCommand->CompletionQueueEntry.SC;
-				ASSERT_IF(status != constants::status::codes::specific::INVALID_QUEUE_DELETION, "Controller did not fail deleting a CQ before SQ");
+				FAIL_IF(status != constants::status::codes::specific::INVALID_QUEUE_DELETION, "Controller did not fail deleting a CQ before SQ");
 
 				// Should be ok to delete SQ 1
 				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::DELETE_IO_SUBMISSION_QUEUE;
 				driver.sendCommand(buffer, BUF_SIZE);
 
 				status = pDriverCommand->CompletionQueueEntry.SC;
-				ASSERT_IF(status != 0, "Controller did not allow deleting a SQ");
+				FAIL_IF(status != 0, "Controller did not allow deleting a SQ");
 
 				// Now we can delete CQ 1
 				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::DELETE_IO_COMPLETION_QUEUE;
 				driver.sendCommand(buffer, BUF_SIZE);
 
 				status = pDriverCommand->CompletionQueueEntry.SC;
-				ASSERT_IF(status != 0, "Controller did not allow deleting a CQ after its SQ was deleted");
+				FAIL_IF(status != 0, "Controller did not allow deleting a CQ after its SQ was deleted");
 
-				delete[] buffer;
 				return true;
 			}
 
@@ -367,7 +377,7 @@ namespace cnvme
 				pDriverCommand->Command.DW11_CreateIoCompletionQueue.PC = 1;
 				driver.sendCommand(payload.getBuffer(), payload.getSize());
 
-				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Controller failed creating an io completion queue");
+				FAIL_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Controller failed creating an io completion queue");
 
 				// Create SQ 1
 				pDriverCommand->Command.DW10_CreateIoQueue.QSIZE = 0xF;
@@ -377,7 +387,7 @@ namespace cnvme
 				pDriverCommand->Command.DWord0Breakdown.OPC = constants::opcodes::admin::CREATE_IO_SUBMISSION_QUEUE;
 				driver.sendCommand(payload.getBuffer(), payload.getSize());
 
-				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Controller failed creating an io completion queue");
+				FAIL_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Controller failed creating an io completion queue");
 
 				// Now we have IO Queue Pair 1
 				pDriverCommand->QueueId = 1;
@@ -396,7 +406,7 @@ namespace cnvme
 				memset(&pDriverCommand->TransferData, sector1Value, 512);
 				driver.sendCommand(payload.getBuffer(), payload.getSize());
 
-				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to write the first sector");
+				FAIL_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to write the first sector");
 
 				// set the data to 0xDC (for the second sector)
 				memset(&pDriverCommand->TransferData, sector2Value, 512);
@@ -404,7 +414,7 @@ namespace cnvme
 
 				driver.sendCommand(payload.getBuffer(), payload.getSize());
 
-				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to write the second sector");
+				FAIL_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to write the second sector");
 
 				// Read back, and confirm the data was what we expected
 				pDriverCommand->TransferDataDirection = cnvme::driver::READ;
@@ -415,7 +425,7 @@ namespace cnvme
 
 				driver.sendCommand(payload.getBuffer(), payload.getSize());
 
-				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to read back the 2 sectors");
+				FAIL_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to read back the 2 sectors");
 
 				for (size_t i = 0; i < 1024; i++)
 				{
@@ -428,10 +438,10 @@ namespace cnvme
 					{
 						cmpVal = sector2Value;
 					}
-					ASSERT_IF(pDriverCommand->TransferData[i] != cmpVal, "Comparison failure: the read data didn't match what was written");
+					FAIL_IF(pDriverCommand->TransferData[i] != cmpVal, "Comparison failure: the read data didn't match what was written");
 				}
 
-				ASSERT_IF(pDriverCommand->TransferData[1024] != 0, "We specified that we were reading 1024 bytes of data and yet the byte after that is set to something other than 0. Did we read too much?");
+				FAIL_IF(pDriverCommand->TransferData[1024] != 0, "We specified that we were reading 1024 bytes of data and yet the byte after that is set to something other than 0. Did we read too much?");
 
 				// Call Format NVM, and confirm the data doesn't match anymore
 				memset(&pDriverCommand->Command, 0, sizeof(pDriverCommand->Command));
@@ -442,7 +452,7 @@ namespace cnvme
 				pDriverCommand->TransferDataSize = 0;
 
 				driver.sendCommand(payload.getBuffer(), payload.getSize());
-				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Format NVM failed");
+				FAIL_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Format NVM failed");
 
 				// Read back, and confirm the data was not what we original wrote
 				memset(&pDriverCommand->Command, 0, sizeof(pDriverCommand->Command));
@@ -454,12 +464,52 @@ namespace cnvme
 				pDriverCommand->TransferDataSize = 1024; // 2 sectors
 
 				driver.sendCommand(payload.getBuffer(), payload.getSize());
-				ASSERT_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to read back data after Format NVM");
+				FAIL_IF(!pDriverCommand->CompletionQueueEntry.succeeded(), "Failed to read back data after Format NVM");
 
 				for (size_t i = 0; i < 1024; i++)
 				{
-					ASSERT_IF(pDriverCommand->TransferData[i] != 0, "Format NVM didn't zero out the area we wrote to")
+					FAIL_IF(pDriverCommand->TransferData[i] != 0, "Format NVM didn't zero out the area we wrote to");
 				}
+
+				return true;
+			}
+
+			bool testNVMeFirmwareDownloadAndCommit()
+			{
+				cnvme::driver::TestDriver driver;
+
+				// Test fw/dl activate on reset
+				std::string updatedFirmware = "NEWFW001";
+				std::string startingFirmware = driver.getFirmwareString();
+				FAIL_IF(!driver.firmwareImageDownload(0, helpers::getFirmwareImage(updatedFirmware, 4096)).CompletionQueueEntry.succeeded(), "Failed to download the FW image");
+				FAIL_IF(driver.getFirmwareString() != startingFirmware, "FW changed without a commit being sent");
+				FAIL_IF(!driver.firmwareCommit(constants::commands::fw_commit::commit_action::REPLACE_IN_SLOT_AND_ACTIVATE_ON_RESET, 4).CompletionQueueEntry.succeeded(), "Failed to commit with a CA to replace and activate on reset");
+				FAIL_IF(driver.getFirmwareString() != startingFirmware, "FW changed without the needed reset being sent");
+				FAIL_IF(!driver.controllerReset(), "Controller reset failed!");
+				FAIL_IF(driver.getFirmwareString() != updatedFirmware, "FW did not change after reset");
+
+				// Test fw/dl commit to slot then activate
+				updatedFirmware = "NEWFW002";
+				startingFirmware = driver.getFirmwareString();
+				size_t fwSize = 4096;
+				auto fwPayloadSegments = helpers::getFirmwareImage(updatedFirmware, fwSize).split(fwSize / 2);
+				FAIL_IF(!driver.firmwareImageDownload(0, fwPayloadSegments[0]).CompletionQueueEntry.succeeded(), "Failed to download the FW image part 1/2");
+				FAIL_IF(!driver.firmwareImageDownload((UINT_32)DWORDS_FROM_BYTES(fwPayloadSegments[0].getSize()), fwPayloadSegments[1]).CompletionQueueEntry.succeeded(), "Failed to download the FW image part 2/2");
+				FAIL_IF(driver.getFirmwareString() != startingFirmware, "FW changed without a commit being sent");
+				FAIL_IF(!driver.firmwareCommit(constants::commands::fw_commit::commit_action::REPLACE_IN_SLOT_NO_ACTIVATE, 5).CompletionQueueEntry.succeeded(), "Failed to commit with a CA to replace in slot without activation");
+				FAIL_IF(driver.getFirmwareString() != startingFirmware, "FW changed without actually activating the replaced slot");
+				FAIL_IF(!driver.firmwareCommit(constants::commands::fw_commit::commit_action::ACTIVATE_GIVEN_SLOT_NOW, 5).CompletionQueueEntry.succeeded(), "Failed to activate the FW in slot 5");
+				FAIL_IF(driver.getFirmwareString() != updatedFirmware, "FW did not change after activation");
+				FAIL_IF(!driver.controllerReset(), "Controller reset failed!");
+				FAIL_IF(driver.getFirmwareString() != updatedFirmware, "FW changed after reset when it shouldn't have");
+
+				// Test fw/dl can return overlapping range
+				FAIL_IF(!driver.firmwareImageDownload(0, fwPayloadSegments[0]).CompletionQueueEntry.succeeded(), "Failed to download the FW image part 1/2");
+				FAIL_IF(driver.firmwareImageDownload(1, fwPayloadSegments[1]).CompletionQueueEntry.SC != constants::status::codes::specific::OVERLAPPING_RANGE, "Overlapping range was not returned");
+
+				// Test commit fails with an invalid image
+				FAIL_IF(!driver.firmwareImageDownload(0, Payload(4096)).CompletionQueueEntry.succeeded(), "Failed to download empty FW image");
+				FAIL_IF(driver.firmwareCommit(constants::commands::fw_commit::commit_action::REPLACE_IN_SLOT_NO_ACTIVATE, 5).CompletionQueueEntry.SC != constants::status::codes::specific::INVALID_FIRMWARE_IMAGE, "FW did not return invalid firmware image on an invalid image");
 
 				return true;
 			}
@@ -471,8 +521,8 @@ namespace cnvme
 			{
 				cnvme::driver::Driver driver;
 				UINT_32 BUF_SIZE = sizeof(cnvme::driver::DRIVER_COMMAND);
-				BYTE* buffer = new BYTE[BUF_SIZE];
-				memset(buffer, 0, BUF_SIZE);
+				Payload p(BUF_SIZE);
+				BYTE* buffer = p.getBuffer();
 
 				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
 				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
@@ -485,16 +535,16 @@ namespace cnvme
 				for (UINT_32 i = 0; i < 8; i++)
 				{
 					driver.sendCommand(buffer, BUF_SIZE);
-					ASSERT_IF(pDriverCommand->DriverStatus != cnvme::driver::SENT_SUCCESSFULLY, "Command did not send successfully");
-					ASSERT_IF(pDriverCommand->TransferDataDirection != cnvme::driver::NO_DATA, "Command transfer data direction somehow changed");
-					ASSERT_IF(pDriverCommand->Timeout != timeout, "Timeout value should not have changed");
-					ASSERT_IF(pDriverCommand->TransferDataSize != 0, "Data transfer size should not have changed");
-					ASSERT_IF(pDriverCommand->Command.DWord0Breakdown.CID != i, "Command's CID should match loop iteration");
-					ASSERT_IF(pDriverCommand->CompletionQueueEntry.CID != pDriverCommand->Command.DWord0Breakdown.CID, "Completion CID should match that of the submission");
-					ASSERT_IF(pDriverCommand->CompletionQueueEntry.SC != 0, "Status wan't success for sending Identify Controller");
-					ASSERT_IF(pDriverCommand->CompletionQueueEntry.SCT != 0, "Status code type wan't generic for sending Identify Controller");
-					ASSERT_IF(pDriverCommand->Command.DPTR.DPTR1 != 0, "DPTR1 was somehow not 0 even though this is non-data");
-					ASSERT_IF(pDriverCommand->Command.DPTR.DPTR2 != 0, "DPTR2 was somehow not 0 even though this is non-data");
+					FAIL_IF(pDriverCommand->DriverStatus != cnvme::driver::SENT_SUCCESSFULLY, "Command did not send successfully");
+					FAIL_IF(pDriverCommand->TransferDataDirection != cnvme::driver::NO_DATA, "Command transfer data direction somehow changed");
+					FAIL_IF(pDriverCommand->Timeout != timeout, "Timeout value should not have changed");
+					FAIL_IF(pDriverCommand->TransferDataSize != 0, "Data transfer size should not have changed");
+					FAIL_IF(pDriverCommand->Command.DWord0Breakdown.CID != i, "Command's CID should match loop iteration");
+					FAIL_IF(pDriverCommand->CompletionQueueEntry.CID != pDriverCommand->Command.DWord0Breakdown.CID, "Completion CID should match that of the submission");
+					FAIL_IF(pDriverCommand->CompletionQueueEntry.SC != 0, "Status wan't success for sending Identify Controller");
+					FAIL_IF(pDriverCommand->CompletionQueueEntry.SCT != 0, "Status code type wan't generic for sending Identify Controller");
+					FAIL_IF(pDriverCommand->Command.DPTR.DPTR1 != 0, "DPTR1 was somehow not 0 even though this is non-data");
+					FAIL_IF(pDriverCommand->Command.DPTR.DPTR2 != 0, "DPTR2 was somehow not 0 even though this is non-data");
 				}
 
 				return true;
@@ -505,8 +555,8 @@ namespace cnvme
 				cnvme::driver::Driver driver;
 
 				UINT_32 BUF_SIZE = sizeof(cnvme::identify::structures::IDENTIFY_CONTROLLER) + sizeof(cnvme::driver::DRIVER_COMMAND);
-				BYTE* buffer = new BYTE[BUF_SIZE];
-				memset(buffer, 0, BUF_SIZE);
+				Payload p(BUF_SIZE);
+				BYTE* buffer = p.getBuffer();
 
 				auto pDriverCommand = (cnvme::driver::PDRIVER_COMMAND)buffer;
 				pDriverCommand->QueueId = ADMIN_QUEUE_ID;
@@ -521,19 +571,19 @@ namespace cnvme
 				for (UINT_32 i = 0; i < 8; i++)
 				{
 					driver.sendCommand(buffer, BUF_SIZE);
-					ASSERT_IF(pDriverCommand->DriverStatus != cnvme::driver::SENT_SUCCESSFULLY, "Command did not send successfully");
-					ASSERT_IF(pDriverCommand->TransferDataDirection != cnvme::driver::READ, "Command transfer data direction somehow changed");
-					ASSERT_IF(pDriverCommand->Timeout != timeout, "Timeout value should not have changed");
-					ASSERT_IF(pDriverCommand->TransferDataSize != sizeof(cnvme::identify::structures::IDENTIFY_CONTROLLER), "Data transfer size should not have changed");
-					ASSERT_IF(pDriverCommand->Command.DWord0Breakdown.CID != i, "Command's CID should match loop iteration");
-					ASSERT_IF(pDriverCommand->CompletionQueueEntry.CID != pDriverCommand->Command.DWord0Breakdown.CID, "Completion CID should match that of the submission");
-					ASSERT_IF(pDriverCommand->CompletionQueueEntry.SC != 0, "Status wan't success for sending Identify Controller");
-					ASSERT_IF(pDriverCommand->CompletionQueueEntry.SCT != 0, "Status code type wan't generic for sending Identify Controller");
+					FAIL_IF(pDriverCommand->DriverStatus != cnvme::driver::SENT_SUCCESSFULLY, "Command did not send successfully");
+					FAIL_IF(pDriverCommand->TransferDataDirection != cnvme::driver::READ, "Command transfer data direction somehow changed");
+					FAIL_IF(pDriverCommand->Timeout != timeout, "Timeout value should not have changed");
+					FAIL_IF(pDriverCommand->TransferDataSize != sizeof(cnvme::identify::structures::IDENTIFY_CONTROLLER), "Data transfer size should not have changed");
+					FAIL_IF(pDriverCommand->Command.DWord0Breakdown.CID != i, "Command's CID should match loop iteration");
+					FAIL_IF(pDriverCommand->CompletionQueueEntry.CID != pDriverCommand->Command.DWord0Breakdown.CID, "Completion CID should match that of the submission");
+					FAIL_IF(pDriverCommand->CompletionQueueEntry.SC != 0, "Status wan't success for sending Identify Controller");
+					FAIL_IF(pDriverCommand->CompletionQueueEntry.SCT != 0, "Status code type wan't generic for sending Identify Controller");
 
 					auto pIdentifyController = (cnvme::identify::structures::PIDENTIFY_CONTROLLER)pDriverCommand->TransferData;
-					ASSERT_IF(std::string(pIdentifyController->MN) != std::string(DEFAULT_MODEL), "Model didn't match expectations");
-					ASSERT_IF(std::string(pIdentifyController->SN) != std::string(DEFAULT_SERIAL), "Serial didn't match expectations");
-					ASSERT_IF(std::string(pIdentifyController->FR) != std::string(DEFAULT_FIRMWARE), "Firmware didn't match expectations");
+					FAIL_IF(std::string(pIdentifyController->MN) != std::string(DEFAULT_MODEL), "Model didn't match expectations");
+					FAIL_IF(std::string(pIdentifyController->SN) != std::string(DEFAULT_SERIAL), "Serial didn't match expectations");
+					FAIL_IF(std::string(pIdentifyController->FR) != std::string(DEFAULT_FIRMWARE), "Firmware didn't match expectations");
 				}
 
 				return true;

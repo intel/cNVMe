@@ -132,6 +132,14 @@ namespace cnvme
 		/// </summary>
 		void clear();
 
+		/// <summary>
+		/// Splits the given payload into a vector of evenly sized payloads of the given size.
+		/// Note that this will ASSERT if the size of this payload isn't evenly divisible by splitSize
+		/// </summary>
+		/// <param name="splitSize">Bytes per even split Payloads</param>
+		/// <returns>vector of Payload</returns>
+		std::vector<Payload> split(size_t splitSize) const;
+
 	private:
 
 		/// <summary>

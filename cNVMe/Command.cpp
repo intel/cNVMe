@@ -122,7 +122,7 @@ namespace cnvme
 				case admin::FIRMWARE_COMMIT:
 					break;
 				case admin::FIRMWARE_IMAGE_DOWNLOAD:
-					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord10);
+					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DWord10) * sizeof(UINT_32);
 					break;
 				case admin::GET_FEATURES:
 					break; // technically this isn't always true with some optional pages

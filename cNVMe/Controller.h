@@ -28,12 +28,14 @@ Controller.h - A header file for the NVMe Controller
 #include "Command.h"
 #include "ControllerRegisters.h"
 #include "Identify.h"
+#include "LogPages.h"
 #include "Namespace.h"
 #include "PCIe.h"
 #include "Types.h"
 #include "Queue.h"
 
 #define ADMIN_QUEUE_ID 0
+#define FIRMWARE_EYE_CATCHER "cNVMe"
 #define MAX_COMMAND_IDENTIFIER 0xFFFF
 #define MAX_SUBMISSION_QUEUES  0xFFFF
 
@@ -214,6 +216,17 @@ namespace cnvme
 			bool handledByCommandResponseApiFile(NVME_COMMAND& nvmeCommand, COMPLETION_QUEUE_ENTRY& completionQueueEntry, UINT_16 SQID);
 
 			/// <summary>
+			/// Updates the running firmware to the one with the given slot
+			/// </summary>
+			/// <param name="firmwareSlot"></param>
+			void replaceRunningFirmwareWithOneInSlot(UINT_8 firmwareSlot);
+
+			/// <summary>
+			/// Used to store the data downloaded by Firmware Image Download
+			/// </summary>
+			std::map<UINT_32, Payload> FirmwareImageDWordOffsetToData;
+
+			/// <summary>
 			/// Map from the admin command opcode to the function that processes it
 			/// </summary>
 			static const std::map<UINT_8, NVMeCaller> AdminCommandCallers;
@@ -227,6 +240,11 @@ namespace cnvme
 			/// File to call for CRAPI (Command Response API)
 			/// </summary>
 			std::string CommandResponseApiFilePath;
+
+			/// <summary>
+			/// Holds info for LID=3 / Firmware Slot Info
+			/// </summary>
+			log_pages::FIRMWARE_SLOT_INFO FirmwareSlotInfo;
 
 			/// <summary>
 			/// Handling for the NVMe Identify Command
@@ -252,6 +270,16 @@ namespace cnvme
 			/// Handling for the NVMe Delete IO Submission Queue Command
 			/// </summary>
 			NVME_CALLER_HEADER(adminDeleteIoSubmissionQueue);
+
+			/// <summary>
+			/// Handling for the NVMe Firmware Commit Command
+			/// </summary>
+			NVME_CALLER_HEADER(adminFirmwareCommit);
+
+			/// <summary>
+			/// Handling for the NVMe Firmware Image Download Command
+			/// </summary>
+			NVME_CALLER_HEADER(adminFirmwareImageDownload);
 
 			/// <summary>
 			/// Handling for the NVM Format command

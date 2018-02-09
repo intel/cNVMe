@@ -40,11 +40,14 @@ Types.h - A header file for all needed type includes
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <fstream>
 #include <functional>
+#include <future>
+#include <iostream>
 #include <list>
 #include <map>
 #include <mutex>
-#include <fstream>
+#include <random>
 #include <set>
 #include <string>
 #include <thread>
@@ -81,6 +84,8 @@ typedef UINT_8 BYTE;
 // Macros for code clarity
 #define ONE_BASED_FROM_ZERO_BASED(number) (number + 1)
 #define ZERO_BASED_FROM_ONE_BASED(number) (number - 1)
+#define DWORDS_FROM_BYTES(number) ((number + sizeof(UINT_32) - 1) / sizeof(UINT_32))
+#define BYTES_FROM_DWORDS(number) (number * sizeof(UINT_32))
 
 // Macros for getting False faster
 #define FAIL(s) LOG_ERROR(s); return false;
@@ -121,9 +126,15 @@ inline errno_t memcpy_s(void *dest, size_t destSize, const void *src, size_t cou
 	}
 
 	return retVal;
-
-	// Add a way to drop to gdb
-	#define DROP_TO_GDB() raise(SIGINT)
 }
-#endif // _WIN32
+
+#ifdef _DEBUG
+// Add a way to drop to gdb
+#define DROP_TO_GDB() raise(SIGINT)
+#else
+#define DROP_TO_GDB() error... DROP_TO_GDB() should not be in release code
+#endif // _DEBUG
+
+#endif // !_WIN32
+
 #endif //_TYPES_H
