@@ -132,7 +132,7 @@ namespace cnvme
 			{
 				// Check if ASQB matches ValidSubmissionQueues
 				Queue* adminQueue = getQueueWithId(ValidSubmissionQueues, ADMIN_QUEUE_ID);
-				ASSERT_IF(!adminQueue, "Couldn't find the admin submission queue! Though ValidSubmissionQueue size is not 0.");
+				ASSERT_IF_EQ(adminQueue, NULL, "Couldn't find the admin submission queue! Though ValidSubmissionQueue size is not 0.");
 				adminQueue->setMemoryAddress(controllerRegisters->ASQ.ASQB);
 			}
 
@@ -149,14 +149,14 @@ namespace cnvme
 				ValidCompletionQueues.push_back(AdminCompletionQueue);
 
 				Queue* adminSubQ = getQueueWithId(ValidSubmissionQueues, ADMIN_QUEUE_ID);
-				ASSERT_IF(!adminSubQ, "Couldn't find the admin submission queue, to link it to the admin completion queue!");
+				ASSERT_IF_EQ(adminSubQ, NULL, "Couldn't find the admin submission queue, to link it to the admin completion queue!");
 				adminSubQ->setMappedQueue(ValidCompletionQueues[ADMIN_QUEUE_ID]); // Map SQ -> CQ
 			}
 			else
 			{
 				// Check if ACQB matches ValidCompletionQueues
 				Queue* adminQueue = getQueueWithId(ValidCompletionQueues, ADMIN_QUEUE_ID);
-				ASSERT_IF(!adminQueue, "Couldn't find the admin completion queue! Though ValidCompletionQueues size is not 0.");
+				ASSERT_IF_EQ(adminQueue, NULL, "Couldn't find the admin completion queue! Though ValidCompletionQueues size is not 0.");
 				adminQueue->setMemoryAddress(controllerRegisters->ACQ.ACQB);
 			}
 

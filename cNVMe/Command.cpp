@@ -180,17 +180,17 @@ namespace cnvme
 				case nvm::FLUSH:
 					break;
 				case nvm::WRITE:
-					ASSERT_IF(sectorSizeInBytes < 512, "Invalid sector size to determine transfer size");
+					ASSERT_IF_LT(sectorSizeInBytes, 512, "Invalid sector size to determine transfer size");
 					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DW12_IO.NLB) * sectorSizeInBytes;
 					break; // 
 				case nvm::READ:
-					ASSERT_IF(sectorSizeInBytes < 512, "Invalid sector size to determine transfer size");
+					ASSERT_IF_LT(sectorSizeInBytes, 512, "Invalid sector size to determine transfer size");
 					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DW12_IO.NLB) * sectorSizeInBytes;
 					break; //
 				case nvm::WRITE_UNCORRECTABLE:
 					break;
 				case nvm::COMPARE:
-					ASSERT_IF(sectorSizeInBytes < 512, "Invalid sector size to determine transfer size");
+					ASSERT_IF_LT(sectorSizeInBytes, 512, "Invalid sector size to determine transfer size");
 					transferSize = ONE_BASED_FROM_ZERO_BASED(this->DW12_IO.NLB) * sectorSizeInBytes;
 					break;
 				case nvm::WRITE_ZEROES:

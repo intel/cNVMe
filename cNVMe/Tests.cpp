@@ -91,14 +91,14 @@ namespace cnvme
 
 			Payload getFirmwareImage(std::string firmwareRevision, size_t fileSizeInBytes)
 			{
-				ASSERT_IF(fileSizeInBytes < sizeof(identify::structures::IDENTIFY_CONTROLLER::FR) + sizeof(FIRMWARE_EYE_CATCHER), "Cannot make firmware image with the given small size");
-				ASSERT_IF(firmwareRevision.size() > sizeof(identify::structures::IDENTIFY_CONTROLLER::FR), "Given firmware revision is sized too large to fit in the FR field");
+				ASSERT_IF_LT(fileSizeInBytes, sizeof(identify::structures::IDENTIFY_CONTROLLER::FR) + sizeof(FIRMWARE_EYE_CATCHER), "Cannot make firmware image with the given small size");
+				ASSERT_IF_GT(firmwareRevision.size(), sizeof(identify::structures::IDENTIFY_CONTROLLER::FR), "Given firmware revision is sized too large to fit in the FR field");
 
 				Payload retPayload((UINT_8*)FIRMWARE_EYE_CATCHER, sizeof(FIRMWARE_EYE_CATCHER));
 				retPayload.append(Payload(fileSizeInBytes - sizeof(FIRMWARE_EYE_CATCHER) - sizeof(identify::structures::IDENTIFY_CONTROLLER::FR)));
 				retPayload.append(Payload((UINT_8*)firmwareRevision.c_str(), firmwareRevision.size()));
 
-				ASSERT_IF(retPayload.getSize() != fileSizeInBytes, "FW image payload was incorrectly sized");
+				ASSERT_IF_NE(retPayload.getSize(), fileSizeInBytes, "FW image payload was incorrectly sized");
 
 				return retPayload;
 			}

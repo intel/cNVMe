@@ -13,11 +13,15 @@ env:
     - BITNESS='64' OUTPUT_TYPE='EXE' CONFIG_TYPE='Release'
     - BITNESS='64' OUTPUT_TYPE='EXE' CONFIG_TYPE='Debug'    
     # No 32 bit DLLs since we can't easily get 32-bit Python to test them on Travis
-    # No 32-bit exes since we would need sudo to install 32-bit libs.
+    - BITNESS='32' OUTPUT_TYPE='EXE' CONFIG_TYPE='Release'
+    - BITNESS='32' OUTPUT_TYPE='EXE' CONFIG_TYPE='Debug'  
 
 before_install:
   - export PATH=$HOME/.local/bin:$PATH
   - pip install --user `whoami` pytest
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y 
+  - sudo apt-get update --option Acquire::Retries=100 --option Acquire::http::Timeout="60" 
+  - sudo apt-get install -y gcc-5 g++-5 g++-5-multilib libc6-dev-i386
 
 before_script:
   - sudo unlink /usr/bin/g++ && sudo ln -s /usr/bin/g++-5 /usr/bin/g++
@@ -27,11 +31,3 @@ before_script:
   
 script:
   - python -m pytest -v -s "Helper Scripts/test_cnvme.py"
-  
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-    - gcc-5
-    - g++-5

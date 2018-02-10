@@ -135,9 +135,19 @@ namespace cnvme
 			return buffer;
 		}
 
-		void Logger::_assert(std::string funcName, std::string txt, unsigned long long line)
+		void Logger::_assert(std::string funcName, std::string txt, unsigned long long line, std::string conditionInfo)
 		{
-			std::string finalTxt = "cNVMe ASSERT! " + funcName + "():" + std::to_string(line) + " - " + std::string(txt);
+			std::string finalTxt;
+			
+			if (conditionInfo.size())
+			{
+				finalTxt = "cNVMe ASSERT! " + funcName + "():" + std::to_string(line) + " - " + conditionInfo + " - " + txt;
+			}
+			else
+			{
+				finalTxt = "cNVMe ASSERT! " + funcName + "():" + std::to_string(line) + " - " + txt;
+			}
+
 			cnvme::logging::theLogger.setStatus(finalTxt);
 			Mutex.lock();
 			if (AssertQuietThreads.find(std::this_thread::get_id()) == AssertQuietThreads.end()) // not a quiet thread
@@ -145,7 +155,6 @@ namespace cnvme
 				std::cerr << finalTxt << std::endl;
 			}
 			Mutex.unlock();
-
 
 #ifdef _DEBUG // only throw on debug builds
 			throw std::runtime_error(finalTxt);
@@ -156,7 +165,15 @@ namespace cnvme
 		{
 			if (condition)
 			{
-				_assert(funcName, txt, line);
+				_assert(funcName, txt, line, "");
+			}
+		}
+
+		void Logger::_assert_if(std::string funcName, bool condition, std::string txt, unsigned long long line, std::string conditionInfo)
+		{
+			if (condition)
+			{
+				_assert(funcName, txt, line, conditionInfo);
 			}
 		}
 

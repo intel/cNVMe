@@ -37,7 +37,7 @@ Logger.h - A header file for the Logging
 #define LOG_ERROR(txt) cnvme::logging::theLogger.log(_LOGGING_INFO() + " - [Error] - " + txt, cnvme::logging::ERROR)
 #define LOG_INFO(txt) cnvme::logging::theLogger.log(_LOGGING_INFO() + " - [Info] - " + txt, cnvme::logging::INFO)
 #define LOG_SET_LEVEL(level) cnvme::logging::theLogger.setLevel((cnvme::logging::LOGGING_LEVEL)level)
-#define ASSERT(txt) cnvme::logging::theLogger._assert(std::string(__func__), txt, __LINE__)
+#define ASSERT(txt) cnvme::logging::theLogger._assert(std::string(__func__), txt, __LINE__, "")
 #define ASSERT_IF(cond, txt) cnvme::logging::theLogger._assert_if(std::string(__func__), cond, txt, __LINE__)
 // The following two have braces at the end to make sure they get used together. Use to hide logging on a thread.
 #define _HIDE_LOG_THREAD() cnvme::logging::theLogger.addHiddenThread(std::this_thread::get_id()); {
@@ -45,6 +45,14 @@ Logger.h - A header file for the Logging
 // The following two have braces at the end to make sure they get used together. Used to not print asserts on a thread
 #define _START_ASSERT_QUIET() cnvme::logging::theLogger.setAssertQuiet(true, std::this_thread::get_id()); {
 #define _END_ASSERT_QUIET() cnvme::logging::theLogger.setAssertQuiet(false, std::this_thread::get_id()); };
+
+// More verbose ASSERT_IFs
+#define ASSERT_IF_EQ(left, right, txt) if (left == right) {std::stringstream s; s << "(" << #left << " == " << #right << " <+> " << left << " == " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());} 
+#define ASSERT_IF_NE(left, right, txt) if (left != right) {std::stringstream s; s << "(" << #left << " != " << #right << " <+> " << left << " != " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());} 
+#define ASSERT_IF_LT(left, right, txt) if (left < right) {std::stringstream s; s << "(" << #left << " < " << #right << " <+> " << left << " < " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());}
+#define ASSERT_IF_GT(left, right, txt) if (left > right) {std::stringstream s; s << "(" << #left << " > " << #right << " <+> " << left << " > " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());}
+#define ASSERT_IF_LTE(left, right, txt) if (left <= right) {std::stringstream s; s << "(" << #left << " <= " << #right << " <+> " << left << " <= " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());} 
+#define ASSERT_IF_GTE(left, right, txt) if (left >= right) {std::stringstream s; s << "(" << #left << " => " << #right << " <+> " << left << " => " << right << ")";cnvme::logging::theLogger._assert(__func__, txt, __LINE__, s.str());}
 
 #define CLEARED_STATUS "Healthy"
 
@@ -148,13 +156,14 @@ namespace cnvme
 			/// Cause an assert with the given txt
 			/// Use the ASSERT macro. Do not call directly
 			/// </summary>
-			void _assert(std::string funcName, std::string txt, unsigned long long line);
+			void _assert(std::string funcName, std::string txt, unsigned long long line, std::string conditionInfo);
 
 			/// <summary>
 			/// Asserts if a condition is met
 			/// Use the ASSERT_IF macro. do not call directly
 			/// </summary>
 			void _assert_if(std::string funcName, bool condition, std::string txt, unsigned long long line);
+			void _assert_if(std::string funcName, bool condition, std::string txt, unsigned long long line, std::string conditionInfo);
 
 		private:
 			/// <summary>
