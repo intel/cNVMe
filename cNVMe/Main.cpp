@@ -36,7 +36,7 @@ int main()
 {
 	// This is testing code.
 	LOG_SET_LEVEL(2);
-
+	Controller c;
 	LOG_SET_LEVEL(1);
 
 	bool testsPassing = cnvme::tests::helpers::runTests();

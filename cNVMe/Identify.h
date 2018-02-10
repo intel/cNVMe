@@ -31,7 +31,7 @@ Identify.h - A header file for the NVMe Identify Commands
 #define DEFAULT_FIRMWARE "00000001"
 #define DEFAULT_SUBMISSION_QUEUE_ENTRY_SIZE 6 // 2^6 = 64
 #define DEFAULT_COMPLETION_QUEUE_ENTRY_SIZE 4 // 2^4 = 16
-#define DEFAULT_MAX_NAMESPACES 1
+#define DEFAULT_MAX_NAMESPACES 1024
 
 #pragma once
 
@@ -141,8 +141,8 @@ namespace cnvme
 				UINT_16 MTFA;
 				UINT_32 HMPRE;
 				UINT_32 HMMIN;
-				UINT_8 TNVMCAP[16];
-				UINT_8 UNVMCAP[16];
+				UINT_64 TNVMCAP[2];
+				UINT_64 UNVMCAP[2];
 				UINT_32 RPMBS;
 				UINT_16 EDSTT;
 				UINT_8 DSTO;
@@ -214,6 +214,11 @@ namespace cnvme
 				UINT_8 RSVD_NVME_OVER_FABRICS[256];
 				IDENTIFY_POWER_STATE_DESCRIPTOR PSD[32];
 				UINT_8 VendorSpecific[1024];
+
+				/// <summary>
+				/// Helper to set the SUBNQN field to a valid value
+				/// </summary>
+				void setSubsystemQualifiedName();
 			} IDENTIFY_CONTROLLER, *PIDENTIFY_CONTROLLER;
 			static_assert(sizeof(IDENTIFY_CONTROLLER) == 4096, "Identify controller should be 4096 bytes in size");
 

@@ -29,7 +29,7 @@ System.h - A header file for a System-specific calls for cNVMe
 
 namespace cnvme
 {
-	namespace system
+	namespace sys
 	{
 		/// <summary>
 		/// Returns the folder that cNVMe's binary data is in.

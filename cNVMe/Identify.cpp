@@ -24,6 +24,7 @@ Identify.cpp - An implementation file for the NVMe Identify Commands
 */
 
 #include "Identify.h"
+#include "Tests.h"
 
 namespace cnvme
 {
@@ -31,7 +32,23 @@ namespace cnvme
 	{
 		namespace structures
 		{
+			void IDENTIFY_CONTROLLER::setSubsystemQualifiedName()
+			{
+				char buffer[2]; // 1 extra for terminating NULL from snprintf
+				std::string nqn(constants::commands::identify::EMPTY_NQN);
+				for (size_t i = 0; i < nqn.size(); i++)
+				{
+					// replace spaces with a random hex char
+					if (nqn[i] == ' ')
+					{
+						UINT_8 randNum = (UINT_8)tests::helpers::randInt(0, 0xf);
+						ASSERT_IF_NE(snprintf(buffer, sizeof(buffer), "%x", randNum), 1, "snprintf() failed");
+						nqn[i] = buffer[0];
+					}
+				}
 
+				memcpy_s(&this->SUBNQN, sizeof(this->SUBNQN), nqn.c_str(), nqn.size());
+			}
 		}
 	}
 }

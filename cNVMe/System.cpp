@@ -37,7 +37,7 @@ System.cpp - An implementation file for a System-specific calls for cNVMe
 
 namespace cnvme
 {
-	namespace system
+	namespace sys
 	{
 		std::string getCNVMeFolder()
 		{

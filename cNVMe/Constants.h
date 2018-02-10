@@ -210,6 +210,8 @@ namespace cnvme
 					const UINT_32 NGUID = 0x02;
 					const UINT_32 NAMESPACE_UUID = 0x03;
 				}
+
+				const std::string EMPTY_NQN = "nqn.2014-08.org.nvmexpress:uuid:        -    -    -    -            ";
 			}
 
 			namespace fw_commit

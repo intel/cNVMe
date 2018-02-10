@@ -33,6 +33,7 @@ Controller.cpp - An implementation file for the NVMe Controller
 #include "Controller.h"
 #include "PRP.h"
 #include "Strings.h"
+#include "System.h"
 
 namespace cnvme
 {
@@ -392,8 +393,18 @@ namespace cnvme
 			this->IdentifyController.MaxCompletionQueueEntrySize = DEFAULT_COMPLETION_QUEUE_ENTRY_SIZE;
 			this->IdentifyController.RequiredCompletionQueueEntrySize = DEFAULT_COMPLETION_QUEUE_ENTRY_SIZE;
 
+			// Queues can process one command at a time right now. (Which is funny because it makes a lot of queue functionality useless)
+			this->IdentifyController.MAXCMD = 1; 
+
 			this->IdentifyController.NN = DEFAULT_MAX_NAMESPACES;
 			this->IdentifyController.AVSCC = 1; // All VU commands must have DW10 be the NUMD
+
+			// Setup Capacity Fields
+			this->IdentifyController.TNVMCAP[0] = sys::getTotalRAMInBytes();
+			this->IdentifyController.UNVMCAP[0] = sys::getUnallocatedRAMInBytes();
+
+			// Set Subsystem Qualified Name
+			this->IdentifyController.setSubsystemQualifiedName();
 
 			// Optional Commands Supported
 			this->IdentifyController.FormatNVMSupported = true;
