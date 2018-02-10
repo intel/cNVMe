@@ -30,6 +30,7 @@ System.cpp - An implementation file for a System-specific calls for cNVMe
 #else // Linux
 #include <unistd.h>
 #include <sys/statvfs.h>
+#include <sys/sysinfo.h>
 #endif // _WIN32
 
 #define MAX_FILE_PATH 4096
@@ -86,7 +87,7 @@ namespace cnvme
 
 #endif // _WIN32
 			
-			ASSERT_IF(len < 0, "Failed to get the executable folder");
+			ASSERT_IF_LT(len, 0, "Failed to get the executable folder");
 			retStr = std::string(filename, len);
 			return retStr.substr(0, retStr.find_last_of("\\/"));
 		}
@@ -106,6 +107,24 @@ namespace cnvme
 			return retBytes;
 		}
 
+		UINT_64 getTotalRAMInBytes()
+		{
+			UINT_64 retBytes = 0;
+#ifdef _WIN32
+			MEMORYSTATUSEX memStatus = { 0 };
+			memStatus.dwLength = sizeof(memStatus);
+			ASSERT_IF_NE(GlobalMemoryStatusEx(&memStatus), TRUE, "GlobalMemoryStatusEx() failed");
+			retBytes = memStatus.ullTotalPhys;
+#else // Linux
+			struct sysinfo s = { 0 };
+			ASSERT_IF_NE(sysinfo(&s), 0, "sysinfo() didn't return zero");
+			retBytes = (UINT_64)s.mem_unit * s.totalram;
+	  // ^ Linux
+#endif // _WIN32
+
+			return retBytes;
+		}
+
 		UINT_64 getUnallocatedLocalCapacityInBytes()
 		{
 			UINT_64 retBytes = 0;
@@ -115,6 +134,24 @@ namespace cnvme
 			struct statvfs buf = { 0 };
 			statvfs(getCNVMeFolder().c_str(), &buf);
 			retBytes = buf.f_bfree  * buf.f_frsize;
+	  // ^ Linux
+#endif // _WIN32
+
+			return retBytes;
+		}
+
+		UINT_64 getUnallocatedRAMInBytes()
+		{
+			UINT_64 retBytes = 0;
+#ifdef _WIN32
+			MEMORYSTATUSEX memStatus = { 0 };
+			memStatus.dwLength = sizeof(memStatus);
+			ASSERT_IF_NE(GlobalMemoryStatusEx(&memStatus), TRUE, "GlobalMemoryStatusEx() failed");
+			retBytes = memStatus.ullAvailPageFile;
+#else // Linux
+			struct sysinfo s = { 0 };
+			ASSERT_IF_NE(sysinfo(&s), 0, "sysinfo() didn't return zero");
+			retBytes = (UINT_64)s.mem_unit * s.freeram;
 	  // ^ Linux
 #endif // _WIN32
 

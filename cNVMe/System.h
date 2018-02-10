@@ -43,9 +43,19 @@ namespace cnvme
 		UINT_64 getTotalLocalCapacityInBytes();
 
 		/// <summary>
+		/// Returns the total amount of RAM on the system
+		/// </summary>
+		UINT_64 getTotalRAMInBytes();
+
+		/// <summary>
 		/// Returns the total usable/unallocated capacity of the drive the executable is on
 		/// </summary>
 		UINT_64 getUnallocatedLocalCapacityInBytes();
+
+		/// <summary>
+		/// Returns the (theoretical) amount of RAM available on the system (does not check for x86 vs x64).
+		/// </summary>
+		UINT_64 getUnallocatedRAMInBytes();
 
 		/// <summary>
 		/// Returns the bitness of the running cNVMe
