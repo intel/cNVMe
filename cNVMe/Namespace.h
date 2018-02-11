@@ -87,6 +87,12 @@ namespace cnvme
 			/// <returns>Completion queue entry for command</returns>
 			command::COMPLETION_QUEUE_ENTRY write(command::NVME_COMMAND nvmeCommand, UINT_32 memoryPageSize);
 
+			/// <summary>
+			/// Gets a generic identify namespace structure (used with NSID==0xFFFFFFFF)
+			/// </summary>
+			/// <returns>IDENTIFY_NAMESPACE</returns>
+			static identify::structures::IDENTIFY_NAMESPACE getGenericIdentifyNamespaceStructure();
+
 		private:
 
 			/// <summary>

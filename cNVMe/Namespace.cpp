@@ -206,6 +206,19 @@ namespace cnvme
 			return completionQueueEntry;
 		}
 
+		identify::structures::IDENTIFY_NAMESPACE Namespace::getGenericIdentifyNamespaceStructure()
+		{
+			Namespace tmp;
+			auto refIdentifyNamespace = tmp.getIdentifyNamespaceStructure();
+			identify::structures::IDENTIFY_NAMESPACE retIdentifyNamespace = { 0 };
+
+			// Copy relevant things from the reference structure to the return one
+			memcpy_s(&retIdentifyNamespace.LBAF, sizeof(retIdentifyNamespace.LBAF), &refIdentifyNamespace.LBAF, sizeof(refIdentifyNamespace.LBAF));
+			retIdentifyNamespace.NLBAF = refIdentifyNamespace.NLBAF;
+
+			return retIdentifyNamespace;
+		}
+
 		UINT_64 Namespace::getNamespaceSizeInSectors()
 		{
 			UINT_32 sectorSize = this->getSectorSize();

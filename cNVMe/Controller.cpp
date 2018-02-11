@@ -585,6 +585,13 @@ namespace cnvme
 						auto identifyNamespaceStructure = namespaceSelected->second.getIdentifyNamespaceStructure();
 						memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &identifyNamespaceStructure, sizeof(identifyNamespaceStructure));
 					}
+					else if (command.NSID == ALL_NAMESPACES && this->IdentifyController.NamespaceCommandsSupported)
+					{
+						// If 0xFFFFFFFF is given and we support namespace management, return an identify namespace structure with fields applicable to all namespaces (current and future)
+						LOG_INFO("Grabbing generic Identify Namespace structure (0xFFFFFFFF)");
+						auto genericIdentifyNamespaceStructure = ns::Namespace::getGenericIdentifyNamespaceStructure();
+						memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &genericIdentifyNamespaceStructure, sizeof(genericIdentifyNamespaceStructure));
+					}
 					else
 					{
 						// See Figure 106 of NVMe 1.3 for details:
@@ -600,6 +607,13 @@ namespace cnvme
 						LOG_INFO("Grabbing Identify Namespace for NSID " + std::to_string(namespaceSelected->first));
 						auto identifyNamespaceStructure = namespaceSelected->second.getIdentifyNamespaceStructure();
 						memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &identifyNamespaceStructure, sizeof(identifyNamespaceStructure));
+					}
+					else if (command.NSID == ALL_NAMESPACES && this->IdentifyController.NamespaceCommandsSupported)
+					{
+						// If 0xFFFFFFFF is given and we support namespace management, return an identify namespace structure with fields applicable to all namespaces (current and future)
+						LOG_INFO("Grabbing generic Identify Namespace structure (0xFFFFFFFF)");
+						auto genericIdentifyNamespaceStructure = ns::Namespace::getGenericIdentifyNamespaceStructure();
+						memcpy_s(transferPayload.getBuffer(), transferPayload.getSize(), &genericIdentifyNamespaceStructure, sizeof(genericIdentifyNamespaceStructure));
 					}
 					else
 					{
